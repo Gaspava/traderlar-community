@@ -1,0 +1,11 @@
+{
+  "dependencies": {
+    "@ant-design/icons": "^6.0.0",
+    "@ant-design/nextjs-registry": "^1.1.0",
+    "@supabase/ssr": "^0.6.1",
+    "@supabase/supabase-js": "^2.53.0",
+    "antd": "^5.26.7",
+    "chart.js": "^4.5.0",
+    "react-chartjs-2": "^5.3.0"
+  }
+}
