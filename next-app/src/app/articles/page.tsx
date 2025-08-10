@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -24,7 +24,7 @@ import ArticleAd from '@/components/ads/ArticleAd';
 
 const ITEMS_PER_PAGE = 9;
 
-export default function ArticlesPage() {
+function ArticlesPageContent() {
   const searchParams = useSearchParams();
   const [articles, setArticles] = useState<ArticleSearchResult[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -480,5 +480,13 @@ export default function ArticlesPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ArticlesPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ArticlesPageContent />
+    </Suspense>
   );
 }

@@ -3,9 +3,10 @@ import { createClient } from '@/lib/supabase/server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = await createClient();
     
     const { searchParams } = new URL(request.url);
@@ -34,7 +35,7 @@ export async function GET(
         vote_count:forum_post_votes(count),
         user_vote:forum_post_votes!inner(vote_type)
       `, { count: 'exact' })
-      .eq('topic_id', params.id)
+      .eq('topic_id', id)
       .is('parent_id', null) // Only get top-level posts
       .range(offset, offset + limit - 1);
 
@@ -136,9 +137,10 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = await createClient();
     
     // Check authentication
@@ -159,7 +161,7 @@ export async function POST(
     const { data: topic } = await supabase
       .from('forum_topics')
       .select('is_locked')
-      .eq('id', params.id)
+      .eq('id', id)
       .single();
 
     if (!topic) {
@@ -174,7 +176,7 @@ export async function POST(
     const { data: post, error } = await supabase
       .from('forum_posts')
       .insert({
-        topic_id: params.id,
+        topic_id: id,
         author_id: user.id,
         parent_id,
         content,
