@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import MainLayout from '@/components/layout/MainLayout';
 
 interface ForumTopic {
   id: string;
@@ -159,17 +160,20 @@ export default function ForumCategoryPage() {
 
   if (!category) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Yükleniyor...</p>
+      <MainLayout>
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Yükleniyor...</p>
+          </div>
         </div>
-      </div>
+      </MainLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
+    <MainLayout>
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
       {/* Header */}
       <div className="bg-background/95 backdrop-blur-xl border-b border-border/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -412,6 +416,7 @@ export default function ForumCategoryPage() {
           </>
         )}
       </div>
-    </div>
+      </div>
+    </MainLayout>
   );
 }
