@@ -30,7 +30,7 @@ export default function HeroSection() {
             transition={{ duration: 0.5 }}
             className="space-y-4"
           >
-            <h1 className="text-4xl font-bold tracking-tight sm:text-6xl md:text-7xl">
+            <h1 className="h1">
               Türkiye&apos;nin en büyük{' '}
               <span className="bg-gradient-to-r from-emerald-600 to-emerald-500 bg-clip-text text-transparent">
                 trader
@@ -38,7 +38,7 @@ export default function HeroSection() {
               topluluğu
             </h1>
             
-            <p className="mx-auto max-w-3xl text-lg text-muted-foreground sm:text-xl md:text-2xl">
+            <p className="mx-auto max-w-3xl body-text text-lg sm:text-xl md:text-2xl text-muted-foreground">
               Stratejiler, analizler, tartışmalar ve profesyonel içerikler için doğru yerdesiniz.
             </p>
           </motion.div>
@@ -49,13 +49,13 @@ export default function HeroSection() {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="mt-10 flex flex-col justify-center gap-4 sm:flex-row"
           >
-            <Button size="lg" asChild className="text-base">
+            <Button size="lg" asChild className="btn-text text-base">
               <Link href="/auth/register">
                 Hemen Başla
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
-            <Button size="lg" variant="outline" asChild className="text-base">
+            <Button size="lg" variant="outline" asChild className="btn-text text-base">
               <Link href="/articles">
                 Makaleleri Keşfet
               </Link>
@@ -81,8 +81,8 @@ export default function HeroSection() {
                     <div className="absolute -right-4 -top-4 h-20 w-20 rounded-full bg-primary/10 transition-all group-hover:scale-110" />
                     <stat.icon className="relative mx-auto mb-4 h-8 w-8 text-primary transition-all group-hover:scale-110" />
                     <div className="relative">
-                      <div className="text-3xl font-bold">{stat.value}</div>
-                      <div className="mt-1 text-sm text-muted-foreground">{stat.label}</div>
+                      <div className="metric-value text-3xl">{stat.value}</div>
+                      <div className="mt-1 text-caption">{stat.label}</div>
                     </div>
                   </CardContent>
                 </Card>

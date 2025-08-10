@@ -2,26 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import MainLayout from '@/components/layout/MainLayout';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { 
-  MessageCircle,
-  Users,
-  TrendingUp,
-  Clock,
-  Eye,
-  ChevronRight,
-  ArrowLeft,
-  Plus,
-  Pin,
-  Lock,
-  ThumbsUp,
-  ThumbsDown,
-  MessageSquare,
-  Calendar,
-  User
-} from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 interface ForumTopic {
@@ -71,8 +52,6 @@ export default function ForumCategoryPage() {
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState<Category | null>(null);
   const [topics, setTopics] = useState<ForumTopic[]>([]);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(false);
 
   useEffect(() => {
     fetchCategory();
@@ -82,7 +61,7 @@ export default function ForumCategoryPage() {
     if (category) {
       fetchTopics();
     }
-  }, [category, sortBy, page]);
+  }, [category, sortBy]);
 
   const fetchCategory = async () => {
     try {
@@ -104,13 +83,55 @@ export default function ForumCategoryPage() {
   const fetchTopics = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/forum/topics?category=${categorySlug}&sort=${sortBy}&page=${page}`);
-      const data = await response.json();
+      const supabase = createClient();
       
-      if (!response.ok) throw new Error(data.error);
+      let query = supabase
+        .from('forum_topics')
+        .select(`
+          id,
+          title,
+          slug,
+          content,
+          is_pinned,
+          is_locked,
+          view_count,
+          reply_count,
+          vote_score,
+          created_at,
+          last_reply_at,
+          category:categories!forum_topics_category_id_fkey(
+            id,
+            name,
+            slug,
+            color
+          ),
+          author:users!forum_topics_author_id_fkey(
+            id,
+            name,
+            username,
+            avatar_url
+          ),
+          last_reply_user:users!forum_topics_last_reply_user_id_fkey(
+            name,
+            username
+          )
+        `)
+        .eq('category_id', category?.id);
+
+      // Apply sorting
+      if (sortBy === 'popular') {
+        query = query.order('vote_score', { ascending: false });
+      } else if (sortBy === 'replies') {
+        query = query.order('reply_count', { ascending: false });
+      } else {
+        query = query.order('last_reply_at', { ascending: false, nullsFirst: false })
+                     .order('created_at', { ascending: false });
+      }
+
+      const { data, error } = await query;
       
-      setTopics(data.topics || []);
-      setHasMore(data.pagination.page < data.pagination.totalPages);
+      if (error) throw error;
+      setTopics(data || []);
     } catch (error) {
       console.error('Error fetching topics:', error);
       setTopics([]);
@@ -118,77 +139,6 @@ export default function ForumCategoryPage() {
       setLoading(false);
     }
   };
-
-  const mockTopics: ForumTopic[] = [
-    {
-      id: '1',
-      title: 'Forum nasıl kullanılır?',
-      slug: 'forum-nasil-kullanilir',
-      content: 'Forumun kullanımı hakkında genel bilgiler...',
-      author: {
-        id: '1',
-        name: 'Test Kullanıcı',
-        username: 'testuser',
-        avatar_url: undefined
-      },
-      category: category,
-      is_pinned: true,
-      is_locked: false,
-      view_count: 150,
-      reply_count: 12,
-      vote_score: 8,
-      user_vote: undefined,
-      last_reply_at: '2024-01-15T10:30:00Z',
-      last_reply_user: {
-        name: 'Son Yanıt User',
-        username: 'lastuser'
-      },
-      created_at: '2024-01-10T08:00:00Z'
-    },
-    {
-      id: '2',
-      title: 'Yeni özellikler hakkında',
-      slug: 'yeni-ozellikler-hakkinda',
-      content: 'Yeni eklenen özellikler ve güncellemeler...',
-      author: {
-        id: '2',
-        name: 'Admin',
-        username: 'admin',
-        avatar_url: undefined
-      },
-      category: category,
-      is_pinned: false,
-      is_locked: false,
-      view_count: 89,
-      reply_count: 5,
-      vote_score: 12,
-      user_vote: undefined,
-      last_reply_at: '2024-01-14T15:20:00Z',
-      last_reply_user: {
-        name: 'Yanıt User',
-        username: 'replyuser'
-      },
-      created_at: '2024-01-12T14:00:00Z'
-    }
-  ];
-
-
-  const sortedTopics = [...topics].sort((a, b) => {
-    // Pinned topics always come first
-    if (a.is_pinned && !b.is_pinned) return -1;
-    if (!a.is_pinned && b.is_pinned) return 1;
-
-    switch (sortBy) {
-      case 'popular':
-        return b.vote_score - a.vote_score;
-      case 'replies':
-        return b.reply_count - a.reply_count;
-      case 'recent':
-      default:
-        return new Date(b.last_reply_at || b.created_at).getTime() - 
-               new Date(a.last_reply_at || a.created_at).getTime();
-    }
-  });
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -201,296 +151,267 @@ export default function ForumCategoryPage() {
     return date.toLocaleDateString('tr-TR');
   };
 
+  const sortedTopics = [...topics].sort((a, b) => {
+    if (a.is_pinned && !b.is_pinned) return -1;
+    if (!a.is_pinned && b.is_pinned) return 1;
+    return 0;
+  });
 
   if (!category) {
     return (
-      <MainLayout>
-        <div className="min-h-screen bg-background flex items-center justify-center">
-          <div className="text-center">
-            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Yükleniyor...</p>
-          </div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Yükleniyor...</p>
         </div>
-      </MainLayout>
+      </div>
     );
   }
 
   return (
-    <MainLayout>
-      <div className="min-h-screen bg-background">
-        {/* Header */}
-        <div className="bg-gradient-to-br from-primary/5 via-background to-secondary/5 border-b border-border/50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              <div className="flex items-center gap-6 mb-8">
-                <Link 
-                  href="/forum"
-                  className="p-3 hover:bg-muted/50 rounded-xl transition-all duration-300 hover:scale-105"
-                >
-                  <ArrowLeft className="w-6 h-6" />
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
+      {/* Header */}
+      <div className="bg-background/95 backdrop-blur-xl border-b border-border/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="py-8">
+            {/* Breadcrumb & Actions */}
+            <div className="flex items-center justify-between mb-6">
+              <nav className="flex items-center gap-2 text-sm">
+                <Link href="/forum" className="text-muted-foreground hover:text-foreground transition-colors">
+                  Forum
                 </Link>
-                <motion.div
-                  whileHover={{ rotate: 5, scale: 1.1 }}
-                  transition={{ type: "spring", stiffness: 300 }}
-                  className="p-4 rounded-xl shadow-lg"
-                  style={{ 
-                    background: `linear-gradient(135deg, ${category.color}15, ${category.color}25)`,
-                    borderColor: `${category.color}30`
-                  }}
-                >
-                  <div className="w-8 h-8" style={{ backgroundColor: category.color }}></div>
-                </motion.div>
-                <div className="flex-1">
-                  <h1 className="text-4xl font-bold text-foreground mb-2 break-long-words">{category.name}</h1>
-                  <p className="text-muted-foreground text-lg break-long-words">{category.description}</p>
-                </div>
-                <Link 
-                  href={`/forum/${category.slug}/new-topic`}
-                  className="hidden md:flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-                >
-                  <Plus className="w-5 h-5" />
-                  Yeni Konu
-                </Link>
-              </div>
+                <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+                <span className="text-foreground font-medium">{category.name}</span>
+              </nav>
+              <Link
+                href={`/forum/${category.slug}/new-topic`}
+                className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                <span className="hidden sm:inline">Yeni Konu</span>
+              </Link>
+            </div>
 
-              {/* Stats */}
-              <div className="grid grid-cols-3 gap-6">
-                <motion.div 
-                  whileHover={{ scale: 1.05 }}
-                  className="text-center bg-card/50 backdrop-blur-sm rounded-2xl p-6 border border-border/50 shadow-lg"
-                >
-                  <div className="text-3xl font-bold text-foreground mb-1">{topics.length}</div>
-                  <div className="text-muted-foreground font-medium">Konu</div>
-                </motion.div>
-                <motion.div 
-                  whileHover={{ scale: 1.05 }}
-                  className="text-center bg-card/50 backdrop-blur-sm rounded-2xl p-6 border border-border/50 shadow-lg"
-                >
-                  <div className="text-3xl font-bold text-foreground mb-1">
-                    {topics.reduce((sum, topic) => sum + topic.reply_count, 0)}
-                  </div>
-                  <div className="text-muted-foreground font-medium">Yanıt</div>
-                </motion.div>
-                <motion.div 
-                  whileHover={{ scale: 1.05 }}
-                  className="text-center bg-card/50 backdrop-blur-sm rounded-2xl p-6 border border-border/50 shadow-lg"
-                >
-                  <div className="text-3xl font-bold text-foreground mb-1">
-                    {topics.reduce((sum, topic) => sum + topic.view_count, 0)}
-                  </div>
-                  <div className="text-muted-foreground font-medium">Görüntüleme</div>
-                </motion.div>
+            {/* Category Info */}
+            <div className="flex items-start gap-4 mb-6">
+              <div
+                className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0"
+                style={{
+                  backgroundColor: `${category.color}15`,
+                  color: category.color
+                }}
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                </svg>
               </div>
-            </motion.div>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Sort Options */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="flex items-center justify-center mb-8"
-          >
-            <div className="bg-card/50 backdrop-blur-sm rounded-full p-1 border border-border/50 shadow-lg">
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => setSortBy('recent')}
-                  className={`px-6 py-3 rounded-full font-medium transition-all duration-300 ${
-                    sortBy === 'recent'
-                      ? 'bg-primary text-primary-foreground shadow-lg scale-105'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                  }`}
-                >
-                  <span className="flex items-center gap-2">
-                    <Clock className="w-4 h-4" />
-                    Son Yanıtlar
-                  </span>
-                </button>
-                <button
-                  onClick={() => setSortBy('popular')}
-                  className={`px-6 py-3 rounded-full font-medium transition-all duration-300 ${
-                    sortBy === 'popular'
-                      ? 'bg-primary text-primary-foreground shadow-lg scale-105'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                  }`}
-                >
-                  <span className="flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4" />
-                    En Popüler
-                  </span>
-                </button>
-                <button
-                  onClick={() => setSortBy('replies')}
-                  className={`px-6 py-3 rounded-full font-medium transition-all duration-300 ${
-                    sortBy === 'replies'
-                      ? 'bg-primary text-primary-foreground shadow-lg scale-105'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                  }`}
-                >
-                  <span className="flex items-center gap-2">
-                    <MessageSquare className="w-4 h-4" />
-                    En Çok Yanıt
-                  </span>
-                </button>
+              <div className="flex-1">
+                <h1 className="text-2xl font-bold text-foreground mb-1">{category.name}</h1>
+                <p className="text-sm text-muted-foreground">{category.description}</p>
               </div>
             </div>
-          </motion.div>
 
-          {/* Topics List */}
-          <div className="space-y-4">
-            {sortedTopics.map((topic, index) => (
-              <motion.div
-                key={topic.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: index * 0.1 }}
-              >
-                <Link href={`/forum/${category.slug}/${topic.slug}`} className="block group">
-                  <motion.div 
-                    whileHover={{ scale: 1.01, y: -2 }}
-                    transition={{ type: "spring", stiffness: 400 }}
-                    className="bg-gradient-to-br from-card via-card/95 to-card/90 rounded-2xl p-8 border border-border/50 hover:border-primary/20 transition-all duration-300 shadow-lg hover:shadow-xl backdrop-blur-sm"
+            {/* Stats & Sort */}
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+              <div className="flex items-center gap-6 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground">Konular:</span>
+                  <span className="font-medium text-foreground">{topics.length}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground">Yanıtlar:</span>
+                  <span className="font-medium text-foreground">
+                    {topics.reduce((sum, topic) => sum + topic.reply_count, 0)}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Sırala:</span>
+                <div className="flex gap-1 bg-card rounded-lg p-1">
+                  <button
+                    onClick={() => setSortBy('recent')}
+                    className={`px-3 py-1.5 rounded text-sm font-medium transition-all ${
+                      sortBy === 'recent'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
                   >
-                    <div className="flex items-start gap-6">
-                      {/* Author Avatar */}
-                      <motion.div 
-                        whileHover={{ scale: 1.1 }}
-                        className="flex-shrink-0"
-                      >
-                        <div className="w-14 h-14 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-full flex items-center justify-center shadow-lg border border-primary/10">
-                          <User className="w-7 h-7 text-primary" />
-                        </div>
-                      </motion.div>
+                    Son Aktivite
+                  </button>
+                  <button
+                    onClick={() => setSortBy('popular')}
+                    className={`px-3 py-1.5 rounded text-sm font-medium transition-all ${
+                      sortBy === 'popular'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    Popüler
+                  </button>
+                  <button
+                    onClick={() => setSortBy('replies')}
+                    className={`px-3 py-1.5 rounded text-sm font-medium transition-all ${
+                      sortBy === 'replies'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    En Çok Yanıt
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-                      {/* Topic Content */}
+      {/* Topics List */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {loading ? (
+          <div className="space-y-4">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="bg-card rounded-lg p-6 animate-pulse">
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 bg-muted rounded-full"></div>
+                  <div className="flex-1">
+                    <div className="h-5 bg-muted rounded w-3/4 mb-2"></div>
+                    <div className="h-4 bg-muted rounded w-full mb-3"></div>
+                    <div className="flex gap-4">
+                      <div className="h-3 bg-muted rounded w-20"></div>
+                      <div className="h-3 bg-muted rounded w-20"></div>
+                      <div className="h-3 bg-muted rounded w-20"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <>
+            <div className="space-y-3">
+              {sortedTopics.map((topic) => (
+                <Link
+                  key={topic.id}
+                  href={`/forum/${category.slug}/${topic.slug}`}
+                  className="block group"
+                >
+                  <div className="bg-card hover:bg-card/80 border border-border hover:border-primary/50 rounded-lg p-4 transition-all hover:shadow-md">
+                    <div className="flex items-start gap-4">
+                      {/* Avatar */}
+                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                        {topic.author.avatar_url ? (
+                          <img
+                            src={topic.author.avatar_url}
+                            alt={topic.author.name}
+                            className="w-full h-full rounded-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-sm font-medium text-muted-foreground">
+                            {topic.author.name?.charAt(0).toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Content */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-start gap-3 mb-3">
-                          <div className="flex items-center gap-2">
-                            {topic.is_pinned && (
-                              <motion.div
-                                whileHover={{ rotate: 15 }}
-                                className="p-1 bg-primary/10 rounded-full"
-                              >
-                                <Pin className="w-4 h-4 text-primary" />
-                              </motion.div>
-                            )}
-                            {topic.is_locked && (
-                              <motion.div
-                                whileHover={{ scale: 1.1 }}
-                                className="p-1 bg-muted/20 rounded-full"
-                              >
-                                <Lock className="w-4 h-4 text-muted-foreground" />
-                              </motion.div>
-                            )}
-                          </div>
-                          <h3 className="text-xl font-bold text-foreground group-hover:text-primary transition-colors duration-300 line-clamp-2 break-long-words">
+                        {/* Title & Badges */}
+                        <div className="flex items-start gap-2 mb-2">
+                          {topic.is_pinned && (
+                            <span className="flex items-center gap-1 px-2 py-0.5 bg-primary/10 text-primary rounded text-xs font-medium">
+                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
+                              </svg>
+                              Sabit
+                            </span>
+                          )}
+                          {topic.is_locked && (
+                            <span className="flex items-center gap-1 px-2 py-0.5 bg-muted text-muted-foreground rounded text-xs font-medium">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                              </svg>
+                              Kilitli
+                            </span>
+                          )}
+                          <h3 className="font-medium text-foreground group-hover:text-primary transition-colors line-clamp-1 flex-1">
                             {topic.title}
                           </h3>
                         </div>
 
-                        <div className="flex items-center gap-6 text-sm text-muted-foreground mb-4">
-                          <div className="flex items-center gap-2 px-3 py-1 bg-muted/30 rounded-full">
-                            <User className="w-3 h-3" />
-                            <span className="font-medium">{topic.author.name}</span>
-                          </div>
-                          <div className="flex items-center gap-2 px-3 py-1 bg-muted/30 rounded-full">
-                            <Calendar className="w-3 h-3" />
-                            <span>{formatDate(topic.created_at)}</span>
-                          </div>
-                        </div>
-
-                        <p className="text-muted-foreground text-sm line-clamp-2 mb-6 leading-relaxed break-long-words">
+                        {/* Description */}
+                        <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
                           {topic.content}
                         </p>
 
-                        {/* Stats */}
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-6">
-                            <div className="flex items-center gap-1 px-3 py-1 bg-primary/10 rounded-full border border-primary/20">
-                              <Eye className="w-3 h-3 text-primary" />
-                              <span className="text-sm font-semibold text-primary">{topic.view_count}</span>
-                            </div>
-                            <div className="flex items-center gap-1 px-3 py-1 bg-secondary/10 rounded-full border border-secondary/20">
-                              <MessageSquare className="w-3 h-3 text-secondary" />
-                              <span className="text-sm font-semibold text-secondary">{topic.reply_count}</span>
-                            </div>
-                            <div className="flex items-center gap-1 px-3 py-1 bg-primary/10 rounded-full border border-primary/20">
-                              <ThumbsUp className="w-3 h-3 text-primary" />
-                              <span className="text-sm font-semibold text-primary">{topic.vote_score}</span>
-                            </div>
-                          </div>
-
-                          {topic.last_reply_at && topic.last_reply_user && (
-                            <div className="text-xs text-muted-foreground text-right bg-muted/20 rounded-lg p-3">
-                              <div className="font-medium">Son yanıt: {topic.last_reply_user.name}</div>
-                              <div className="flex items-center gap-1 mt-1">
-                                <Clock className="w-3 h-3" />
-                                {formatDate(topic.last_reply_at)}
-                              </div>
-                            </div>
+                        {/* Meta Info */}
+                        <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                            {topic.author.name}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                            </svg>
+                            {topic.reply_count} yanıt
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            {topic.view_count} görüntüleme
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
+                            </svg>
+                            {topic.vote_score}
+                          </span>
+                          {topic.last_reply_at && (
+                            <>
+                              <span>•</span>
+                              <span>Son yanıt: {formatDate(topic.last_reply_at)}</span>
+                              {topic.last_reply_user && (
+                                <span className="font-medium">{topic.last_reply_user.name}</span>
+                              )}
+                            </>
                           )}
                         </div>
                       </div>
                     </div>
-                  </motion.div>
+                  </div>
                 </Link>
-              </motion.div>
-            ))}
-          </div>
+              ))}
+            </div>
 
-          {topics.length === 0 && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6 }}
-              className="text-center py-20"
-            >
-              <motion.div
-                animate={{ 
-                  scale: [1, 1.1, 1],
-                  rotate: [0, 5, -5, 0]
-                }}
-                transition={{ 
-                  duration: 4,
-                  repeat: Infinity,
-                  repeatType: "reverse"
-                }}
-                className="w-24 h-24 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-full flex items-center justify-center mx-auto mb-8 shadow-lg"
-              >
-                <MessageCircle className="w-12 h-12 text-primary" />
-              </motion.div>
-              <h3 className="text-2xl font-bold text-foreground mb-4">
-                Henüz konu yok
-              </h3>
-              <p className="text-muted-foreground text-lg mb-8 max-w-md mx-auto">
-                Bu kategoride ilk konuyu sen aç ve tartışmayı başlat!
-              </p>
-              <Link 
-                href={`/forum/${category.slug}/new-topic`}
-                className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-              >
-                <Plus className="w-5 h-5" />
-                Yeni Konu Aç
-              </Link>
-            </motion.div>
-          )}
-
-          {/* Mobile New Topic Button */}
-          <Link 
-            href={`/forum/${category.slug}/new-topic`}
-            className="md:hidden fixed bottom-6 right-6 flex items-center justify-center w-14 h-14 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full shadow-lg transition-colors z-10"
-          >
-            <Plus className="w-6 h-6" />
-          </Link>
-        </div>
+            {topics.length === 0 && (
+              <div className="text-center py-16">
+                <svg className="w-16 h-16 text-muted-foreground mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                <h3 className="text-lg font-semibold text-foreground mb-2">Henüz konu yok</h3>
+                <p className="text-muted-foreground mb-6">Bu kategoride ilk konuyu sen aç!</p>
+                <Link
+                  href={`/forum/${category.slug}/new-topic`}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Yeni Konu Aç
+                </Link>
+              </div>
+            )}
+          </>
+        )}
       </div>
-    </MainLayout>
+    </div>
   );
 }

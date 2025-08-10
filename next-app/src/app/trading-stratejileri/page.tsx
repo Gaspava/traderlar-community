@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import MainLayout from '@/components/layout/MainLayout';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { 
@@ -315,8 +314,14 @@ export default function TradingStratejileriPage() {
       const response = await fetch(`/api/strategies?${params}`);
       if (response.ok) {
         const data = await response.json();
-        setStrategies(data.strategies || []);
-        setPagination(data.pagination || pagination);
+        // If no strategies returned from API, use mock data
+        if (data.strategies && data.strategies.length > 0) {
+          setStrategies(data.strategies);
+          setPagination(data.pagination || pagination);
+        } else {
+          console.log('API returned empty strategies, using mock data');
+          setStrategies(mockStrategies);
+        }
       } else {
         console.error('Failed to fetch strategies');
         // Fallback to mock data
@@ -350,50 +355,69 @@ export default function TradingStratejileriPage() {
 
 
   return (
-    <MainLayout>
-      <div className="min-h-screen bg-background">
-        {/* Header */}
-        <div className="relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5"></div>
-          <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary/10 rounded-full blur-3xl"></div>
-          <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-primary/10 rounded-full blur-3xl"></div>
-          
-          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+    <div className="min-h-screen bg-gray-50 dark:bg-background">
+        {/* Header - Forum stili sadeleştirilmiş */}
+        <div className="sticky top-0 z-40 bg-gray-50/80 dark:bg-background/80 backdrop-blur-xl border-b border-gray-200/30 dark:border-border/30">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
-              className="text-center"
+              className="flex flex-col xl:flex-row items-center justify-between gap-8"
             >
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-full text-sm font-medium mb-4">
-                <Sparkles className="w-4 h-4" />
-                En gelişmiş trading stratejileri
+              {/* Page Title & Filter Buttons */}
+              <div className="flex flex-col lg:flex-row items-center gap-6">
+                <div className="text-center lg:text-left">
+                  <h1 className="text-3xl font-bold text-gray-900 dark:text-foreground mb-2">Trading Stratejileri</h1>
+                  <p className="text-gray-600 dark:text-muted-foreground text-sm">
+                    Profesyonel trading stratejilerini keşfedin
+                  </p>
+                </div>
+                
+                {/* Filter Pills - Forum tarzı */}
+                <div className="bg-gradient-to-r from-white/80 to-white/60 dark:from-card/80 dark:to-card/60 backdrop-blur-lg rounded-2xl p-1.5 border border-gray-200/40 dark:border-border/40 shadow-xl">
+                  <div className="flex items-center gap-1">
+                    {['Tüm Stratejiler', 'Ücretsiz', 'Premium'].map((category) => (
+                      <motion.button
+                        key={category}
+                        onClick={() => setSelectedCategory(category)}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className={`px-5 py-2.5 rounded-xl font-medium transition-all duration-300 ${
+                          selectedCategory === category
+                            ? 'bg-gradient-to-r from-green-600 to-green-700 text-white shadow-lg'
+                            : 'text-gray-500 dark:text-muted-foreground hover:text-gray-900 dark:hover:text-foreground hover:bg-gray-100 dark:hover:bg-muted'
+                        }`}
+                      >
+                        {category}
+                      </motion.button>
+                    ))}
+                  </div>
+                </div>
               </div>
-              <h1 className="text-5xl font-bold text-foreground mb-4">
-                Trading Stratejileri
-              </h1>
-              <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-                Profesyonel traderlar tarafından geliştirilmiş, backtest edilmiş ve 
-                gerçek piyasa koşullarında test edilmiş stratejileri keşfedin.
-              </p>
-              
-              {/* Quick Stats */}
-              <div className="flex items-center justify-center gap-8 mt-8">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-foreground">500+</div>
-                  <div className="text-sm text-muted-foreground">Strateji</div>
+
+              {/* Enhanced Search Bar - Forum tarzı */}
+              <motion.div 
+                className="relative group"
+                whileHover={{ scale: 1.02 }}
+                transition={{ type: "spring", stiffness: 300 }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                <div className="relative bg-gradient-to-r from-white/90 to-white/70 dark:from-card/90 dark:to-card/70 backdrop-blur-xl border border-gray-200/40 dark:border-border/40 rounded-2xl shadow-xl group-hover:shadow-2xl transition-all duration-300">
+                  <div className="flex items-center">
+                    <div className="pl-6 pr-3 py-4">
+                      <Search className="h-5 w-5 text-gray-400 group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors duration-300" />
+                    </div>
+                    <input
+                      type="text"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      placeholder="Strateji ara..."
+                      className="flex-1 pr-6 py-4 bg-transparent text-gray-900 dark:text-foreground placeholder-gray-500 dark:placeholder-muted-foreground focus:outline-none focus:placeholder-gray-400 dark:focus:placeholder-muted-foreground transition-all duration-300 min-w-[300px] lg:min-w-[400px]"
+                    />
+                  </div>
                 </div>
-                <div className="w-px h-8 bg-border"></div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-foreground">10K+</div>
-                  <div className="text-sm text-muted-foreground">Kullanıcı</div>
-                </div>
-                <div className="w-px h-8 bg-border"></div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-foreground">85%</div>
-                  <div className="text-sm text-muted-foreground">Başarı Oranı</div>
-                </div>
-              </div>
+              </motion.div>
             </motion.div>
           </div>
         </div>
@@ -403,7 +427,7 @@ export default function TradingStratejileriPage() {
           <div className="lg:hidden mb-6">
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 px-4 py-2 bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors font-medium w-full justify-center"
+              className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-card border border-gray-200 dark:border-border rounded-lg hover:bg-gray-50 dark:hover:bg-muted transition-colors font-medium w-full justify-center"
             >
               <Filter className="w-4 h-4" />
               {showFilters ? 'Filtreleri Gizle' : 'Filtreleri Göster'}
@@ -415,23 +439,23 @@ export default function TradingStratejileriPage() {
             {/* Sidebar Filters */}
             <div className={`lg:w-80 space-y-6 ${showFilters ? 'block' : 'hidden lg:block'} ${showFilters ? 'w-full lg:w-80' : ''}`}>
               {/* Search */}
-              <div className="bg-card rounded-2xl p-6 border border-border/50">
+              <div className="bg-white dark:bg-card rounded-2xl p-6 border border-gray-200/50 dark:border-border/50">
                 <div className="relative">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="text"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     placeholder="Strateji ara..."
-                    className="w-full pl-12 pr-4 py-3 bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all duration-300"
+                    className="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-background border border-gray-200 dark:border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500/50 transition-all duration-300 text-gray-900 dark:text-foreground"
                   />
                 </div>
               </div>
 
               {/* Filters */}
-              <div className="bg-card rounded-2xl p-6 border border-border/50">
+              <div className="bg-white dark:bg-card rounded-2xl p-6 border border-gray-200/50 dark:border-border/50">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-foreground flex items-center gap-2">
+                  <h3 className="font-semibold text-gray-900 dark:text-foreground flex items-center gap-2">
                     <Filter className="w-4 h-4" />
                     Filtreler
                   </h3>
@@ -442,7 +466,7 @@ export default function TradingStratejileriPage() {
                       setSelectedType('Tümü');
                       setSearchTerm('');
                     }}
-                    className="text-sm text-primary hover:text-primary/80 transition-colors"
+                    className="text-sm text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 transition-colors"
                   >
                     Filtreleri Temizle
                   </button>
@@ -451,7 +475,7 @@ export default function TradingStratejileriPage() {
                 <div className="space-y-6">
                   {/* Piyasa */}
                   <div>
-                    <label className="block text-sm font-medium text-foreground mb-3">
+                    <label className="block text-sm font-medium text-gray-900 dark:text-foreground mb-3">
                       Piyasa
                     </label>
                     <div className="space-y-2">
@@ -461,8 +485,8 @@ export default function TradingStratejileriPage() {
                           onClick={() => setSelectedCategory(category)}
                           className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all duration-300 ${
                             selectedCategory === category
-                              ? 'bg-primary/20 text-primary border border-primary/30'
-                              : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'
+                              ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-border'
+                              : 'text-gray-500 dark:text-muted-foreground hover:text-gray-900 dark:hover:text-foreground hover:bg-gray-100 dark:hover:bg-muted'
                           }`}
                         >
                           {category}
@@ -473,7 +497,7 @@ export default function TradingStratejileriPage() {
 
                   {/* Zaman Dilimi */}
                   <div>
-                    <label className="block text-sm font-medium text-foreground mb-3">
+                    <label className="block text-sm font-medium text-gray-900 dark:text-foreground mb-3">
                       Zaman Dilimi
                     </label>
                     <div className="space-y-2">
@@ -483,8 +507,8 @@ export default function TradingStratejileriPage() {
                           onClick={() => setSelectedTimeframe(tf)}
                           className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all duration-300 ${
                             selectedTimeframe === tf
-                              ? 'bg-primary/20 text-primary border border-primary/30'
-                              : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'
+                              ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-border'
+                              : 'text-gray-500 dark:text-muted-foreground hover:text-gray-900 dark:hover:text-foreground hover:bg-gray-100 dark:hover:bg-muted'
                           }`}
                         >
                           {tf}
@@ -495,7 +519,7 @@ export default function TradingStratejileriPage() {
 
                   {/* Strateji Tipi */}
                   <div>
-                    <label className="block text-sm font-medium text-foreground mb-3">
+                    <label className="block text-sm font-medium text-gray-900 dark:text-foreground mb-3">
                       Strateji Tipi
                     </label>
                     <div className="space-y-2">
@@ -505,8 +529,8 @@ export default function TradingStratejileriPage() {
                           onClick={() => setSelectedType(type)}
                           className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all duration-300 ${
                             selectedType === type
-                              ? 'bg-primary/20 text-primary border border-primary/30'
-                              : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'
+                              ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-border'
+                              : 'text-gray-500 dark:text-muted-foreground hover:text-gray-900 dark:hover:text-foreground hover:bg-gray-100 dark:hover:bg-muted'
                           }`}
                         >
                           {type}
@@ -517,7 +541,7 @@ export default function TradingStratejileriPage() {
 
                   {/* Başarı Oranı Slider */}
                   <div>
-                    <label className="block text-sm font-medium text-foreground mb-3">
+                    <label className="block text-sm font-medium text-gray-900 dark:text-foreground mb-3">
                       Başarı Oranı: 0% - 100%
                     </label>
                     <div className="px-3">
@@ -526,27 +550,27 @@ export default function TradingStratejileriPage() {
                         min="0"
                         max="100"
                         defaultValue="100"
-                        className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer slider"
+                        className="w-full h-2 bg-gray-200 dark:bg-muted rounded-lg appearance-none cursor-pointer slider"
                       />
                     </div>
                   </div>
 
                   {/* Show Only Free */}
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-foreground">
+                    <span className="text-sm font-medium text-gray-900 dark:text-foreground">
                       Sadece Ücretsiz Stratejiler
                     </span>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input type="checkbox" className="sr-only peer" />
-                      <div className="w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                      <div className="w-11 h-6 bg-gray-200 dark:bg-muted peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-500/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
                     </label>
                   </div>
                 </div>
               </div>
 
               {/* Popular Tags */}
-              <div className="bg-card rounded-2xl p-6 border border-border/50">
-                <h3 className="font-semibold text-foreground mb-4">Popüler Etiketler</h3>
+              <div className="bg-white dark:bg-card rounded-2xl p-6 border border-gray-200/50 dark:border-border/50">
+                <h3 className="font-semibold text-gray-900 dark:text-foreground mb-4">Popüler Etiketler</h3>
                 <div className="flex flex-wrap gap-2">
                   {['RSI', 'MACD', 'Bollinger', 'EMA', 'Scalping', 'Swing', 'Breakout', 'Trend'].map((tag) => (
                     <button
@@ -554,8 +578,8 @@ export default function TradingStratejileriPage() {
                       onClick={() => setSelectedType(tag)}
                       className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-300 ${
                         selectedType === tag
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-secondary text-secondary-foreground hover:bg-primary/10 hover:text-primary'
+                          ? 'bg-green-600 text-white'
+                          : 'bg-gray-100 dark:bg-muted text-gray-700 dark:text-muted-foreground hover:bg-green-100 dark:hover:bg-green-900/30 hover:text-green-700 dark:hover:text-green-400'
                       }`}
                     >
                       {tag}
@@ -567,55 +591,32 @@ export default function TradingStratejileriPage() {
 
             {/* Main Content */}
             <div className={`flex-1 ${showFilters ? 'lg:block' : ''}`}>
-              {/* Top Bar */}
-              <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-4 mb-8">
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                  {/* Filter Pills */}
-                  <div className="flex items-center gap-2 overflow-x-auto">
-                    {['Tüm Stratejiler', 'Ücretsiz', 'Premium'].map((category) => (
-                      <button
-                        key={category}
-                        onClick={() => setSelectedCategory(category)}
-                        className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 whitespace-nowrap ${
-                          selectedCategory === category
-                            ? 'bg-primary text-primary-foreground shadow-lg'
-                            : 'bg-background text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                        }`}
-                      >
-                        {category}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex items-center gap-3">
-                    <button 
-                      onClick={() => setShowFilters(!showFilters)}
-                      className="lg:hidden flex items-center gap-2 px-4 py-2 bg-background border border-border rounded-xl hover:bg-muted/50 transition-colors text-sm font-medium"
-                    >
-                      <SlidersHorizontal className="w-4 h-4" />
-                      Filtreler
-                    </button>
-                    
-                    <select
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value)}
-                      className="px-4 py-2 bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm font-medium"
-                    >
-                      <option value="En Popüler">En Popüler</option>
-                      <option value="En Yüksek Getiri">En Yüksek Getiri</option>
-                      <option value="En Düşük Risk">En Düşük Risk</option>
-                      <option value="En Yeni">En Yeni</option>
-                    </select>
-
-                    <Link 
-                      href="/trading-stratejileri/new"
-                      className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary to-primary/90 text-primary-foreground rounded-xl hover:shadow-lg transition-all font-medium text-sm"
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span className="hidden sm:inline">Strateji Oluştur</span>
-                    </Link>
-                  </div>
+              {/* Stats ve Actions */}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-6 text-sm text-gray-600 dark:text-muted-foreground">
+                  <span>{filteredStrategies.length} strateji</span>
+                  <span>{filteredStrategies.reduce((sum, s) => sum + s.downloads, 0)} indirilme</span>
+                  <span>{filteredStrategies.reduce((sum, s) => sum + s.views, 0)} görüntüleme</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-gray-500 dark:text-muted-foreground">Sırala:</span>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="px-3 py-1.5 text-sm bg-white dark:bg-card border border-gray-200 dark:border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500"
+                  >
+                    <option value="En Popüler">En Popüler</option>
+                    <option value="En Yüksek Getiri">En Yüksek Getiri</option>
+                    <option value="En Düşük Risk">En Düşük Risk</option>
+                    <option value="En Yeni">En Yeni</option>
+                  </select>
+                  <Link 
+                    href="/trading-stratejileri/new"
+                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:shadow-lg transition-all font-medium text-sm"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span className="hidden sm:inline">Yeni Strateji</span>
+                  </Link>
                 </div>
               </div>
 
@@ -638,7 +639,7 @@ export default function TradingStratejileriPage() {
               {pagination.pages > 1 && (
                 <div className="mt-12 flex flex-col items-center gap-6">
                   {/* Page info */}
-                  <div className="text-sm text-muted-foreground text-center">
+                  <div className="text-sm text-gray-500 dark:text-muted-foreground text-center">
                     <span>{pagination.total} stratejiden </span>
                     <span className="font-medium">{((pagination.page - 1) * pagination.limit) + 1}-{Math.min(pagination.page * pagination.limit, pagination.total)}</span>
                     <span> arası gösteriliyor</span>
@@ -649,11 +650,11 @@ export default function TradingStratejileriPage() {
                     <button 
                       onClick={() => fetchStrategies(pagination.page + 1)}
                       disabled={loading}
-                      className="px-8 py-3 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-colors font-medium disabled:opacity-50 flex items-center gap-2"
+                      className="px-8 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors font-medium disabled:opacity-50 flex items-center gap-2"
                     >
                       {loading ? (
                         <>
-                          <div className="animate-spin w-4 h-4 border-2 border-primary-foreground/20 border-t-primary-foreground rounded-full"></div>
+                          <div className="animate-spin w-4 h-4 border-2 border-white/20 border-t-white rounded-full"></div>
                           Yükleniyor...
                         </>
                       ) : (
@@ -675,8 +676,8 @@ export default function TradingStratejileriPage() {
                           onClick={() => fetchStrategies(pageNum)}
                           className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
                             pageNum === pagination.page
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-card border border-border hover:bg-muted/50 text-muted-foreground'
+                              ? 'bg-green-600 text-white'
+                              : 'bg-white dark:bg-card border border-gray-200 dark:border-border hover:bg-gray-50 dark:hover:bg-muted text-gray-600 dark:text-muted-foreground'
                           }`}
                         >
                           {pageNum}
@@ -690,8 +691,8 @@ export default function TradingStratejileriPage() {
                           onClick={() => fetchStrategies(pagination.pages)}
                           className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
                             pagination.pages === pagination.page
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-card border border-border hover:bg-muted/50 text-muted-foreground'
+                              ? 'bg-green-600 text-white'
+                              : 'bg-white dark:bg-card border border-gray-200 dark:border-border hover:bg-gray-50 dark:hover:bg-muted text-gray-600 dark:text-muted-foreground'
                           }`}
                         >
                           {pagination.pages}
@@ -705,14 +706,14 @@ export default function TradingStratejileriPage() {
               {/* Loading indicator */}
               {loading && strategies.length === 0 && (
                 <div className="flex justify-center items-center py-20">
-                  <div className="animate-spin w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full"></div>
+                  <div className="animate-spin w-8 h-8 border-4 border-green-200 dark:border-border border-t-green-600 dark:border-t-green-400 rounded-full"></div>
                 </div>
               )}
 
               {/* No results */}
               {!loading && strategies.length === 0 && (
                 <div className="text-center py-20">
-                  <div className="text-muted-foreground mb-4">
+                  <div className="text-gray-500 dark:text-muted-foreground mb-4">
                     <BarChart3 className="w-16 h-16 mx-auto mb-4 opacity-50" />
                     <p>Henüz strateji bulunamadı.</p>
                     <p className="text-sm">İlk stratejiyi oluşturmak için yukarıdaki butonu kullanın.</p>
@@ -723,6 +724,5 @@ export default function TradingStratejileriPage() {
           </div>
         </div>
       </div>
-    </MainLayout>
   );
 }

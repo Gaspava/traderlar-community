@@ -75,165 +75,116 @@ export function StrategyCard({
   onLike, 
   onBookmark 
 }: StrategyCardProps) {
+  // Strategy kategori renkleri
+  const categoryColors = {
+    'Forex': '#10b981',
+    'Crypto': '#f59e0b', 
+    'Hisse': '#3b82f6',
+    'Emtia': '#ef4444',
+    'Endeks': '#8b5cf6'
+  };
+
+  const categoryColor = categoryColors[strategy.category as keyof typeof categoryColors] || '#6b7280';
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: index * 0.05 }}
-      className="group relative h-full"
+      transition={{ duration: 0.4, delay: index * 0.1 }}
+      className="relative group"
     >
-      <Link href={`/trading-stratejileri/${strategy.id}`}>
-        <div className="relative h-full bg-card border border-border/50 rounded-2xl overflow-hidden">
-          {/* Premium Badge */}
-          {strategy.isPremium && (
-            <div className="absolute top-4 right-4 z-10">
-              <div className="flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-xs font-semibold rounded-full shadow-lg">
-                <Award className="w-3 h-3" />
-                PREMIUM
+      <Link href={`/trading-stratejileri/${strategy.id}`} className="block">
+        <div className="relative rounded-2xl overflow-hidden bg-white dark:bg-gray-800 shadow-sm hover:shadow-xl dark:shadow-gray-900/50 transition-all duration-300 transform hover:-translate-y-1 h-full">
+          {/* Hero Image Area - Forum CourseCard tarzında */}
+          <div className="relative h-48 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800">
+            {/* Gradient overlay with category color */}
+            <div 
+              className="absolute inset-0 opacity-20"
+              style={{ backgroundColor: categoryColor }}
+            ></div>
+            
+            {/* Strategy Performance Indicator */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div 
+                className="p-6 rounded-full shadow-lg backdrop-blur-sm flex flex-col items-center"
+                style={{ 
+                  backgroundColor: `${categoryColor}20`,
+                  border: `2px solid ${categoryColor}40`
+                }}
+              >
+                <div className={`trading-price ${
+                  strategy.performance.totalReturn > 0 ? 'text-green-600' : 'text-red-600'
+                }`}>
+                  {strategy.performance.totalReturn > 0 ? '+' : ''}{formatLargeNumber(strategy.performance.totalReturn)}%
+                </div>
+                <div className="text-caption mt-1">Toplam Getiri</div>
               </div>
             </div>
-          )}
-
-          {/* Header Section */}
-          <div className="p-5 pb-4">
-            {/* Author & Rating */}
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2 min-w-0">
-                <div className="relative flex-shrink-0">
-                  <div className="w-9 h-9 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full flex items-center justify-center">
-                    <span className="text-sm">{strategy.authorAvatar}</span>
-                  </div>
-                  <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-card rounded-full"></div>
-                </div>
-                <div className="min-w-0">
-                  <div className="text-sm font-medium text-foreground truncate">{strategy.author}</div>
-                  <div className="flex items-center gap-0.5">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        className={`w-2.5 h-2.5 ${
-                          i < Math.floor(strategy.rating)
-                            ? 'text-yellow-400 fill-current'
-                            : 'text-muted-foreground/30'
-                        }`}
-                      />
-                    ))}
-                    <span className="text-[10px] text-muted-foreground ml-1">
-                      ({strategy.rating})
-                    </span>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Quick Actions */}
-              <div className="flex items-center gap-1 flex-shrink-0">
-                <button
-                  onClick={(e) => onLike(strategy.id, e)}
-                  className={`p-1.5 rounded-lg transition-all ${
-                    isLiked 
-                      ? 'bg-red-500/20 text-red-500' 
-                      : 'bg-muted/50 text-muted-foreground hover:text-red-500 hover:bg-red-500/10'
-                  }`}
-                >
-                  <Heart className={`w-3.5 h-3.5 ${isLiked ? 'fill-current' : ''}`} />
-                </button>
-                <button
-                  onClick={(e) => onBookmark(strategy.id, e)}
-                  className={`p-1.5 rounded-lg transition-all ${
-                    isBookmarked 
-                      ? 'bg-primary/20 text-primary' 
-                      : 'bg-muted/50 text-muted-foreground hover:text-primary hover:bg-primary/10'
-                  }`}
-                >
-                  <Bookmark className={`w-3.5 h-3.5 ${isBookmarked ? 'fill-current' : ''}`} />
-                </button>
-              </div>
+            
+            {/* Premium/Category Badge */}
+            <div className="absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-semibold text-white backdrop-blur-sm" style={{ backgroundColor: `${categoryColor}CC` }}>
+              {strategy.isPremium ? 'PREMIUM' : strategy.category}
             </div>
-
-            {/* Title & Description */}
-            <h3 className="text-base font-bold text-foreground mb-1.5 line-clamp-1">
+            
+            {/* Bookmark Button */}
+            <button 
+              onClick={(e) => onBookmark(strategy.id, e)}
+              className="absolute top-4 right-4 w-8 h-8 bg-white/90 dark:bg-gray-800/90 backdrop-blur rounded-full flex items-center justify-center hover:bg-white dark:hover:bg-gray-700 transition-colors"
+            >
+              <Bookmark className={`w-4 h-4 ${isBookmarked ? 'text-green-600 fill-current' : 'text-gray-600 dark:text-gray-400'}`} />
+            </button>
+          </div>
+          
+          {/* Content */}
+          <div className="p-5">
+            <h3 className="card-title text-gray-900 dark:text-gray-100 mb-3 text-lg group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors line-clamp-1">
               {strategy.name}
             </h3>
-            <p className="text-xs text-muted-foreground line-clamp-2 mb-3 leading-relaxed">
+            
+            <p className="body-text text-gray-600 dark:text-gray-300 text-sm mb-4 line-clamp-2">
               {strategy.description}
             </p>
-
-            {/* Tags */}
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-medium rounded whitespace-nowrap">
-                <Clock className="w-3 h-3" />
-                {strategy.timeframe}
-              </span>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-500/10 text-blue-500 text-[10px] font-medium rounded whitespace-nowrap">
-                <BarChart3 className="w-3 h-3" />
-                {strategy.category}
-              </span>
+            
+            {/* Progress-style Performance Bar */}
+            <div className="mb-4">
+              <div className="flex justify-between text-caption mb-1">
+                <span className="metric-value">{strategy.performance.winRate}% Başarı</span>
+                <span>Aktif</span>
+              </div>
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                <div 
+                  className="h-2 rounded-full transition-all duration-300"
+                  style={{ 
+                    backgroundColor: categoryColor,
+                    width: `${Math.min(100, strategy.performance.winRate)}%`
+                  }}
+                />
+              </div>
+            </div>
+            
+            {/* Author/Creator Info - Forum CourseCard tarzında */}
+            <div className="flex items-center">
+              <div className="w-8 h-8 rounded-full mr-2 flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: categoryColor }}>
+                {strategy.author.charAt(0).toUpperCase()}
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100 line-clamp-1">{strategy.author}</p>
+                <p className="text-caption">{strategy.timeframe} • <span className="metric-value">{strategy.performance.totalTrades}</span> işlem</p>
+              </div>
+              
+              {/* Like Button */}
+              <button
+                onClick={(e) => onLike(strategy.id, e)}
+                className={`ml-2 p-1.5 rounded-lg transition-all ${
+                  isLiked 
+                    ? 'bg-red-500/20 text-red-500' 
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-red-500 hover:bg-red-500/10'
+                }`}
+              >
+                <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
+              </button>
             </div>
           </div>
-
-          {/* Performance Metrics */}
-          <div className="px-5 pb-5">
-            <div className="bg-gradient-to-br from-background/50 to-background/30 rounded-xl p-3 border border-border/50">
-              {/* Main Stats */}
-              <div className="grid grid-cols-3 gap-3 mb-3">
-                <div className="text-center">
-                  <div className={`text-lg font-bold ${
-                    strategy.performance.totalReturn > 0 ? 'text-green-500' : 'text-red-500'
-                  }`}>
-                    {strategy.performance.totalReturn > 0 ? '+' : ''}{formatLargeNumber(strategy.performance.totalReturn)}%
-                  </div>
-                  <div className="text-[10px] text-muted-foreground mt-1">Toplam<br/>Getiri</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-lg font-bold text-foreground">
-                    {strategy.performance.winRate}%
-                  </div>
-                  <div className="text-[10px] text-muted-foreground mt-1">Başarı<br/>Oranı</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-lg font-bold text-orange-500">
-                    {Math.abs(strategy.performance.maxDrawdown)}%
-                  </div>
-                  <div className="text-[10px] text-muted-foreground mt-1">Max DD</div>
-                </div>
-              </div>
-
-              {/* Secondary Stats */}
-              <div className="grid grid-cols-3 gap-2 pt-3 border-t border-border/50">
-                <div className="text-center">
-                  <div className="text-xs font-medium">{strategy.performance.sharpeRatio.toFixed(2)}</div>
-                  <div className="text-[10px] text-muted-foreground">Sharpe</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-xs font-medium">{strategy.performance.profitFactor?.toFixed(2) || '0.00'}</div>
-                  <div className="text-[10px] text-muted-foreground">P.Factor</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-xs font-medium">{strategy.performance.totalTrades}</div>
-                  <div className="text-[10px] text-muted-foreground">İşlemler</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Social Stats */}
-            <div className="flex items-center justify-between mt-3 text-[11px] text-muted-foreground">
-              <div className="flex items-center gap-4">
-                <span className="flex items-center gap-1">
-                  <Eye className="w-3 h-3" />
-                  {strategy.views}
-                </span>
-                <span className="flex items-center gap-1">
-                  <Heart className="w-3 h-3" />
-                  {strategy.likes}
-                </span>
-                <span className="flex items-center gap-1">
-                  <Download className="w-3 h-3" />
-                  {strategy.downloads}
-                </span>
-              </div>
-            </div>
-          </div>
-
         </div>
       </Link>
     </motion.div>

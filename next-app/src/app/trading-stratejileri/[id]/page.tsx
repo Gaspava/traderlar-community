@@ -15,7 +15,6 @@ import {
   Legend,
   Filler
 } from 'chart.js';
-import MainLayout from '@/components/layout/MainLayout';
 
 ChartJS.register(
   CategoryScale,
@@ -729,10 +728,10 @@ export default function StrategyDetailPage() {
     };
 
     return (
-      <div className="bg-gradient-to-br from-white/80 to-slate-50/90 dark:from-slate-800/40 dark:to-slate-900/60 rounded-xl p-6 backdrop-blur-sm">
+      <div className="bg-gradient-to-br from-white/80 to-gray-50/90 dark:from-card/40 dark:to-background/60 rounded-xl p-6 backdrop-blur-sm">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-emerald-500 dark:text-emerald-400">Equity Curve</h3>
-          <div className="text-sm text-slate-600 dark:text-slate-400 px-3 py-1 bg-slate-200/50 dark:bg-slate-800/50 rounded-lg">
+          <div className="text-sm text-gray-600 dark:text-muted-foreground px-3 py-1 bg-gray-200/50 dark:bg-card/50 rounded-lg">
             {equityCurve.length} işlem
           </div>
         </div>
@@ -740,20 +739,20 @@ export default function StrategyDetailPage() {
           <Line data={chartData} options={chartOptions} />
         </div>
         <div className="mt-6 grid grid-cols-3 gap-4 text-sm">
-          <div className="text-center p-3 bg-slate-200/30 dark:bg-slate-800/30 rounded-lg">
-            <div className="text-slate-600 dark:text-slate-400 mb-1">Başlangıç</div>
+          <div className="text-center p-3 bg-gray-200/30 dark:bg-card/30 rounded-lg">
+            <div className="text-gray-600 dark:text-muted-foreground mb-1">Başlangıç</div>
             <div className="font-bold text-cyan-500 dark:text-cyan-400">
               ${strategy?.performance?.initialDeposit?.toLocaleString('tr-TR') || '10,000'}
             </div>
           </div>
-          <div className="text-center p-3 bg-slate-200/30 dark:bg-slate-800/30 rounded-lg">
-            <div className="text-slate-600 dark:text-slate-400 mb-1">Son Equity</div>
+          <div className="text-center p-3 bg-gray-200/30 dark:bg-card/30 rounded-lg">
+            <div className="text-gray-600 dark:text-muted-foreground mb-1">Son Equity</div>
             <div className="font-bold text-blue-500 dark:text-blue-400">
               ${equityCurve[equityCurve.length - 1]?.equity.toLocaleString('tr-TR') || 'N/A'}
             </div>
           </div>
-          <div className="text-center p-3 bg-slate-200/30 dark:bg-slate-800/30 rounded-lg">
-            <div className="text-slate-600 dark:text-slate-400 mb-1">Toplam Kar/Zarar</div>
+          <div className="text-center p-3 bg-gray-200/30 dark:bg-card/30 rounded-lg">
+            <div className="text-gray-600 dark:text-muted-foreground mb-1">Toplam Kar/Zarar</div>
             <div className={`font-bold ${
               (equityCurve[equityCurve.length - 1]?.equity || (strategy?.performance?.initialDeposit || 10000)) >= (strategy?.performance?.initialDeposit || 10000) 
                 ? 'text-emerald-500 dark:text-emerald-400' 
@@ -798,7 +797,7 @@ export default function StrategyDetailPage() {
 
     if (!drawdownData || drawdownData.length === 0) {
       return (
-        <div className="bg-gradient-to-br from-white/80 to-slate-50/90 dark:from-slate-800/40 dark:to-slate-900/60 rounded-xl p-6 backdrop-blur-sm">
+        <div className="bg-gradient-to-br from-white/80 to-gray-50/90 dark:from-card/40 dark:to-background/60 rounded-xl p-6 backdrop-blur-sm">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-red-500 dark:text-red-400">Drawdown Analizi</h3>
             <div className="flex items-center gap-2">
@@ -813,7 +812,7 @@ export default function StrategyDetailPage() {
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300 min-w-[4rem] text-center">
+              <span className="text-sm font-medium text-gray-700 dark:text-muted-foreground min-w-[4rem] text-center">
                 {selectedDrawdownYear}
               </span>
               <button
@@ -936,7 +935,7 @@ export default function StrategyDetailPage() {
     const recoveryPeriods = displayData.filter(d => d.drawdown === 0).length;
 
     return (
-      <div className="bg-gradient-to-br from-white/80 to-slate-50/90 dark:from-slate-800/40 dark:to-slate-900/60 rounded-xl p-6 backdrop-blur-sm">
+      <div className="bg-gradient-to-br from-white/80 to-gray-50/90 dark:from-card/40 dark:to-background/60 rounded-xl p-6 backdrop-blur-sm">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-red-500 dark:text-red-400">Drawdown Analizi</h3>
           <div className="flex items-center gap-2">
@@ -951,7 +950,7 @@ export default function StrategyDetailPage() {
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <span className="text-sm font-medium text-slate-700 dark:text-slate-300 min-w-[4rem] text-center">
+            <span className="text-sm font-medium text-gray-700 dark:text-muted-foreground min-w-[4rem] text-center">
               {selectedDrawdownYear}
             </span>
             <button
@@ -971,20 +970,20 @@ export default function StrategyDetailPage() {
           <Line data={chartData} options={chartOptions} />
         </div>
         <div className="mt-6 grid grid-cols-3 gap-4 text-sm">
-          <div className="text-center p-3 bg-slate-200/30 dark:bg-slate-800/30 rounded-lg">
-            <div className="text-slate-600 dark:text-slate-400 mb-1">Max Drawdown</div>
+          <div className="text-center p-3 bg-gray-200/30 dark:bg-card/30 rounded-lg">
+            <div className="text-gray-600 dark:text-muted-foreground mb-1">Max Drawdown</div>
             <div className="font-bold text-red-500 dark:text-red-400">
               ${Math.abs(maxDrawdown).toLocaleString('tr-TR')}
             </div>
           </div>
-          <div className="text-center p-3 bg-slate-200/30 dark:bg-slate-800/30 rounded-lg">
-            <div className="text-slate-600 dark:text-slate-400 mb-1">Ortalama Drawdown</div>
+          <div className="text-center p-3 bg-gray-200/30 dark:bg-card/30 rounded-lg">
+            <div className="text-gray-600 dark:text-muted-foreground mb-1">Ortalama Drawdown</div>
             <div className="font-bold text-orange-500 dark:text-orange-400">
               ${Math.abs(avgDrawdown).toLocaleString('tr-TR')}
             </div>
           </div>
-          <div className="text-center p-3 bg-slate-200/30 dark:bg-slate-800/30 rounded-lg">
-            <div className="text-slate-600 dark:text-slate-400 mb-1">Recovery Oranı</div>
+          <div className="text-center p-3 bg-gray-200/30 dark:bg-card/30 rounded-lg">
+            <div className="text-gray-600 dark:text-muted-foreground mb-1">Recovery Oranı</div>
             <div className="font-bold text-emerald-500 dark:text-emerald-400">
               {displayData.length > 0 ? ((recoveryPeriods / displayData.length) * 100).toFixed(1) : 0}%
             </div>
@@ -1113,40 +1112,35 @@ export default function StrategyDetailPage() {
 
   if (loading) {
     return (
-      <MainLayout>
-        <div className="min-h-screen bg-background flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Strateji yükleniyor...</p>
-          </div>
+      <div className="min-h-screen bg-gray-50 dark:bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-500 dark:text-muted-foreground">Strateji yükleniyor...</p>
         </div>
-      </MainLayout>
+      </div>
     );
   }
 
   if (!strategy) {
     return (
-      <MainLayout>
-        <div className="min-h-screen bg-background flex items-center justify-center">
-          <div className="text-center">
-            <p className="text-xl text-muted-foreground mb-4">Strateji bulunamadı</p>
-            <Link href="/trading-stratejileri" className="text-primary hover:underline">
-              Stratejilere dön
-            </Link>
-          </div>
+      <div className="min-h-screen bg-gray-50 dark:bg-background flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-xl text-gray-500 dark:text-muted-foreground mb-4">Strateji bulunamadı</p>
+          <Link href="/trading-stratejileri" className="text-purple-600 dark:text-purple-400 hover:underline">
+            Stratejilere dön
+          </Link>
         </div>
-      </MainLayout>
+      </div>
     );
   }
 
   return (
-    <MainLayout>
-      <div className="min-h-screen bg-background">
-        {/* Modern Strategy Header */}
-        <div className="relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5"></div>
-          <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary/10 rounded-full blur-3xl"></div>
-          <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-primary/10 rounded-full blur-3xl"></div>
+    <div className="min-h-screen bg-gray-50 dark:bg-background">
+      {/* Modern Strategy Header */}
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-blue-500/5"></div>
+          <div className="absolute -top-40 -right-40 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"></div>
+          <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
           
           <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <motion.div
@@ -1158,17 +1152,17 @@ export default function StrategyDetailPage() {
               {/* Back Button - Modern Design */}
               <Link 
                 href="/trading-stratejileri"
-                className="group inline-flex items-center gap-2 px-4 py-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-white dark:hover:bg-slate-700 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-500/10 dark:hover:shadow-emerald-500/20"
+                className="group inline-flex items-center gap-2 px-4 py-2 bg-white/80 dark:bg-card/80 backdrop-blur-sm border border-gray-200 dark:border-border rounded-xl hover:bg-white dark:hover:bg-muted transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/10 dark:hover:shadow-purple-500/20"
               >
-                <ArrowLeft className="w-4 h-4 text-slate-600 dark:text-slate-300 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 group-hover:scale-110 transition-all duration-300" />
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400">Geri Dön</span>
+                <ArrowLeft className="w-4 h-4 text-gray-600 dark:text-muted-foreground group-hover:text-purple-600 dark:group-hover:text-purple-400 group-hover:scale-110 transition-all duration-300" />
+                <span className="text-sm font-medium text-gray-700 dark:text-foreground group-hover:text-purple-600 dark:group-hover:text-purple-400">Geri Dön</span>
               </Link>
 
               {/* Strategy Title Section */}
               <div className="space-y-4">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <h1 className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-slate-900 via-emerald-800 to-green-800 dark:from-white dark:via-emerald-200 dark:to-green-200 bg-clip-text text-transparent mb-3">
+                    <h1 className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-gray-900 via-purple-800 to-blue-800 dark:from-white dark:via-purple-200 dark:to-blue-200 bg-clip-text text-transparent mb-3">
                       {strategy.name}
                     </h1>
                     
@@ -1180,15 +1174,15 @@ export default function StrategyDetailPage() {
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="font-semibold text-slate-800 dark:text-slate-100">{strategy.author.name}</span>
+                            <span className="font-semibold text-gray-800 dark:text-foreground">{strategy.author.name}</span>
                             {strategy.author.verified && (
-                              <div className="flex items-center gap-1 px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full text-xs font-medium">
+                              <div className="flex items-center gap-1 px-2 py-0.5 bg-blue-100 dark:bg-card text-blue-700 dark:text-blue-400 rounded-full text-xs font-medium">
                                 <CheckCircle className="w-3 h-3" />
                                 <span>Verified</span>
                               </div>
                             )}
                           </div>
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-full text-xs font-medium">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded-full text-xs font-medium">
                             <Sparkles className="w-3 h-3" />
                             Pro Trader
                           </span>
@@ -1198,18 +1192,18 @@ export default function StrategyDetailPage() {
 
                     {/* Strategy Stats */}
                     <div className="flex flex-wrap items-center gap-4 text-sm">
-                      <div className="flex items-center gap-2 px-3 py-1.5 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm rounded-lg border border-slate-200/50 dark:border-slate-700/50">
+                      <div className="flex items-center gap-2 px-3 py-1.5 bg-white/60 dark:bg-card/60 backdrop-blur-sm rounded-lg border border-gray-200/50 dark:border-border/50">
                         <Calendar className="w-4 h-4 text-blue-500" />
-                        <span className="text-slate-600 dark:text-slate-300">Oluşturulma:</span>
-                        <span className="font-medium text-slate-800 dark:text-slate-100">
+                        <span className="text-gray-600 dark:text-muted-foreground">Oluşturulma:</span>
+                        <span className="font-medium text-gray-800 dark:text-foreground">
                           {strategy.created_at ? new Date(strategy.created_at).toLocaleDateString('tr-TR') : '15 Oca 2024'}
                         </span>
                       </div>
                       
-                      <div className="flex items-center gap-2 px-3 py-1.5 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm rounded-lg border border-slate-200/50 dark:border-slate-700/50">
+                      <div className="flex items-center gap-2 px-3 py-1.5 bg-white/60 dark:bg-card/60 backdrop-blur-sm rounded-lg border border-gray-200/50 dark:border-border/50">
                         <RefreshCw className="w-4 h-4 text-green-500" />
-                        <span className="text-slate-600 dark:text-slate-300">Son Güncelleme:</span>
-                        <span className="font-medium text-slate-800 dark:text-slate-100">
+                        <span className="text-gray-600 dark:text-muted-foreground">Son Güncelleme:</span>
+                        <span className="font-medium text-gray-800 dark:text-foreground">
                           {strategy.updated_at ? new Date(strategy.updated_at).toLocaleDateString('tr-TR') : '28 Oca 2024'}
                         </span>
                       </div>
@@ -1218,20 +1212,20 @@ export default function StrategyDetailPage() {
 
                   {/* Action Stats */}
                   <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 px-4 py-2 bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-700 transition-all duration-300">
+                    <div className="flex items-center gap-2 px-4 py-2 bg-white/70 dark:bg-card/70 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-border hover:bg-white dark:hover:bg-muted transition-all duration-300">
                       <Eye className="w-4 h-4 text-blue-500" />
-                      <span className="font-semibold text-slate-700 dark:text-slate-200">{strategy.views || 45}</span>
+                      <span className="font-semibold text-gray-700 dark:text-foreground">{strategy.views || 45}</span>
                     </div>
                     
-                    <div className="flex items-center gap-2 px-4 py-2 bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-700 transition-all duration-300">
+                    <div className="flex items-center gap-2 px-4 py-2 bg-white/70 dark:bg-card/70 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-border hover:bg-white dark:hover:bg-muted transition-all duration-300">
                       <Heart className="w-4 h-4 text-red-500" />
-                      <span className="font-semibold text-slate-700 dark:text-slate-200">{strategy.likes || 234}</span>
+                      <span className="font-semibold text-gray-700 dark:text-foreground">{strategy.likes || 234}</span>
                     </div>
                     
-                    <div className="flex items-center gap-2 px-4 py-2 bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-700 transition-all duration-300">
+                    <div className="flex items-center gap-2 px-4 py-2 bg-white/70 dark:bg-card/70 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-border hover:bg-white dark:hover:bg-muted transition-all duration-300">
                       <Users className="w-4 h-4 text-purple-500" />
-                      <span className="font-semibold text-slate-700 dark:text-slate-200">{strategy.subscribers || 1340}</span>
-                      <span className="text-xs text-slate-500 dark:text-slate-400">İşlem</span>
+                      <span className="font-semibold text-gray-700 dark:text-foreground">{strategy.subscribers || 1340}</span>
+                      <span className="text-xs text-gray-500 dark:text-muted-foreground">İşlem</span>
                     </div>
                   </div>
                 </div>
@@ -1241,7 +1235,7 @@ export default function StrategyDetailPage() {
         </div>
 
         {/* Download Actions Bar */}
-        <div className="border-b border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
+        <div className="border-b border-gray-200 dark:border-border bg-white/50 dark:bg-background/50 backdrop-blur-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
@@ -1249,20 +1243,20 @@ export default function StrategyDetailPage() {
                   onClick={() => setLiked(!liked)}
                   className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-300 ${
                     liked 
-                      ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800' 
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-700'
+                      ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-border' 
+                      : 'bg-gray-100 dark:bg-card text-gray-600 dark:text-muted-foreground border border-gray-200 dark:border-border hover:bg-red-50 dark:hover:bg-muted hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-border'
                   }`}
                 >
                   <Heart className={`w-4 h-4 ${liked ? 'fill-current' : ''}`} />
                   <span className="text-sm font-medium">{strategy.likes || 234}</span>
                 </button>
                 
-                <button className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-700 transition-all duration-300">
+                <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-card text-gray-600 dark:text-muted-foreground border border-gray-200 dark:border-border rounded-xl hover:bg-blue-50 dark:hover:bg-muted hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-border transition-all duration-300">
                   <Share2 className="w-4 h-4" />
                   <span className="text-sm font-medium">Paylaş</span>
                 </button>
                 
-                <button className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-yellow-50 dark:hover:bg-yellow-900/20 hover:text-yellow-600 dark:hover:text-yellow-400 hover:border-yellow-200 dark:hover:border-yellow-700 transition-all duration-300">
+                <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-card text-gray-600 dark:text-muted-foreground border border-gray-200 dark:border-border rounded-xl hover:bg-yellow-50 dark:hover:bg-muted hover:text-yellow-600 dark:hover:text-yellow-400 hover:border-yellow-200 dark:hover:border-border transition-all duration-300">
                   <Flag className="w-4 h-4" />
                   <span className="text-sm font-medium">Raporla</span>
                 </button>
@@ -1274,13 +1268,13 @@ export default function StrategyDetailPage() {
                     href={strategy.ea_link} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-500/30 font-medium"
+                    className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 text-white rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-purple-500/30 font-medium"
                   >
                     <Play className="w-4 h-4" />
                     <span>EA İndir</span>
                   </a>
                 )}
-                <button className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-600/30 font-medium">
+                <button className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-purple-600/30 font-medium">
                   <Download className="w-4 h-4" />
                   <span>İndir</span>
                 </button>
@@ -1291,7 +1285,7 @@ export default function StrategyDetailPage() {
 
         {/* Tabs */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="border-b border-slate-300/50 dark:border-slate-700/50 bg-slate-100/20 dark:bg-slate-900/20 backdrop-blur-sm">
+          <div className="border-b border-gray-300/50 dark:border-border/50 bg-gray-100/20 dark:bg-background/20 backdrop-blur-sm">
             <div className="flex overflow-x-auto">
               {tabs.map((tab) => (
                 <button
@@ -1299,16 +1293,16 @@ export default function StrategyDetailPage() {
                   onClick={() => setActiveTab(tab.id)}
                   className={`group flex items-center gap-3 px-6 py-4 font-medium transition-all duration-300 border-b-2 whitespace-nowrap relative ${
                     activeTab === tab.id
-                      ? 'border-emerald-500 dark:border-emerald-400 text-emerald-600 dark:text-emerald-400 bg-gradient-to-t from-emerald-500/10 to-transparent shadow-lg shadow-emerald-500/20'
-                      : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-300 hover:border-emerald-500/50 hover:bg-gradient-to-t hover:from-slate-200/30 dark:hover:from-slate-800/30 hover:to-transparent'
+                      ? 'border-purple-500 dark:border-purple-400 text-purple-600 dark:text-purple-400 bg-gradient-to-t from-purple-500/10 to-transparent shadow-lg shadow-purple-500/20'
+                      : 'border-transparent text-gray-600 dark:text-muted-foreground hover:text-purple-500 dark:hover:text-purple-300 hover:border-purple-500/50 hover:bg-gradient-to-t hover:from-gray-200/30 dark:hover:from-card/30 hover:to-transparent'
                   }`}
                 >
                   <tab.icon className={`w-5 h-5 transition-all duration-300 ${
-                    activeTab === tab.id ? 'text-emerald-600 dark:text-emerald-400 drop-shadow-lg drop-shadow-emerald-500/50' : 'group-hover:scale-110'
+                    activeTab === tab.id ? 'text-purple-600 dark:text-purple-400 drop-shadow-lg drop-shadow-purple-500/50' : 'group-hover:scale-110'
                   }`} />
                   <span className="font-semibold">{tab.label}</span>
                   {activeTab === tab.id && (
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-emerald-500/5 to-transparent animate-pulse" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-purple-500/5 to-transparent animate-pulse" />
                   )}
                 </button>
               ))}
@@ -1326,41 +1320,41 @@ export default function StrategyDetailPage() {
             >
               {/* Performance Metrics */}
               <div>
-                <h2 className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 dark:from-emerald-400 dark:to-green-400 bg-clip-text text-transparent mb-6">Performans Metrikleri</h2>
+                <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 dark:from-purple-400 dark:to-blue-400 bg-clip-text text-transparent mb-6">Performans Metrikleri</h2>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
-                  <div className="bg-gradient-to-br from-white/80 to-slate-50/90 dark:from-slate-800/50 dark:to-slate-900/70 rounded-xl p-6 text-center backdrop-blur-sm">
-                    <div className="text-2xl font-bold text-emerald-500 dark:text-emerald-400 mb-2">
+                  <div className="bg-gradient-to-br from-white/80 to-gray-50/90 dark:from-card/50 dark:to-background/70 rounded-xl p-6 text-center backdrop-blur-sm">
+                    <div className="text-2xl font-bold text-purple-500 dark:text-purple-400 mb-2">
                       +{strategy.performance.totalReturn || 0}%
                     </div>
-                    <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">Toplam Getiri</div>
+                    <div className="text-sm text-gray-600 dark:text-muted-foreground font-medium">Toplam Getiri</div>
                   </div>
                   
-                  <div className="bg-gradient-to-br from-white/80 to-slate-50/90 dark:from-slate-800/50 dark:to-slate-900/70 rounded-xl p-6 text-center backdrop-blur-sm">
-                    <div className="text-2xl font-bold text-green-500 dark:text-green-400 mb-2">
+                  <div className="bg-gradient-to-br from-white/80 to-gray-50/90 dark:from-card/50 dark:to-background/70 rounded-xl p-6 text-center backdrop-blur-sm">
+                    <div className="text-2xl font-bold text-blue-500 dark:text-blue-400 mb-2">
                       +{calculatedAnnualReturn !== null ? calculatedAnnualReturn : (strategy.performance.annualReturn || 0)}%
                     </div>
-                    <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">Yıllık Getiri</div>
+                    <div className="text-sm text-gray-600 dark:text-muted-foreground font-medium">Yıllık Getiri</div>
                   </div>
                   
-                  <div className="bg-gradient-to-br from-white/80 to-slate-50/90 dark:from-slate-800/50 dark:to-slate-900/70 rounded-xl p-6 text-center backdrop-blur-sm">
-                    <div className="text-2xl font-bold text-teal-500 dark:text-teal-400 mb-2">
+                  <div className="bg-gradient-to-br from-white/80 to-gray-50/90 dark:from-card/50 dark:to-background/70 rounded-xl p-6 text-center backdrop-blur-sm">
+                    <div className="text-2xl font-bold text-green-500 dark:text-green-400 mb-2">
                       {strategy.performance.profitFactor}
                     </div>
-                    <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">Profit Factor</div>
+                    <div className="text-sm text-gray-600 dark:text-muted-foreground font-medium">Profit Factor</div>
                   </div>
                   
-                  <div className="bg-gradient-to-br from-white/80 to-slate-50/90 dark:from-slate-800/50 dark:to-slate-900/70 rounded-xl p-6 text-center backdrop-blur-sm">
-                    <div className="text-2xl font-bold text-lime-500 dark:text-lime-400 mb-2">
+                  <div className="bg-gradient-to-br from-white/80 to-gray-50/90 dark:from-card/50 dark:to-background/70 rounded-xl p-6 text-center backdrop-blur-sm">
+                    <div className="text-2xl font-bold text-pink-500 dark:text-pink-400 mb-2">
                       {strategy.performance.sharpeRatio}
                     </div>
-                    <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">Sharpe Ratio</div>
+                    <div className="text-sm text-gray-600 dark:text-muted-foreground font-medium">Sharpe Ratio</div>
                   </div>
                   
-                  <div className="bg-gradient-to-br from-white/80 to-slate-50/90 dark:from-slate-800/50 dark:to-slate-900/70 rounded-xl p-6 text-center backdrop-blur-sm">
-                    <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-500 mb-2">
+                  <div className="bg-gradient-to-br from-white/80 to-gray-50/90 dark:from-card/50 dark:to-background/70 rounded-xl p-6 text-center backdrop-blur-sm">
+                    <div className="text-2xl font-bold text-purple-600 dark:text-purple-500 mb-2">
                       {strategy.performance.totalTrades}
                     </div>
-                    <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">Toplam İşlem</div>
+                    <div className="text-sm text-gray-600 dark:text-muted-foreground font-medium">Toplam İşlem</div>
                   </div>
                 </div>
               </div>
@@ -1487,7 +1481,7 @@ export default function StrategyDetailPage() {
                       <div className="text-lg font-bold text-green-400">
                         {trades.filter(t => t.profit > 0).length}
                       </div>
-                      <div className="text-xs text-gray-600 dark:text-gray-400">Kazanan İşlem</div>
+                      <div className="text-xs text-gray-600 dark:text-muted-foreground">Kazanan İşlem</div>
                       <div className="text-xs text-green-400/80 mt-1">
                         %{trades.length > 0 ? ((trades.filter(t => t.profit > 0).length / trades.length) * 100).toFixed(1) : 0}
                       </div>
@@ -1496,7 +1490,7 @@ export default function StrategyDetailPage() {
                       <div className="text-lg font-bold text-red-400">
                         {trades.filter(t => t.profit < 0).length}
                       </div>
-                      <div className="text-xs text-gray-600 dark:text-gray-400">Kaybeden İşlem</div>
+                      <div className="text-xs text-gray-600 dark:text-muted-foreground">Kaybeden İşlem</div>
                       <div className="text-xs text-red-400/80 mt-1">
                         %{trades.length > 0 ? ((trades.filter(t => t.profit < 0).length / trades.length) * 100).toFixed(1) : 0}
                       </div>
@@ -1529,15 +1523,15 @@ export default function StrategyDetailPage() {
                       <table className="w-full text-xs">
                         <thead className="bg-muted/30">
                           <tr>
-                            <th className="text-left px-2 py-2 text-xs font-medium text-gray-700 dark:text-gray-300">İşlem #</th>
-                            <th className="text-left px-2 py-2 text-xs font-medium text-gray-700 dark:text-gray-300">Açılış</th>
-                            <th className="text-left px-2 py-2 text-xs font-medium text-gray-700 dark:text-gray-300">Tür</th>
-                            <th className="text-left px-2 py-2 text-xs font-medium text-gray-700 dark:text-gray-300">Sembol</th>
-                            <th className="text-right px-2 py-2 text-xs font-medium text-gray-700 dark:text-gray-300">Boyut</th>
-                            <th className="text-right px-2 py-2 text-xs font-medium text-gray-700 dark:text-gray-300">Açılış</th>
-                            <th className="text-right px-2 py-2 text-xs font-medium text-gray-700 dark:text-gray-300">Kapanış</th>
-                            <th className="text-right px-2 py-2 text-xs font-medium text-gray-700 dark:text-gray-300">Kar/Zarar</th>
-                            <th className="text-right px-2 py-2 text-xs font-medium text-gray-700 dark:text-gray-300">Süre</th>
+                            <th className="text-left px-2 py-2 text-xs font-medium text-gray-700 dark:text-muted-foreground">İşlem #</th>
+                            <th className="text-left px-2 py-2 text-xs font-medium text-gray-700 dark:text-muted-foreground">Açılış</th>
+                            <th className="text-left px-2 py-2 text-xs font-medium text-gray-700 dark:text-muted-foreground">Tür</th>
+                            <th className="text-left px-2 py-2 text-xs font-medium text-gray-700 dark:text-muted-foreground">Sembol</th>
+                            <th className="text-right px-2 py-2 text-xs font-medium text-gray-700 dark:text-muted-foreground">Boyut</th>
+                            <th className="text-right px-2 py-2 text-xs font-medium text-gray-700 dark:text-muted-foreground">Açılış</th>
+                            <th className="text-right px-2 py-2 text-xs font-medium text-gray-700 dark:text-muted-foreground">Kapanış</th>
+                            <th className="text-right px-2 py-2 text-xs font-medium text-gray-700 dark:text-muted-foreground">Kar/Zarar</th>
+                            <th className="text-right px-2 py-2 text-xs font-medium text-gray-700 dark:text-muted-foreground">Süre</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1734,8 +1728,7 @@ export default function StrategyDetailPage() {
               </p>
             </motion.div>
           )}
-        </div>
       </div>
-    </MainLayout>
+    </div>
   );
 }

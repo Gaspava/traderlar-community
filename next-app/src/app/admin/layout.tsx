@@ -21,7 +21,7 @@ import {
 import { createClient } from '@/lib/supabase/client';
 
 const menuItems = [
-  { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/admin', label: 'Yönetim Paneli', icon: LayoutDashboard },
   { href: '/admin/strategies', label: 'Stratejiler', icon: Target },
   { href: '/admin/articles', label: 'Makaleler', icon: FileText },
   { href: '/admin/categories', label: 'Ana Konular', icon: Shield },

@@ -291,16 +291,16 @@ export default function CommentSection({ articleId, onCommentCountChange }: Comm
           <img
             src={comment.user_avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${comment.user_username}`}
             alt={comment.user_name}
-            className="w-10 h-10 rounded-full flex-shrink-0"
+            className="w-8 h-8 rounded-full flex-shrink-0"
           />
           
           <div className="flex-1">
-            <div className="bg-card rounded-lg p-4">
-              <div className="flex items-start justify-between mb-2">
+            <div className="bg-card/50 rounded-lg p-3">
+              <div className="flex items-start justify-between mb-1">
                 <div>
-                  <span className="font-medium text-foreground">{comment.user_name}</span>
-                  <span className="text-muted-foreground text-sm ml-2">@{comment.user_username}</span>
-                  <span className="text-muted-foreground text-sm ml-2">
+                  <span className="font-medium text-foreground text-sm">{comment.user_name}</span>
+                  <span className="text-muted-foreground text-xs ml-2">@{comment.user_username}</span>
+                  <span className="text-muted-foreground text-xs ml-2">
                     {new Date(comment.created_at).toLocaleDateString('tr-TR')}
                   </span>
                   {comment.is_edited && (
@@ -358,18 +358,18 @@ export default function CommentSection({ articleId, onCommentCountChange }: Comm
                 </div>
               </div>
               
-              <p className="text-card-foreground">
+              <p className="body-text text-sm text-card-foreground mt-1">
                 {comment.mentioned_username && (
-                  <span className="text-green-400 font-medium">@{comment.mentioned_username} </span>
+                  <span className="text-green-500 font-medium">@{comment.mentioned_username} </span>
                 )}
                 {comment.content}
               </p>
             </div>
             
-            <div className="flex items-center gap-4 mt-2">
+            <div className="flex items-center gap-3 mt-2">
               <motion.button 
                 onClick={() => handleLikeComment(comment.id, comment.is_liked)}
-                className={`flex items-center gap-1 text-sm transition-colors ${
+                className={`flex items-center gap-1 text-xs transition-colors ${
                   comment.is_liked 
                     ? 'text-red-500 hover:text-red-400' 
                     : 'text-muted-foreground hover:text-foreground'
@@ -380,12 +380,13 @@ export default function CommentSection({ articleId, onCommentCountChange }: Comm
                   animate={comment.is_liked ? { scale: [1, 1.2, 1] } : { scale: 1 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <Heart className={`w-4 h-4 transition-all duration-200 ${
+                  <Heart className={`w-3 h-3 transition-all duration-200 ${
                     comment.is_liked ? 'fill-current text-red-500' : ''
                   }`} />
                 </motion.div>
                 <motion.span
                   key={`${comment.id}-${comment.like_count}`}
+                  className="metric-value"
                   initial={{ scale: 1 }}
                   animate={{ scale: [1, 1.1, 1] }}
                   transition={{ duration: 0.15 }}
@@ -402,26 +403,26 @@ export default function CommentSection({ articleId, onCommentCountChange }: Comm
                   }
                   setReplyTo(replyTo === comment.id ? null : comment.id);
                 }}
-                className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
               >
-                <Reply className="w-4 h-4" />
+                <Reply className="w-3 h-3" />
                 {replyTo === comment.id ? 'İptal' : 'Yanıtla'}
               </button>
               
               {!isReply && comment.reply_count > 0 && (
                 <button
                   onClick={() => toggleReplies(comment.id)}
-                  className="flex items-center gap-1 text-sm text-green-400 hover:text-green-300 transition-colors"
+                  className="flex items-center gap-1 text-xs text-green-500 hover:text-green-400 transition-colors"
                 >
                   {expandedComments.has(comment.id) ? (
                     <>
-                      <ChevronUp className="w-4 h-4" />
+                      <ChevronUp className="w-3 h-3" />
                       Yanıtları gizle
                     </>
                   ) : (
                     <>
-                      <ChevronDown className="w-4 h-4" />
-                      {comment.reply_count} yanıtı göster
+                      <ChevronDown className="w-3 h-3" />
+                      <span className="metric-value">{comment.reply_count}</span> yanıtı göster
                     </>
                   )}
                 </button>
@@ -434,7 +435,7 @@ export default function CommentSection({ articleId, onCommentCountChange }: Comm
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="mt-4"
+                className="mt-3"
               >
                 <CommentInput
                   placeholder="Yanıtınızı yazın..."
@@ -458,7 +459,7 @@ export default function CommentSection({ articleId, onCommentCountChange }: Comm
                   className="mt-4 space-y-4"
                 >
                   {comment.replies.map(reply => (
-                    <div key={reply.id} className="ml-12">
+                    <div key={reply.id} className="ml-8">
                       <CommentItem comment={reply} isReply />
                     </div>
                   ))}
@@ -483,16 +484,16 @@ export default function CommentSection({ articleId, onCommentCountChange }: Comm
 
   if (loading) {
     return (
-      <div className="space-y-4">
-        <h3 className="text-2xl font-bold text-foreground mb-6">Yorumlar</h3>
+      <div className="px-8 py-6 space-y-4">
+        <h3 className="h3 text-foreground mb-6">Yorumlar</h3>
         {[1, 2, 3].map(i => (
           <div key={i} className="animate-pulse">
             <div className="flex gap-3">
-              <div className="w-10 h-10 bg-muted rounded-full"></div>
+              <div className="w-8 h-8 bg-muted rounded-full"></div>
               <div className="flex-1">
-                <div className="bg-muted rounded-lg p-4">
-                  <div className="h-4 bg-muted/80 rounded w-1/4 mb-2"></div>
-                  <div className="h-4 bg-muted/80 rounded w-3/4"></div>
+                <div className="bg-muted rounded-lg p-3">
+                  <div className="h-3 bg-muted/80 rounded w-1/4 mb-2"></div>
+                  <div className="h-3 bg-muted/80 rounded w-3/4"></div>
                 </div>
               </div>
             </div>
@@ -503,15 +504,15 @@ export default function CommentSection({ articleId, onCommentCountChange }: Comm
   }
 
   return (
-    <div>
-      <h3 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-2">
-        <MessageCircle className="w-6 h-6" />
+    <div className="px-8 py-6">
+      <h3 className="h3 text-foreground mb-6 flex items-center gap-2">
+        <MessageCircle className="w-5 h-5" />
         Yorumlar ({totalCommentCount})
       </h3>
 
       {/* Comment Form */}
       {currentUser ? (
-        <div className="mb-8">
+        <div className="mb-6">
           <CommentInput
             placeholder="Yorumunuzu yazın..."
             onSubmit={(text) => handleSubmitComment(text)}
@@ -520,11 +521,11 @@ export default function CommentSection({ articleId, onCommentCountChange }: Comm
           />
         </div>
       ) : (
-        <div className="bg-card rounded-lg p-6 text-center mb-8">
-          <p className="text-muted-foreground mb-4">Yorum yapmak için giriş yapmanız gerekiyor.</p>
+        <div className="bg-card/50 rounded-xl p-4 text-center mb-6">
+          <p className="text-muted-foreground mb-3 text-sm">Yorum yapmak için giriş yapmanız gerekiyor.</p>
           <button
             onClick={() => router.push('/auth/login')}
-            className="px-6 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors"
+            className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors text-sm btn-text"
           >
             Giriş Yap
           </button>
@@ -532,9 +533,9 @@ export default function CommentSection({ articleId, onCommentCountChange }: Comm
       )}
 
       {/* Comments List */}
-      <div className="space-y-4">
+      <div className="space-y-5">
         {comments.length === 0 ? (
-          <p className="text-muted-foreground text-center py-8">
+          <p className="text-muted-foreground text-center py-6 text-sm">
             Henüz yorum yapılmamış. İlk yorumu siz yapın!
           </p>
         ) : (

@@ -24,6 +24,7 @@ import type { User as AuthUser } from '@supabase/supabase-js';
 import type { User } from '@/lib/supabase/types';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
+import { useMobileNavigation } from '@/hooks/useMobileInteractions';
 import { Button } from '@/components/ui/button';
 import {
   NavigationMenu,
@@ -64,6 +65,7 @@ export default function Navbar() {
   const [searchQuery, setSearchQuery] = useState('');
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const { shouldHideNavbar, isScrolled } = useMobileNavigation();
 
   useEffect(() => {
     setMounted(true);
@@ -130,13 +132,18 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <nav className={cn(
+        "sticky top-0 z-50 border-b transition-all duration-300 safe-top",
+        "bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60",
+        shouldHideNavbar && "transform -translate-y-full md:translate-y-0",
+        isScrolled && "shadow-sm"
+      )}>
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
             {/* Logo */}
             <div className="flex items-center">
               <Link href="/" className="flex items-center space-x-2">
-                <span className="text-xl font-bold">
+                <span className="text-xl font-montserrat font-bold">
                   traderlar<span className="text-emerald-600">.com</span>
                 </span>
               </Link>
@@ -148,7 +155,7 @@ export default function Navbar() {
                 {navItems.map((item) => (
                   <NavigationMenuItem key={item.href}>
                     <NavigationMenuLink asChild>
-                      <Link href={item.href} className={navigationMenuTriggerStyle()}>
+                      <Link href={item.href} className={`${navigationMenuTriggerStyle()} nav-text`}>
                         <item.icon className="mr-2 h-4 w-4" />
                         {item.label}
                       </Link>
@@ -233,10 +240,10 @@ export default function Navbar() {
                 </>
               ) : (
                 <div className="flex items-center space-x-3">
-                  <Button variant="ghost" asChild>
+                  <Button variant="ghost" asChild className="btn-text">
                     <Link href="/auth/login">Giriş Yap</Link>
                   </Button>
-                  <Button asChild>
+                  <Button asChild className="btn-text">
                     <Link href="/auth/register">Üye Ol</Link>
                   </Button>
                 </div>
@@ -264,7 +271,7 @@ export default function Navbar() {
             <Button
               variant="ghost"
               size="icon"
-              className="md:hidden"
+              className="md:hidden relative z-50"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
               {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -273,90 +280,138 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Mobile Menu */}
+        {/* Mobile Menu - Enhanced with modern mobile UX */}
         {isMenuOpen && (
-          <div className="md:hidden border-t">
-            <div className="space-y-1 px-2 pb-3 pt-2">
-              {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="flex items-center rounded-md px-3 py-2 text-base font-medium hover:bg-accent hover:text-accent-foreground"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  <item.icon className="mr-3 h-5 w-5" />
-                  {item.label}
-                </Link>
-              ))}
-              {profile?.role === 'admin' && (
-                <Link
-                  href="/admin"
-                  className="flex items-center rounded-md px-3 py-2 text-base font-medium text-emerald-600 hover:bg-accent hover:text-emerald-700"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  <Shield className="mr-3 h-5 w-5" />
-                  Admin
-                </Link>
-              )}
-              
-              <div className="border-t pt-4">
-                {/* Theme Toggle in Mobile */}
-                <div className="flex items-center justify-between px-3 py-2">
-                  <div className="flex items-center space-x-2">
-                    {theme === "dark" ? (
-                      <Moon className="h-4 w-4" />
-                    ) : (
-                      <Sun className="h-4 w-4" />
+          <>
+            {/* Mobile Menu Overlay */}
+            <div 
+              className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 md:hidden" 
+              onClick={() => setIsMenuOpen(false)}
+            />
+            
+            {/* Mobile Menu Content */}
+            <div className="fixed top-16 left-0 right-0 bottom-0 bg-background/95 backdrop-blur-lg border-t z-50 md:hidden animate-slideDown">
+              <div className="flex flex-col h-full">
+                {/* Navigation Items */}
+                <div className="flex-1 overflow-y-auto py-4">
+                  <div className="space-y-1 px-4">
+                    {navItems.map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className="flex items-center rounded-xl px-4 py-3 nav-text text-base hover:bg-accent hover:text-accent-foreground transition-all duration-200 touch-manipulation min-h-[48px]"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <item.icon className="mr-4 h-5 w-5" />
+                        {item.label}
+                      </Link>
+                    ))}
+                    {profile?.role === 'admin' && (
+                      <Link
+                        href="/admin"
+                        className="flex items-center rounded-xl px-4 py-3 text-base font-medium text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all duration-200 touch-manipulation min-h-[48px]"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <Shield className="mr-4 h-5 w-5" />
+                        Admin
+                      </Link>
                     )}
-                    <span className="text-sm font-medium">Tema</span>
                   </div>
-                  <Switch
-                    checked={theme === "dark"}
-                    onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
-                  />
-                </div>
-                {user ? (
-                  <>
-                    <Link
-                      href={`/profile/${profile?.username}`}
-                      className="flex items-center rounded-md px-3 py-2 text-base font-medium hover:bg-accent hover:text-accent-foreground"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      <User className="mr-3 h-5 w-5" />
-                      Profilim
-                    </Link>
+                  
+                  {/* Search Button for Mobile */}
+                  <div className="px-4 mt-4">
                     <button
                       onClick={() => {
-                        handleLogout();
+                        setIsSearchOpen(true);
                         setIsMenuOpen(false);
                       }}
-                      className="flex w-full items-center rounded-md px-3 py-2 text-base font-medium hover:bg-accent hover:text-accent-foreground"
+                      className="flex items-center w-full rounded-xl px-4 py-3 text-base font-medium hover:bg-accent hover:text-accent-foreground transition-all duration-200 touch-manipulation min-h-[48px]"
                     >
-                      <LogOut className="mr-3 h-5 w-5" />
-                      Çıkış Yap
+                      <Search className="mr-4 h-5 w-5" />
+                      Ara
                     </button>
-                  </>
-                ) : (
-                  <>
-                    <Link
-                      href="/auth/login"
-                      className="block rounded-md px-3 py-2 text-base font-medium hover:bg-accent hover:text-accent-foreground"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      Giriş Yap
-                    </Link>
-                    <Link
-                      href="/auth/register"
-                      className="block rounded-md bg-primary px-3 py-2 text-base font-medium text-primary-foreground hover:bg-primary/90"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      Üye Ol
-                    </Link>
-                  </>
-                )}
+                  </div>
+                </div>
+                
+                {/* Bottom Section */}
+                <div className="border-t bg-muted/30 p-4 space-y-3">
+                  {/* Theme Toggle */}
+                  <div className="flex items-center justify-between rounded-xl px-4 py-3 bg-background border">
+                    <div className="flex items-center space-x-3">
+                      {theme === "dark" ? (
+                        <Moon className="h-5 w-5" />
+                      ) : (
+                        <Sun className="h-5 w-5" />
+                      )}
+                      <span className="font-medium">Karanlık Tema</span>
+                    </div>
+                    <Switch
+                      checked={theme === "dark"}
+                      onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
+                    />
+                  </div>
+                  
+                  {user ? (
+                    <div className="space-y-2">
+                      {/* User Profile Section */}
+                      <div className="flex items-center space-x-3 px-4 py-3 rounded-xl bg-background border">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage 
+                            src={profile?.avatar_url || undefined} 
+                            alt={profile?.name || 'User'} 
+                          />
+                          <AvatarFallback className="text-sm">
+                            {profile?.name?.charAt(0).toUpperCase() || 'U'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">{profile?.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">@{profile?.username}</p>
+                        </div>
+                      </div>
+                      
+                      <Link
+                        href={`/profile/${profile?.username}`}
+                        className="flex items-center rounded-xl px-4 py-3 text-base font-medium hover:bg-accent hover:text-accent-foreground transition-all duration-200 touch-manipulation min-h-[48px] bg-background border"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <User className="mr-4 h-5 w-5" />
+                        Profilim
+                      </Link>
+                      
+                      <button
+                        onClick={() => {
+                          handleLogout();
+                          setIsMenuOpen(false);
+                        }}
+                        className="flex w-full items-center rounded-xl px-4 py-3 text-base font-medium text-destructive hover:bg-destructive/10 transition-all duration-200 touch-manipulation min-h-[48px] bg-background border border-destructive/20"
+                      >
+                        <LogOut className="mr-4 h-5 w-5" />
+                        Çıkış Yap
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Link
+                        href="/auth/login"
+                        className="block rounded-xl px-4 py-3 text-base font-medium text-center hover:bg-accent hover:text-accent-foreground transition-all duration-200 touch-manipulation min-h-[48px] bg-background border"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        Giriş Yap
+                      </Link>
+                      <Link
+                        href="/auth/register"
+                        className="block rounded-xl bg-primary px-4 py-3 text-base font-medium text-primary-foreground text-center hover:bg-primary/90 transition-all duration-200 touch-manipulation min-h-[48px]"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        Üye Ol
+                      </Link>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
+          </>
         )}
       </nav>
 
