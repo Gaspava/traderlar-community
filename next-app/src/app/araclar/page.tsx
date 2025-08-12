@@ -16,23 +16,14 @@ import {
 
 const tools = [
   {
-    id: 'hizli-backtest',
-    title: 'Hızlı Backtest',
-    description: 'RR bazlı hızlı trading testi. TradingView benzeri manuel testleri grafiğe dökün.',
-    icon: TrendingUp,
-    href: '/araclar/manuel-backtest/hizli',
-    color: 'from-green-500 to-emerald-500',
-    features: ['RR bazlı otomatik TP/SL', 'Tek sayfa hızlı test', 'Real-time grafik', 'Klavye kısayolları'],
-    featured: true
-  },
-  {
     id: 'manuel-backtest',
-    title: 'Detaylı Backtest',
-    description: 'Stratejilerinizi detaylı olarak test edin, işlemlerinizi kaydedin ve performansınızı analiz edin.',
+    title: 'Manuel Backtest',
+    description: 'RR bazlı manuel trading testi. TradingView benzeri manuel testleri grafiğe dökün ve analiz edin.',
     icon: BarChart3,
     href: '/araclar/manuel-backtest',
     color: 'from-blue-500 to-cyan-500',
-    features: ['Detaylı işlem kaydı', 'Gelişmiş analiz', 'Çoklu backtest', 'Karşılaştırma araçları']
+    features: ['RR bazlı otomatik TP/SL', 'Tek sayfa hızlı test', 'Real-time grafik', 'Klavye kısayolları'],
+    featured: true
   },
   {
     id: 'risk-calculator',

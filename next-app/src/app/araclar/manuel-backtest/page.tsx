@@ -30,6 +30,7 @@ export default function ManuelBacktestListPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'completed' | 'paused'>('all');
   const [sortBy, setSortBy] = useState<'created_at' | 'name' | 'total_pnl'>('created_at');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchBacktests();
@@ -103,6 +104,32 @@ export default function ManuelBacktestListPage() {
     return `${percentage >= 0 ? '+' : ''}${percentage.toFixed(2)}%`;
   };
 
+  const deleteBacktest = async (backtestId: string, backtestName: string) => {
+    if (!confirm(`"${backtestName}" stratejisini ve tüm işlemlerini silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`)) {
+      return;
+    }
+
+    setDeletingId(backtestId);
+    try {
+      const response = await fetch(`/api/manual-backtests/${backtestId}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Silme işlemi başarısız');
+      }
+
+      // Refresh the list
+      fetchBacktests();
+    } catch (error) {
+      console.error('Error deleting backtest:', error);
+      alert('Backtest silinirken hata oluştu: ' + (error as Error).message);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -133,20 +160,11 @@ export default function ManuelBacktestListPage() {
               
               <div className="flex items-center gap-3">
                 <Link
-                  href="/araclar/manuel-backtest/hizli"
-                  className="flex items-center gap-2 px-6 py-3 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors font-medium shadow-lg hover:shadow-xl relative"
-                >
-                  <TrendingUp className="w-5 h-5" />
-                  Hızlı Backtest
-                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full"></div>
-                </Link>
-                
-                <Link
                   href="/araclar/manuel-backtest/yeni"
                   className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-colors font-medium shadow-lg hover:shadow-xl"
                 >
                   <Plus className="w-5 h-5" />
-                  Detaylı Backtest
+                  Yeni Manuel Backtest Oluştur
                 </Link>
               </div>
             </div>
@@ -246,7 +264,7 @@ export default function ManuelBacktestListPage() {
                   className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-colors font-medium"
                 >
                   <Plus className="w-5 h-5" />
-                  İlk Backtest'inizi Oluşturun
+                  İlk Manuel Backtest'inizi Oluşturun
                 </Link>
               )}
             </motion.div>
@@ -283,8 +301,21 @@ export default function ManuelBacktestListPage() {
                       </p>
                     </div>
                     
-                    <button className="opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-muted rounded-lg">
-                      <MoreVertical className="w-4 h-4 text-muted-foreground" />
+                    <button 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        deleteBacktest(backtest.id, backtest.name);
+                      }}
+                      disabled={deletingId === backtest.id}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-red-500/10 text-red-500 rounded-lg disabled:opacity-50"
+                      title="Stratejiyi Sil"
+                    >
+                      {deletingId === backtest.id ? (
+                        <div className="w-4 h-4 border-2 border-red-500/20 border-t-red-500 rounded-full animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4" />
+                      )}
                     </button>
                   </div>
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { 
@@ -24,6 +24,9 @@ import type { Category } from '@/lib/supabase/types';
 import ForumSidebar from '@/components/forum/ForumSidebar';
 import { slugify, isValidSlug } from '@/lib/utils/slugify';
 import { useThemeDetection } from '@/hooks/useThemeDetection';
+import { useMentionDetection } from '@/hooks/useMentionDetection';
+import StrategyMentionModal from '@/components/forum/StrategyMentionModal';
+import ForumContentRenderer from '@/components/forum/ForumContentRenderer';
 
 export default function NewTopicPage() {
   const params = useParams();
@@ -42,6 +45,13 @@ export default function NewTopicPage() {
     content?: string;
   }>({});
   const [showPreview, setShowPreview] = useState(false);
+  const contentTextareaRef = useRef<HTMLTextAreaElement>(null);
+  
+  // Mention detection
+  const { mentionTrigger, closeMention, insertMention } = useMentionDetection(
+    formData.content, 
+    contentTextareaRef
+  );
 
   const formatNumber = (num: number) => {
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
@@ -50,7 +60,6 @@ export default function NewTopicPage() {
   };
 
   useEffect(() => {
-    setMounted(true);
     fetchCategory();
   }, [categorySlug]);
 
@@ -372,11 +381,12 @@ export default function NewTopicPage() {
 
                     {!showPreview ? (
                       <textarea
+                        ref={contentTextareaRef}
                         id="content"
                         name="content"
                         value={formData.content}
                         onChange={handleInputChange}
-                        placeholder="Konunuzun detaylarını yazın..."
+                        placeholder="Konunuzun detaylarını yazın... (@strateji yazarak strateji ekleyebilirsiniz)"
                         rows={10}
                         className={`w-full px-4 py-3 rounded-lg text-sm border transition-all ${
                           isDarkMode 
@@ -391,13 +401,10 @@ export default function NewTopicPage() {
                         isDarkMode ? 'bg-muted border-border' : 'bg-gray-50 border-gray-300'
                       }`}>
                         {formData.content ? (
-                          <div className={`text-sm ${isDarkMode ? 'text-foreground' : 'text-gray-900'}`}>
-                            {formData.content.split('\n').map((paragraph, index) => (
-                              <p key={index} className="mb-3 last:mb-0">
-                                {paragraph || '\u00A0'}
-                              </p>
-                            ))}
-                          </div>
+                          <ForumContentRenderer 
+                            content={formData.content}
+                            className="text-sm"
+                          />
                         ) : (
                           <div className="flex items-center justify-center h-full">
                             <p className={`text-sm italic ${
@@ -534,6 +541,20 @@ export default function NewTopicPage() {
         </div>
         </div>
       </div>
+
+      {/* Strategy Mention Modal */}
+      <StrategyMentionModal
+        isOpen={!!mentionTrigger}
+        onClose={closeMention}
+        onSelect={(strategyId, strategyName) => {
+          insertMention(strategyId, strategyName);
+          setFormData(prev => ({
+            ...prev,
+            content: contentTextareaRef.current?.value || prev.content
+          }));
+        }}
+        query={mentionTrigger?.query}
+      />
     </div>
   );
 }

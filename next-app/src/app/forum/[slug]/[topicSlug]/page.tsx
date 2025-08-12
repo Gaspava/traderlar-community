@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import ForumSidebar from '@/components/forum/ForumSidebar';
+import ForumContentRenderer from '@/components/forum/ForumContentRenderer';
 import { addRecentItem } from '@/lib/utils/recent-items';
 import { useThemeDetection } from '@/hooks/useThemeDetection';
 
@@ -579,24 +580,10 @@ export default function TopicDetailPage() {
             <div className={`text-sm mb-4 leading-6 ${
               isDarkMode ? 'text-foreground' : 'text-gray-900'
             }`}>
-              {post.content.split('\n').map((paragraph, index) => (
-                <p key={index} className="mb-3 last:mb-0" style={{ fontSize: '0.9rem' }}>
-                  {paragraph.split(' ').map((word, wordIndex) => {
-                    if (word.startsWith('@')) {
-                      // Highlight @mentions
-                      return (
-                        <span 
-                          key={wordIndex} 
-                          className="text-blue-500 hover:text-blue-600 cursor-pointer font-medium bg-blue-50 dark:bg-blue-900/20 px-1 rounded"
-                        >
-                          {word}
-                        </span>
-                      );
-                    }
-                    return word + ' ';
-                  })}
-                </p>
-              ))}
+              <ForumContentRenderer 
+                content={post.content}
+                className="text-sm"
+              />
             </div>
 
             {/* Post Actions */}
@@ -915,24 +902,10 @@ export default function TopicDetailPage() {
                 <div className={`text-sm mb-6 leading-6 ${
                   isDarkMode ? 'text-foreground' : 'text-gray-900'
                 }`}>
-                  {topic.content.split('\n').map((paragraph, index) => (
-                    <p key={index} className="mb-4 last:mb-0" style={{ fontSize: '0.9rem' }}>
-                      {paragraph.split(' ').map((word, wordIndex) => {
-                        if (word.startsWith('@')) {
-                          // Highlight @mentions in topic content too
-                          return (
-                            <span 
-                              key={wordIndex} 
-                              className="text-blue-500 hover:text-blue-600 cursor-pointer font-medium bg-blue-50 dark:bg-blue-900/20 px-1 rounded"
-                            >
-                              {word}
-                            </span>
-                          );
-                        }
-                        return word + ' ';
-                      })}
-                    </p>
-                  ))}
+                  <ForumContentRenderer 
+                    content={topic.content}
+                    className="text-sm"
+                  />
                 </div>
 
                 {/* Vote and Actions Section */}

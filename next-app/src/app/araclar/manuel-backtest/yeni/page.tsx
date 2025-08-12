@@ -1,135 +1,367 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import {
   ArrowLeft,
-  Settings,
-  DollarSign,
+  TrendingUp,
+  TrendingDown,
   Target,
-  Shield,
-  Info,
-  X,
+  Square,
+  Settings,
+  Save,
+  Trash2,
+  BarChart3,
+  DollarSign,
+  Percent,
   Plus,
+  ChevronLeft,
+  ChevronRight,
+  Calendar,
   Loader2
 } from 'lucide-react';
-import type { CreateManualBacktestData } from '@/lib/supabase/types';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+import KeyboardShortcutsPanel from '@/components/KeyboardShortcutsPanel';
+import PerformanceChart from '@/components/charts/PerformanceChart';
 
-const categories = [
-  'Forex',
-  'Hisse Senetleri',
-  'Kripto Para',
-  'Emtia',
-  'Endeksler',
-  'Tahvil',
-  'Diğer'
-];
+interface QuickTrade {
+  id: string;
+  symbol: string;
+  type: 'long' | 'short';
+  entry_price: number;
+  position_size: number;
+  rr_ratio: number;
+  risk_amount: number;
+  entry_time: Date;
+  exit_time?: Date;
+  exit_reason?: 'tp' | 'sl' | 'manual';
+  pnl: number;
+  status: 'open' | 'closed';
+  take_profit?: number;
+  stop_loss?: number;
+}
 
-const timeframes = [
-  { value: 'M1', label: '1 Dakika' },
-  { value: 'M5', label: '5 Dakika' },
-  { value: 'M15', label: '15 Dakika' },
-  { value: 'M30', label: '30 Dakika' },
-  { value: 'H1', label: '1 Saat' },
-  { value: 'H4', label: '4 Saat' },
-  { value: 'D1', label: '1 Gün' },
-  { value: 'W1', label: '1 Hafta' },
-  { value: 'MN1', label: '1 Ay' }
-];
-
-const markets = [
-  'Forex',
-  'Hisse Senetleri',
-  'Kripto Para',
-  'Emtia',
-  'Endeksler',
-  'Tahvil'
-];
-
-const currencies = [
-  { value: 'USD', label: 'USD ($)' },
-  { value: 'EUR', label: 'EUR (€)' },
-  { value: 'TRY', label: 'TRY (₺)' },
-  { value: 'GBP', label: 'GBP (£)' },
-  { value: 'JPY', label: 'JPY (¥)' }
-];
+interface QuickBacktestSettings {
+  symbol: string;
+  position_size: number;
+  rr_ratio: number;
+  risk_amount: number;
+  initial_capital: number;
+  use_custom_date: boolean;
+  custom_date: string;
+}
 
 export default function YeniManuelBacktestPage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [tagInput, setTagInput] = useState('');
+  const [trades, setTrades] = useState<QuickTrade[]>([]);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [isSaving, setIsSaving] = useState(false);
   
-  const [formData, setFormData] = useState<CreateManualBacktestData>({
-    name: '',
-    description: '',
+  const [settings, setSettings] = useState<QuickBacktestSettings>({
+    symbol: 'EURUSD',
+    position_size: 0.10,
+    rr_ratio: 2,
+    risk_amount: 100,
     initial_capital: 10000,
-    risk_per_trade_percent: 2,
-    max_risk_percent: 10,
-    commission_per_trade: 0,
-    currency: 'USD',
-    category: 'Forex',
-    timeframe: 'H1',
-    market: 'Forex',
-    tags: []
+    use_custom_date: true,
+    custom_date: new Date().toISOString().split('T')[0]
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.name.trim()) return;
+  const [backtestName, setBacktestName] = useState('');
 
-    setLoading(true);
+  // Date navigation functions
+  const goToPreviousDay = () => {
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() - 1);
+    setSelectedDate(newDate);
+    setSettings(prev => ({
+      ...prev,
+      custom_date: newDate.toISOString().split('T')[0]
+    }));
+  };
+
+  const goToNextDay = () => {
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() + 1);
+    setSelectedDate(newDate);
+    setSettings(prev => ({
+      ...prev,
+      custom_date: newDate.toISOString().split('T')[0]
+    }));
+  };
+
+  const goToToday = () => {
+    const today = new Date();
+    setSelectedDate(today);
+    setSettings(prev => ({
+      ...prev,
+      custom_date: today.toISOString().split('T')[0]
+    }));
+  };
+
+  const formatDateForDisplay = (date: Date) => {
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
     
-    try {
-      const response = await fetch('/api/manual-backtests', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(formData)
+    if (date.toDateString() === today.toDateString()) {
+      return 'Bugün';
+    } else if (date.toDateString() === yesterday.toDateString()) {
+      return 'Dün';
+    } else {
+      return date.toLocaleDateString('tr-TR', {
+        day: 'numeric',
+        month: 'short'
       });
+    }
+  };
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Backtest oluşturulurken bir hata oluştu');
+  // Get days in current month for balloon display
+  const getDaysInMonth = (date: Date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    
+    const days = [];
+    for (let day = 1; day <= daysInMonth; day++) {
+      days.push(new Date(year, month, day));
+    }
+    return days;
+  };
+
+  // Month navigation
+  const goToPreviousMonth = () => {
+    const newMonth = new Date(currentMonth);
+    newMonth.setMonth(newMonth.getMonth() - 1);
+    setCurrentMonth(newMonth);
+  };
+
+  const goToNextMonth = () => {
+    const newMonth = new Date(currentMonth);
+    newMonth.setMonth(newMonth.getMonth() + 1);
+    setCurrentMonth(newMonth);
+  };
+
+  const goToCurrentMonth = () => {
+    setCurrentMonth(new Date());
+  };
+
+  // Select a specific date
+  const selectDate = (date: Date) => {
+    setSelectedDate(date);
+    setSettings(prev => ({
+      ...prev,
+      custom_date: date.toISOString().split('T')[0]
+    }));
+  };
+
+  // Calculate current balance
+  const currentBalance = settings.initial_capital + trades.filter(t => t.status === 'closed').reduce((sum, t) => sum + t.pnl, 0);
+  
+  // Calculate performance metrics
+  const closedTrades = trades.filter(t => t.status === 'closed');
+  const totalTrades = closedTrades.length;
+  const winningTrades = closedTrades.filter(t => t.pnl > 0).length;
+  const winRate = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0;
+  const totalPnL = closedTrades.reduce((sum, t) => sum + t.pnl, 0);
+  const totalPnLPercent = (totalPnL / settings.initial_capital) * 100;
+
+  const addTrade = (type: 'long' | 'short') => {
+    // Bu fonksiyon artık kullanılmıyor ama kalsın
+  };
+
+  const addCompletedTrade = (type: 'long' | 'short', exitType: 'tp' | 'sl') => {
+    const pnl = exitType === 'tp' 
+      ? settings.risk_amount * settings.rr_ratio  // Win: Risk × RR
+      : -settings.risk_amount;  // Loss: -Risk
+
+    // Use selected date with current time
+    const entryDateTime = new Date(selectedDate);
+    entryDateTime.setHours(new Date().getHours(), new Date().getMinutes(), new Date().getSeconds());
+    
+    const exitDateTime = new Date(entryDateTime);
+    exitDateTime.setMinutes(exitDateTime.getMinutes() + Math.floor(Math.random() * 30) + 1); // 1-30 min trade duration
+
+    const newTrade: QuickTrade = {
+      id: Date.now().toString(),
+      symbol: settings.symbol,
+      type,
+      entry_price: 1.0,
+      position_size: settings.position_size,
+      rr_ratio: settings.rr_ratio,
+      risk_amount: settings.risk_amount,
+      entry_time: entryDateTime,
+      exit_time: exitDateTime,
+      exit_reason: exitType,
+      pnl,
+      status: 'closed'
+    };
+
+    setTrades(prev => [...prev, newTrade]);
+  };
+
+  const closeTrade = (tradeId: string, reason: 'tp' | 'sl') => {
+    setTrades(prev => prev.map(trade => {
+      if (trade.id !== tradeId || trade.status === 'closed') return trade;
+
+      let pnl: number;
+
+      if (reason === 'tp') {
+        pnl = trade.risk_amount * trade.rr_ratio; // Win: Risk × RR
+      } else { // 'sl'
+        pnl = -trade.risk_amount; // Loss: -Risk
       }
 
-      const { backtest } = await response.json();
+      return {
+        ...trade,
+        exit_time: new Date(),
+        exit_reason: reason,
+        pnl,
+        status: 'closed' as const
+      };
+    }));
+  };
+
+  const deleteTrade = (tradeId: string) => {
+    setTrades(prev => prev.filter(trade => trade.id !== tradeId));
+  };
+
+  const saveBacktest = async () => {
+    if (!backtestName.trim()) {
+      alert('Lütfen backtest adı girin');
+      return;
+    }
+
+    if (closedTrades.length === 0) {
+      alert('En az bir tamamlanmış işlem olmalı');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      // Create backtest
+      const backtestData = {
+        name: backtestName.trim(),
+        description: `Manuel backtest - ${settings.symbol} - RR:${settings.rr_ratio}`,
+        initial_capital: settings.initial_capital,
+        risk_per_trade_percent: (settings.risk_amount / settings.initial_capital) * 100,
+        currency: 'USD',
+        category: 'Manual',
+        timeframe: 'Mixed',
+        market: 'Forex'
+      };
+
+      const backtestResponse = await fetch('/api/manual-backtests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(backtestData)
+      });
+
+      if (!backtestResponse.ok) throw new Error('Backtest oluşturulamadı');
       
-      // Redirect to the new backtest
+      const { backtest } = await backtestResponse.json();
+
+      // Add trades
+      for (const trade of closedTrades) {
+        const tradeData = {
+          symbol: trade.symbol,
+          trade_type: trade.type,
+          position_size: trade.position_size,
+          entry_date: trade.entry_time.toISOString().split('T')[0],
+          entry_time: trade.entry_time.toTimeString().split(' ')[0],
+          entry_price: 1.0, // Dummy price for RR-based trades
+          risk_amount: trade.risk_amount,
+          risk_reward_ratio: trade.rr_ratio, // RR ratio'yu da gönder
+          entry_notes: `Manuel Backtest - RR: ${trade.rr_ratio}`
+        };
+
+        const tradeResponse = await fetch(`/api/manual-backtests/${backtest.id}/trades`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(tradeData)
+        });
+
+        if (tradeResponse.ok) {
+          const { trade: createdTrade } = await tradeResponse.json();
+          
+          // Close the trade immediately if it's closed in our local state
+          if (trade.exit_time) {
+            await fetch(`/api/manual-backtests/${backtest.id}/trades/${createdTrade.id}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                exit_date: trade.exit_time.toISOString().split('T')[0],
+                exit_time: trade.exit_time.toTimeString().split(' ')[0],
+                exit_price: trade.exit_reason === 'tp' ? 1.1 : 0.9, // Dummy exit prices
+                exit_reason: trade.exit_reason,
+                exit_notes: `Manuel backtest - RR:${trade.rr_ratio} - ${trade.exit_reason?.toUpperCase()}`,
+                manual_pnl: trade.pnl // P&L değerini frontend'ten gönder
+              })
+            });
+          }
+        }
+      }
+
+      // Redirect to detailed view
       router.push(`/araclar/manuel-backtest/${backtest.id}`);
       
     } catch (error) {
-      console.error('Error creating backtest:', error);
-      // TODO: Show error toast/notification
+      console.error('Error saving backtest:', error);
+      alert('Backtest kaydedilirken hata oluştu');
     } finally {
-      setLoading(false);
+      setIsSaving(false);
     }
   };
 
-  const addTag = (tag: string) => {
-    if (tag.trim() && !formData.tags?.includes(tag.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        tags: [...(prev.tags || []), tag.trim()]
-      }));
+  // Keyboard shortcuts with date navigation
+  const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    // Don't trigger shortcuts when user is typing in inputs
+    const target = event.target as HTMLElement;
+    if (
+      target.tagName === 'INPUT' ||
+      target.tagName === 'TEXTAREA' ||
+      target.contentEditable === 'true'
+    ) {
+      return;
     }
-    setTagInput('');
-  };
 
-  const removeTag = (tagToRemove: string) => {
-    setFormData(prev => ({
-      ...prev,
-      tags: prev.tags?.filter(tag => tag !== tagToRemove) || []
-    }));
-  };
+    // Arrow key navigation for dates
+    if (event.key === 'ArrowLeft') {
+      event.preventDefault();
+      goToPreviousDay();
+    } else if (event.key === 'ArrowRight') {
+      event.preventDefault();
+      goToNextDay();
+    } else if (event.key === 'Home') {
+      event.preventDefault();
+      goToToday();
+    }
+  }, []);
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
+
+  // Keyboard shortcuts
+  const { shortcuts } = useKeyboardShortcuts({
+    onQuickLong: () => addCompletedTrade('long', 'tp'),
+    onQuickShort: () => addCompletedTrade('short', 'tp'),
+    onTakeProfit: () => addCompletedTrade('long', 'tp'),
+    onStopLoss: () => addCompletedTrade('long', 'sl'),
+    onSave: saveBacktest,
+  });
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="bg-gradient-to-br from-background via-card/30 to-background border-b border-border/50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -137,333 +369,494 @@ export default function YeniManuelBacktestPage() {
           >
             <Link
               href="/araclar/manuel-backtest"
-              className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors mb-6"
+              className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors mb-4"
             >
               <ArrowLeft className="w-4 h-4" />
               Manuel Backtest'e Dön
             </Link>
             
-            <div className="flex items-center gap-4 mb-4">
-              <div className="p-3 bg-primary/10 rounded-2xl">
-                <Settings className="w-8 h-8 text-primary" />
-              </div>
+            <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold text-foreground">
-                  Yeni Manuel Backtest
+                <h1 className="text-2xl font-bold text-foreground mb-1">
+                  Manuel Backtest
                 </h1>
                 <p className="text-muted-foreground">
-                  Trading stratejinizi test etmek için yeni bir backtest oluşturun
+                  RR bazlı manuel trading testi ve performans analizi
                 </p>
               </div>
+              
             </div>
           </motion.div>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Basic Information */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="bg-card border border-border/50 rounded-2xl p-8"
-          >
-            <h2 className="text-xl font-semibold text-foreground mb-6 flex items-center gap-2">
-              <Info className="w-5 h-5 text-primary" />
-              Temel Bilgiler
-            </h2>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Panel - Controls */}
+          <div className="lg:col-span-1 space-y-6">
+            {/* Quick Settings */}
+            <div className="bg-card border border-border/50 rounded-2xl p-6">
+              <h3 className="text-lg font-semibold text-foreground mb-4">Manuel Backtest Ayarları</h3>
+              
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">Sembol</label>
+                    <input
+                      type="text"
+                      value={settings.symbol}
+                      onChange={(e) => setSettings(prev => ({ ...prev, symbol: e.target.value.toUpperCase() }))}
+                      className="w-full px-3 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all text-sm"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">Başlangıç Sermayesi</label>
+                    <input
+                      type="number"
+                      value={settings.initial_capital}
+                      onChange={(e) => setSettings(prev => ({ ...prev, initial_capital: parseFloat(e.target.value) || 0 }))}
+                      className="w-full px-3 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all text-sm"
+                    />
+                  </div>
+                </div>
 
-            <div className="space-y-6">
-              {/* Name */}
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Backtest Adı *
-                </label>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">RR Oranı</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={settings.rr_ratio}
+                      onChange={(e) => setSettings(prev => ({ ...prev, rr_ratio: parseFloat(e.target.value) || 1 }))}
+                      className="w-full px-3 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all text-sm"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">Risk ($)</label>
+                    <input
+                      type="number"
+                      value={settings.risk_amount}
+                      onChange={(e) => setSettings(prev => ({ ...prev, risk_amount: parseFloat(e.target.value) || 0 }))}
+                      className="w-full px-3 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all text-sm"
+                    />
+                  </div>
+                </div>
+
+
+              </div>
+            </div>
+
+
+            {/* Performance Summary */}
+            <div className="bg-card border border-border/50 rounded-2xl p-6">
+              <h3 className="text-lg font-semibold text-foreground mb-4">Performans</h3>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center p-3 bg-background/50 rounded-lg">
+                  <div className="text-lg font-bold text-foreground">
+                    ${currentBalance.toFixed(0)}
+                  </div>
+                  <div className="text-xs text-muted-foreground">Bakiye</div>
+                </div>
+                
+                <div className="text-center p-3 bg-background/50 rounded-lg">
+                  <div className={`text-lg font-bold ${totalPnLPercent >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                    {totalPnLPercent >= 0 ? '+' : ''}{totalPnLPercent.toFixed(1)}%
+                  </div>
+                  <div className="text-xs text-muted-foreground">Getiri</div>
+                </div>
+                
+                <div className="text-center p-3 bg-background/50 rounded-lg">
+                  <div className="text-lg font-bold text-foreground">{totalTrades}</div>
+                  <div className="text-xs text-muted-foreground">İşlem</div>
+                </div>
+                
+                <div className="text-center p-3 bg-background/50 rounded-lg">
+                  <div className="text-lg font-bold text-green-500">{winRate.toFixed(1)}%</div>
+                  <div className="text-xs text-muted-foreground">Başarı</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Save Section */}
+            <div className="bg-card border border-border/50 rounded-2xl p-6">
+              <h3 className="text-lg font-semibold text-foreground mb-4">Kaydet</h3>
+              
+              <div className="space-y-3">
                 <input
                   type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="Örn: RSI Divergence Stratejisi"
-                  className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
-                  required
+                  value={backtestName}
+                  onChange={(e) => setBacktestName(e.target.value)}
+                  placeholder="Backtest adı girin..."
+                  className="w-full px-3 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
+                />
+                
+                <button
+                  onClick={saveBacktest}
+                  disabled={!backtestName.trim() || closedTrades.length === 0 || isSaving}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground transition-colors"
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Strateji Kaydediliyor...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      Kaydet ve Detaylı Analiz
+                    </>
+                  )}
+                </button>
+                
+                <p className="text-xs text-muted-foreground text-center">
+                  {closedTrades.length} tamamlanmış işlem
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Panel - Trades & Chart */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Chart */}
+            {trades.length > 0 && (
+              <div className="bg-card border border-border/50 rounded-2xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-foreground">
+                    Performans Grafiği
+                  </h3>
+                  <div className="text-sm text-primary font-medium">
+                    Seçili Tarih: {selectedDate.toLocaleDateString('tr-TR', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric'
+                    })}
+                  </div>
+                </div>
+                
+                <PerformanceChart 
+                  trades={trades.map(t => ({
+                    ...t,
+                    backtest_id: 'temp',
+                    entry_date: t.entry_time.toISOString().split('T')[0],
+                    entry_time: t.entry_time.toTimeString().split(' ')[0],
+                    exit_date: t.exit_time?.toISOString().split('T')[0],
+                    exit_time: t.exit_time?.toTimeString().split(' ')[0],
+                    trade_type: t.type,
+                    pnl_percent: (t.pnl / settings.risk_amount) * 100,
+                    commission: 0,
+                    created_at: t.entry_time.toISOString(),
+                    updated_at: t.exit_time?.toISOString() || t.entry_time.toISOString()
+                  }))}
+                  initialCapital={settings.initial_capital}
+                  currency="USD"
+                  height={300}
                 />
               </div>
+            )}
 
-              {/* Description */}
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Açıklama
-                </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Bu backtest'in amacını ve stratejinizi kısaca açıklayın..."
-                  rows={4}
-                  className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all resize-none"
-                />
-              </div>
-
-              {/* Category, Timeframe, Market */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Kategori
-                  </label>
-                  <select
-                    value={formData.category}
-                    onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-                    className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
-                  >
-                    {categories.map(category => (
-                      <option key={category} value={category}>{category}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Zaman Dilimi
-                  </label>
-                  <select
-                    value={formData.timeframe}
-                    onChange={(e) => setFormData(prev => ({ ...prev, timeframe: e.target.value }))}
-                    className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
-                  >
-                    {timeframes.map(tf => (
-                      <option key={tf.value} value={tf.value}>{tf.label}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Piyasa
-                  </label>
-                  <select
-                    value={formData.market}
-                    onChange={(e) => setFormData(prev => ({ ...prev, market: e.target.value }))}
-                    className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
-                  >
-                    {markets.map(market => (
-                      <option key={market} value={market}>{market}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Tags */}
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Etiketler
-                </label>
-                <div className="flex gap-2 mb-3 flex-wrap">
-                  {formData.tags?.map(tag => (
-                    <span
-                      key={tag}
-                      className="px-3 py-1 bg-primary/20 text-primary rounded-full text-sm font-medium flex items-center gap-1"
+            {/* Quick Trading Buttons */}
+            <div className="bg-card border border-border/50 rounded-2xl p-4 mb-4">
+              <div className="grid grid-cols-2 gap-4">
+                {/* Long Section */}
+                <div className="space-y-2">
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-2 text-green-600 font-medium text-sm">
+                      <TrendingUp className="w-4 h-4" />
+                      LONG
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => addCompletedTrade('long', 'tp')}
+                      className="px-3 py-2 bg-green-500/10 text-green-600 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors text-sm font-medium"
                     >
-                      {tag}
-                      <button
-                        type="button"
-                        onClick={() => removeTag(tag)}
-                        className="hover:text-primary/70 transition-colors"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </span>
-                  ))}
+                      TP +${(settings.risk_amount * settings.rr_ratio).toFixed(0)}
+                    </button>
+                    <button
+                      onClick={() => addCompletedTrade('long', 'sl')}
+                      className="px-3 py-2 bg-red-500/10 text-red-600 border border-red-500/20 rounded-lg hover:bg-red-500/20 transition-colors text-sm font-medium"
+                    >
+                      SL -${settings.risk_amount.toFixed(0)}
+                    </button>
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={tagInput}
-                    onChange={(e) => setTagInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        addTag(tagInput);
-                      }
-                    }}
-                    placeholder="Etiket ekle..."
-                    className="flex-1 px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
-                  />
+
+                {/* Short Section */}
+                <div className="space-y-2">
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-2 text-red-600 font-medium text-sm">
+                      <TrendingDown className="w-4 h-4" />
+                      SHORT
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => addCompletedTrade('short', 'tp')}
+                      className="px-3 py-2 bg-green-500/10 text-green-600 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors text-sm font-medium"
+                    >
+                      TP +${(settings.risk_amount * settings.rr_ratio).toFixed(0)}
+                    </button>
+                    <button
+                      onClick={() => addCompletedTrade('short', 'sl')}
+                      className="px-3 py-2 bg-red-500/10 text-red-600 border border-red-500/20 rounded-lg hover:bg-red-500/20 transition-colors text-sm font-medium"
+                    >
+                      SL -${settings.risk_amount.toFixed(0)}
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="text-center mt-2">
+                <p className="text-xs text-muted-foreground">
+                  RR {settings.rr_ratio}: Win ${(settings.risk_amount * settings.rr_ratio).toFixed(0)} | Loss ${settings.risk_amount.toFixed(0)}
+                </p>
+              </div>
+            </div>
+
+            {/* Date Balloons */}
+            <div className="bg-card border border-border/50 rounded-2xl p-4">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3 text-sm">
+                  {/* Day Navigation */}
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => {
+                        const newDate = new Date(selectedDate);
+                        newDate.setDate(newDate.getDate() - 1);
+                        setSelectedDate(newDate);
+                        setSettings(prev => ({
+                          ...prev,
+                          custom_date: newDate.toISOString().split('T')[0]
+                        }));
+                        setCurrentMonth(newDate);
+                      }}
+                      className="p-1 hover:bg-muted rounded-full transition-colors"
+                      title="Önceki gün"
+                    >
+                      <ChevronLeft className="w-3 h-3 text-muted-foreground" />
+                    </button>
+                    
+                    <span className="px-2 py-1 font-medium text-primary min-w-[24px] text-center">
+                      {selectedDate.getDate()}
+                    </span>
+                    
+                    <button
+                      onClick={() => {
+                        const newDate = new Date(selectedDate);
+                        newDate.setDate(newDate.getDate() + 1);
+                        setSelectedDate(newDate);
+                        setSettings(prev => ({
+                          ...prev,
+                          custom_date: newDate.toISOString().split('T')[0]
+                        }));
+                        setCurrentMonth(newDate);
+                      }}
+                      className="p-1 hover:bg-muted rounded-full transition-colors"
+                      title="Sonraki gün"
+                    >
+                      <ChevronRight className="w-3 h-3 text-muted-foreground" />
+                    </button>
+                  </div>
+                  
+                  {/* Month Navigation */}
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={goToPreviousMonth}
+                      className="p-1 hover:bg-muted rounded-full transition-colors"
+                      title="Önceki ay"
+                    >
+                      <ChevronLeft className="w-3 h-3 text-muted-foreground" />
+                    </button>
+                    
+                    <span className="px-2 py-1 font-medium text-foreground min-w-[80px] text-center">
+                      {currentMonth.toLocaleDateString('tr-TR', { month: 'long' })}
+                    </span>
+                    
+                    <button
+                      onClick={goToNextMonth}
+                      className="p-1 hover:bg-muted rounded-full transition-colors"
+                      title="Sonraki ay"
+                    >
+                      <ChevronRight className="w-3 h-3 text-muted-foreground" />
+                    </button>
+                  </div>
+                  
+                  {/* Year Navigation */}
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => {
+                        const newYear = new Date(currentMonth);
+                        newYear.setFullYear(newYear.getFullYear() - 1);
+                        setCurrentMonth(newYear);
+                      }}
+                      className="p-1 hover:bg-muted rounded-full transition-colors"
+                      title="Önceki yıl"
+                    >
+                      <ChevronLeft className="w-3 h-3 text-muted-foreground" />
+                    </button>
+                    
+                    <span className="px-2 py-1 font-medium text-foreground min-w-[48px] text-center">
+                      {currentMonth.getFullYear()}
+                    </span>
+                    
+                    <button
+                      onClick={() => {
+                        const newYear = new Date(currentMonth);
+                        newYear.setFullYear(newYear.getFullYear() + 1);
+                        setCurrentMonth(newYear);
+                      }}
+                      className="p-1 hover:bg-muted rounded-full transition-colors"
+                      title="Sonraki yıl"
+                    >
+                      <ChevronRight className="w-3 h-3 text-muted-foreground" />
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="flex items-center">
                   <button
-                    type="button"
-                    onClick={() => addTag(tagInput)}
-                    className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                    onClick={() => {
+                      const today = new Date();
+                      setSelectedDate(today);
+                      setCurrentMonth(today);
+                      setSettings(prev => ({
+                        ...prev,
+                        custom_date: today.toISOString().split('T')[0]
+                      }));
+                    }}
+                    className="px-3 py-1 text-xs bg-primary/10 text-primary rounded-full hover:bg-primary/20 transition-colors"
+                    title="Bugüne git"
                   >
-                    <Plus className="w-4 h-4" />
+                    Bugün
                   </button>
                 </div>
               </div>
-            </div>
-          </motion.div>
-
-          {/* Financial Configuration */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="bg-card border border-border/50 rounded-2xl p-8"
-          >
-            <h2 className="text-xl font-semibold text-foreground mb-6 flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-primary" />
-              Finansal Ayarlar
-            </h2>
-
-            <div className="space-y-6">
-              {/* Initial Capital & Currency */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Başlangıç Sermayesi *
-                  </label>
-                  <input
-                    type="number"
-                    min="100"
-                    step="100"
-                    value={formData.initial_capital}
-                    onChange={(e) => setFormData(prev => ({ ...prev, initial_capital: Number(e.target.value) }))}
-                    className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Para Birimi
-                  </label>
-                  <select
-                    value={formData.currency}
-                    onChange={(e) => setFormData(prev => ({ ...prev, currency: e.target.value }))}
-                    className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
-                  >
-                    {currencies.map(currency => (
-                      <option key={currency.value} value={currency.value}>{currency.label}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Commission */}
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  İşlem Başına Komisyon
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={formData.commission_per_trade}
-                  onChange={(e) => setFormData(prev => ({ ...prev, commission_per_trade: Number(e.target.value) }))}
-                  placeholder="0.00"
-                  className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
-                />
-                <p className="text-sm text-muted-foreground mt-2">
-                  Her işlem için ödenecek sabit komisyon miktarı
-                </p>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Risk Management */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="bg-card border border-border/50 rounded-2xl p-8"
-          >
-            <h2 className="text-xl font-semibold text-foreground mb-6 flex items-center gap-2">
-              <Shield className="w-5 h-5 text-primary" />
-              Risk Yönetimi
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  İşlem Başına Risk (%)
-                </label>
-                <input
-                  type="number"
-                  min="0.1"
-                  max="10"
-                  step="0.1"
-                  value={formData.risk_per_trade_percent}
-                  onChange={(e) => setFormData(prev => ({ ...prev, risk_per_trade_percent: Number(e.target.value) }))}
-                  className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
-                />
-                <p className="text-sm text-muted-foreground mt-2">
-                  Her işlemde riske atacağınız sermaye yüzdesi
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Maksimum Risk (%)
-                </label>
-                <input
-                  type="number"
-                  min="5"
-                  max="50"
-                  step="1"
-                  value={formData.max_risk_percent}
-                  onChange={(e) => setFormData(prev => ({ ...prev, max_risk_percent: Number(e.target.value) }))}
-                  className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
-                />
-                <p className="text-sm text-muted-foreground mt-2">
-                  Portföyünüzün riske atacağınız maksimum yüzdesi
-                </p>
+              
+              <div className="flex flex-wrap gap-2 min-h-[120px]">
+                {getDaysInMonth(currentMonth).map((date) => {
+                  const isSelected = selectedDate.toDateString() === date.toDateString();
+                  const isToday = new Date().toDateString() === date.toDateString();
+                  
+                  // Calculate daily P&L for this date
+                  const dailyTrades = trades.filter(trade => 
+                    trade.entry_time.toDateString() === date.toDateString() && trade.status === 'closed'
+                  );
+                  const dailyPnL = dailyTrades.reduce((sum, trade) => sum + trade.pnl, 0);
+                  const hasTradesOnDate = dailyTrades.length > 0;
+                  
+                  // Determine color based on P&L
+                  let colorClass = '';
+                  if (isSelected) {
+                    colorClass = 'bg-primary text-primary-foreground scale-110 shadow-lg';
+                  } else if (hasTradesOnDate) {
+                    if (dailyPnL > 0) {
+                      colorClass = 'bg-green-500/20 text-green-600 border border-green-500/30';
+                    } else if (dailyPnL < 0) {
+                      colorClass = 'bg-red-500/20 text-red-600 border border-red-500/30';
+                    } else {
+                      colorClass = 'bg-gray-500/20 text-gray-600 border border-gray-500/30';
+                    }
+                  } else {
+                    colorClass = 'bg-muted/50 text-muted-foreground hover:bg-muted hover:scale-105';
+                  }
+                  
+                  return (
+                    <button
+                      key={date.toISOString()}
+                      onClick={() => selectDate(date)}
+                      className={`w-8 h-8 rounded-full text-xs font-medium transition-all duration-200 ${colorClass}`}
+                      title={`${date.getDate()} ${date.toLocaleDateString('tr-TR', { month: 'long' })}${
+                        hasTradesOnDate 
+                          ? ` - ${dailyTrades.length} işlem, P&L: ${dailyPnL >= 0 ? '+' : ''}$${dailyPnL.toFixed(0)}` 
+                          : ''
+                      }`}
+                    >
+                      {date.getDate()}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Risk Warning */}
-            <div className="mt-6 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
-              <div className="flex items-start gap-3">
-                <Target className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="font-medium text-yellow-800 dark:text-yellow-200 mb-1">
-                    Risk Yönetimi Önemli
-                  </h4>
-                  <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                    Belirlediğiniz risk parametrelerine sadık kalın. Başarılı trading'in anahtarı tutarlı risk yönetimidir.
-                  </p>
+
+            {/* Closed Trades */}
+            {closedTrades.length > 0 && (
+              <div className="bg-card border border-border/50 rounded-2xl p-6">
+                <h3 className="text-lg font-semibold text-foreground mb-4">
+                  Tamamlanan İşlemler ({closedTrades.length})
+                </h3>
+                
+                <div className="space-y-2">
+                  {closedTrades.slice(-10).reverse().map(trade => (
+                    <div key={trade.id} className="flex items-center justify-between p-3 bg-background/30 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className={`p-1 rounded ${
+                          trade.type === 'long' 
+                            ? 'bg-green-500/10 text-green-600' 
+                            : 'bg-red-500/10 text-red-600'
+                        }`}>
+                          {trade.type === 'long' ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                        </div>
+                        <div className="text-sm">
+                          <span className="font-medium">{trade.symbol}</span>
+                          <span className="text-muted-foreground ml-2">RR:{trade.rr_ratio}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-4">
+                        <div className={`text-sm font-medium ${trade.pnl >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                          {trade.pnl >= 0 ? '+' : ''}${trade.pnl.toFixed(0)}
+                        </div>
+                        <div className={`px-2 py-1 text-xs rounded-full ${
+                          trade.exit_reason === 'tp' 
+                            ? 'bg-green-500/10 text-green-600'
+                            : trade.exit_reason === 'sl'
+                            ? 'bg-red-500/10 text-red-600'
+                            : 'bg-blue-500/10 text-blue-600'
+                        }`}>
+                          {trade.exit_reason?.toUpperCase()}
+                        </div>
+                        <button
+                          onClick={() => deleteTrade(trade.id)}
+                          className="text-muted-foreground hover:text-red-500 transition-colors"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-            </div>
-          </motion.div>
+            )}
 
-          {/* Submit */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-            className="flex justify-end gap-4"
-          >
-            <Link
-              href="/araclar/manuel-backtest"
-              className="px-6 py-3 bg-muted text-muted-foreground rounded-xl hover:bg-muted/80 transition-colors font-medium"
-            >
-              İptal
-            </Link>
-            
-            <button
-              type="submit"
-              disabled={loading || !formData.name.trim()}
-              className="px-6 py-3 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground transition-colors font-medium flex items-center gap-2 min-w-[140px]"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Oluşturuluyor...
-                </>
-              ) : (
-                'Backtest Oluştur'
-              )}
-            </button>
-          </motion.div>
-        </form>
+            {/* Empty State */}
+            {trades.length === 0 && (
+              <div className="bg-card border border-border/50 rounded-2xl p-8 text-center">
+                <BarChart3 className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-foreground mb-2">Manuel RR Backtest</h3>
+                <p className="text-muted-foreground mb-4">
+                  RR oranını ayarlayın ve Long/Short altındaki TP/SL butonlarına tıklayın.
+                  Her tıklama otomatik olarak tamamlanmış işlem olarak eklenir.
+                </p>
+                <div className="text-sm text-muted-foreground space-y-1">
+                  <p>• RR 2 = TP butonuna basınca +$200, SL butonuna basınca -$100</p>
+                  <p>• Long altında TP/SL var, Short altında da TP/SL var</p>
+                  <p>• Tek tıklama ile işlem tamamlanır ve grafiğe eklenir</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
+
+      {/* Keyboard Shortcuts */}
+      <KeyboardShortcutsPanel shortcuts={shortcuts} />
     </div>
   );
 }

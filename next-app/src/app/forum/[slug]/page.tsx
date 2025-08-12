@@ -66,7 +66,6 @@ export default function ForumCategoryPage() {
   const { isDarkMode, mounted } = useThemeDetection();
 
   useEffect(() => {
-    setMounted(true);
     fetchCategory();
   }, [categorySlug]);
 

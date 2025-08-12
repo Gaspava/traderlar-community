@@ -149,15 +149,42 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // Check if slug is unique
-    const { data: existingTopic } = await supabase
-      .from('forum_topics')
-      .select('id')
-      .eq('slug', slug)
-      .single();
+    // Extract mentioned strategies from content (temporarily disabled until DB is ready)
+    // const mentionRegex = /@strateji:([^:]+):([^@\s]+)/g;
+    // const mentionedStrategies: string[] = [];
+    // let match;
+    
+    // while ((match = mentionRegex.exec(content)) !== null) {
+    //   const strategyId = match[1];
+    //   if (!mentionedStrategies.includes(strategyId)) {
+    //     mentionedStrategies.push(strategyId);
+    //   }
+    // }
 
-    if (existingTopic) {
-      return NextResponse.json({ error: 'Topic with this slug already exists' }, { status: 400 });
+    // Create a unique slug by checking for duplicates
+    let uniqueSlug = slug;
+    let counter = 1;
+    
+    while (true) {
+      const { data: existingTopic } = await supabase
+        .from('forum_topics')
+        .select('id')
+        .eq('slug', uniqueSlug)
+        .single();
+
+      if (!existingTopic) {
+        // Slug is unique, break the loop
+        break;
+      }
+
+      // If slug exists, append a number and try again
+      uniqueSlug = `${slug}-${counter}`;
+      counter++;
+      
+      // Prevent infinite loop (safety check)
+      if (counter > 100) {
+        return NextResponse.json({ error: 'Unable to generate unique slug' }, { status: 400 });
+      }
     }
 
     // Create topic - simple insert like articles
@@ -165,7 +192,7 @@ export async function POST(request: NextRequest) {
       .from('forum_topics')
       .insert({
         title,
-        slug,
+        slug: uniqueSlug,
         content,
         author_id: user.id,
         category_id,

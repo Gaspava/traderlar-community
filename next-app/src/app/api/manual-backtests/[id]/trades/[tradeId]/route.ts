@@ -50,13 +50,33 @@ export async function PUT(
     let durationMinutes = trade.duration_minutes;
 
     if (body.exit_price && body.exit_date && body.exit_time && trade.status === 'open') {
-      // Calculate P&L based on trade type
-      const priceDiff = trade.trade_type === 'long' 
-        ? body.exit_price - trade.entry_price
-        : trade.entry_price - body.exit_price;
+      // Use manual P&L from frontend if provided (for RR-based trades)
+      if (body.manual_pnl !== undefined && body.manual_pnl !== null) {
+        pnl = Number(body.manual_pnl.toFixed(2));
+        pnlPercent = Number(((pnl / trade.risk_amount) * 100).toFixed(2));
+      } else {
+        // Fallback: For manual backtests, use RR-based calculation if it's a TP/SL exit
+        if (body.exit_reason === 'tp' || body.exit_reason === 'sl') {
+          // RR-based P&L calculation for manual backtests
+          if (body.exit_reason === 'tp') {
+            // Win: Risk amount × RR ratio
+            pnl = Number((trade.risk_amount * trade.risk_reward_ratio).toFixed(2));
+          } else {
+            // Loss: Negative risk amount
+            pnl = Number((-trade.risk_amount).toFixed(2));
+          }
+          pnlPercent = Number(((pnl / trade.risk_amount) * 100).toFixed(2));
+        } else {
+          // Manual exit: Calculate based on price difference
+          const priceDiff = trade.trade_type === 'long' 
+            ? body.exit_price - trade.entry_price
+            : trade.entry_price - body.exit_price;
+          
+          pnl = Number((priceDiff * trade.position_size).toFixed(2));
+          pnlPercent = Number(((pnl / trade.risk_amount) * 100).toFixed(2));
+        }
+      }
       
-      pnl = Number((priceDiff * trade.position_size).toFixed(2));
-      pnlPercent = Number(((pnl / trade.risk_amount) * 100).toFixed(2));
       status = 'closed';
 
       // Calculate duration

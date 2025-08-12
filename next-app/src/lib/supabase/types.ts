@@ -559,5 +559,74 @@ export interface UpdateTradeData {
   exit_price?: number;
   exit_reason?: 'tp' | 'sl' | 'manual' | 'time';
   exit_notes?: string;
+  manual_pnl?: number; // RR-based trades için manuel P&L
+}
+
+// Forum System Types
+export interface ForumTopic {
+  id: string;
+  title: string;
+  slug: string;
+  content: string;
+  author_id: string;
+  category_id: string;
+  mentioned_strategies: string[];
+  is_pinned: boolean;
+  is_locked: boolean;
+  view_count: number;
+  reply_count: number;
+  vote_score: number;
+  last_reply_at?: string;
+  last_reply_user_id?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ForumTopicWithDetails extends ForumTopic {
+  author: {
+    id: string;
+    name: string;
+    username: string;
+    avatar_url?: string;
+    role: UserRole;
+  };
+  category: {
+    id: string;
+    name: string;
+    slug: string;
+    color: string;
+  };
+  mentioned_strategies_data?: TradingStrategy[];
+}
+
+export interface ForumPost {
+  id: string;
+  topic_id: string;
+  author_id: string;
+  parent_id?: string;
+  content: string;
+  mentioned_strategies: string[];
+  is_edited: boolean;
+  vote_score: number;
+  mentioned_user_id?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ForumPostWithDetails extends ForumPost {
+  author: {
+    id: string;
+    name: string;
+    username: string;
+    avatar_url?: string;
+    role: UserRole;
+  };
+  mentioned_user?: {
+    id: string;
+    username: string;
+  };
+  mentioned_strategies_data?: TradingStrategy[];
+  replies?: ForumPostWithDetails[];
+  reply_count: number;
 }
 

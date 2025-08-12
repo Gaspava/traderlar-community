@@ -44,7 +44,7 @@ export default function PerformanceChart({
   // Calculate cumulative performance data
   const chartData = useMemo(() => {
     const closedTrades = trades
-      .filter(trade => trade.status === 'closed')
+      .filter(trade => trade.status === 'closed' && trade.pnl !== null)
       .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
     if (closedTrades.length === 0) {
@@ -72,11 +72,10 @@ export default function PerformanceChart({
     const portfolioValues: number[] = [initialCapital];
     const pnlValues: number[] = [0];
     
-    let cumulativePnL = 0;
+    let runningBalance = initialCapital;
     
     closedTrades.forEach((trade, index) => {
-      cumulativePnL += trade.pnl;
-      const portfolioValue = initialCapital + cumulativePnL;
+      runningBalance += (trade.pnl || 0);
       
       // Create label with date info
       const tradeDate = new Date(trade.created_at);
@@ -86,9 +85,14 @@ export default function PerformanceChart({
       });
       
       labels.push(label);
-      portfolioValues.push(portfolioValue);
-      pnlValues.push(cumulativePnL);
+      portfolioValues.push(runningBalance);
+      pnlValues.push(runningBalance - initialCapital);
     });
+
+    // Determine line color based on overall performance
+    const totalPnL = runningBalance - initialCapital;
+    const lineColor = totalPnL >= 0 ? 'rgb(34, 197, 94)' : 'rgb(239, 68, 68)';
+    const fillColor = totalPnL >= 0 ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)';
 
     return {
       labels,
@@ -96,8 +100,8 @@ export default function PerformanceChart({
         {
           label: 'Portföy Değeri',
           data: portfolioValues,
-          borderColor: 'rgb(59, 130, 246)',
-          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          borderColor: lineColor,
+          backgroundColor: fillColor,
           borderWidth: 2,
           fill: true,
           tension: 0.4,
@@ -179,7 +183,9 @@ export default function PerformanceChart({
             if (context.dataIndex > 0) {
               const pnl = value - initialCapital;
               const pnlPercent = ((pnl / initialCapital) * 100).toFixed(2);
-              label += ` (${pnl >= 0 ? '+' : ''}${formatter.format(pnl)} / ${pnlPercent}%)`;
+              const pnlSign = pnl >= 0 ? '+' : '';
+              const pnlPercentSign = parseFloat(pnlPercent) >= 0 ? '+' : '';
+              label += ` (${pnlSign}${formatter.format(pnl)} / ${pnlPercentSign}${pnlPercent}%)`;
             }
             
             return label;
