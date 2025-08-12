@@ -112,7 +112,7 @@ export default function ProfileHeader({
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center bg-muted text-3xl font-semibold text-muted-foreground">
-                  {user.name.charAt(0).toUpperCase()}
+                  {user.name ? user.name.charAt(0).toUpperCase() : user.username ? user.username.charAt(0).toUpperCase() : '?'}
                 </div>
               )}
               {user.is_online && (
@@ -126,7 +126,7 @@ export default function ProfileHeader({
             <div className="mt-6 min-w-0 flex-1 sm:hidden md:block">
               <div className="flex items-center gap-2">
                 <h1 className="truncate text-2xl font-bold text-foreground">
-                  {user.name}
+                  {user.name || user.username || 'Kullanıcı'}
                 </h1>
                 {user.is_verified && (
                   <CheckCircle2 className="h-6 w-6 text-blue-500" />
@@ -144,7 +144,7 @@ export default function ProfileHeader({
                   </Badge>
                 )}
               </div>
-              <p className="text-sm text-muted-foreground">@{user.username}</p>
+              <p className="text-sm text-muted-foreground">@{user.username || 'kullanici'}</p>
             </div>
             
             <div className="mt-6 flex flex-col justify-stretch space-y-3 sm:flex-row sm:space-x-4 sm:space-y-0">

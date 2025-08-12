@@ -70,6 +70,52 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch topics' }, { status: 500 });
     }
 
+    // Fix vote scores for fetched topics (batch operation)
+    if (topics && topics.length > 0) {
+      try {
+        // Get all votes for these topics in one query
+        const topicIds = topics.map(t => t.id);
+        const { data: allVotes } = await supabase
+          .from('forum_topic_votes')
+          .select('topic_id, vote_type')
+          .in('topic_id', topicIds);
+        
+        // Group votes by topic_id
+        const votesByTopic = (allVotes || []).reduce((acc, vote) => {
+          if (!acc[vote.topic_id]) acc[vote.topic_id] = [];
+          acc[vote.topic_id].push(vote);
+          return acc;
+        }, {} as Record<string, any[]>);
+        
+        // Calculate scores and batch update if needed
+        const topicsToUpdate = [];
+        
+        for (const topic of topics) {
+          const votes = votesByTopic[topic.id] || [];
+          const actualVoteScore = votes.reduce((sum, vote) => sum + vote.vote_type, 0);
+          
+          if (topic.vote_score !== actualVoteScore) {
+            topicsToUpdate.push({ id: topic.id, vote_score: actualVoteScore });
+            // Update in memory for response
+            topic.vote_score = actualVoteScore;
+          }
+        }
+        
+        // Batch update topics if needed
+        if (topicsToUpdate.length > 0) {
+          for (const update of topicsToUpdate) {
+            await supabase
+              .from('forum_topics')
+              .update({ vote_score: update.vote_score })
+              .eq('id', update.id);
+          }
+          console.log(`Synced vote scores for ${topicsToUpdate.length} topics`);
+        }
+      } catch (voteError) {
+        console.error('Error syncing vote scores:', voteError);
+      }
+    }
+
     return NextResponse.json({
       topics: topics || [],
       pagination: {

@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import MainLayout from '@/components/layout/MainLayout';
+
 import { motion } from 'framer-motion';
 import { 
   Upload,
@@ -191,7 +191,7 @@ export default function NewStrategyPage() {
   };
 
   return (
-    <MainLayout>
+    
       <div className="min-h-screen bg-background">
         {/* Header */}
         <div className="bg-gradient-to-br from-background via-card/30 to-background border-b border-border/50">
@@ -655,6 +655,6 @@ export default function NewStrategyPage() {
           )}
         </div>
       </div>
-    </MainLayout>
+    
   );
 }

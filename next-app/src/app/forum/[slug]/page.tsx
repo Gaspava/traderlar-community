@@ -4,7 +4,17 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
-import MainLayout from '@/components/layout/MainLayout';
+import ForumSidebar from '@/components/forum/ForumSidebar';
+import { useThemeDetection } from '@/hooks/useThemeDetection';
+import { 
+  ArrowUp,
+  ArrowDown,
+  MessageCircle,
+  Share2,
+  Bookmark,
+  MoreHorizontal,
+  User
+} from 'lucide-react';
 
 interface ForumTopic {
   id: string;
@@ -53,8 +63,10 @@ export default function ForumCategoryPage() {
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState<Category | null>(null);
   const [topics, setTopics] = useState<ForumTopic[]>([]);
+  const { isDarkMode, mounted } = useThemeDetection();
 
   useEffect(() => {
+    setMounted(true);
     fetchCategory();
   }, [categorySlug]);
 
@@ -132,6 +144,24 @@ export default function ForumCategoryPage() {
       const { data, error } = await query;
       
       if (error) throw error;
+      
+      // Get current user's votes for these topics
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user && data) {
+        const topicIds = data.map(topic => topic.id);
+        const { data: userVotes } = await supabase
+          .from('forum_topic_votes')
+          .select('topic_id, vote_type')
+          .eq('user_id', user.id)
+          .in('topic_id', topicIds);
+
+        // Map user votes to topics
+        const voteMap = new Map(userVotes?.map(v => [v.topic_id, v.vote_type]));
+        data.forEach(topic => {
+          topic.user_vote = voteMap.get(topic.id) || null;
+        });
+      }
+      
       setTopics(data || []);
     } catch (error) {
       console.error('Error fetching topics:', error);
@@ -152,6 +182,57 @@ export default function ForumCategoryPage() {
     return date.toLocaleDateString('tr-TR');
   };
 
+  const formatNumber = (num: number) => {
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+    return num.toString();
+  };
+
+  const handleVote = async (type: 'up' | 'down', topicId: string) => {
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        router.push('/auth/login');
+        return;
+      }
+
+      const voteValue = type === 'up' ? 1 : -1;
+      const currentTopic = topics.find(t => t.id === topicId);
+      const currentVote = currentTopic?.user_vote;
+      
+      const newVoteType = currentVote === voteValue ? null : voteValue;
+
+      // Send vote request
+      const response = await fetch(`/api/forum/topics/${topicId}/vote`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ vote_type: newVoteType })
+      });
+
+      if (!response.ok) {
+        console.error('Error voting');
+        return;
+      }
+
+      const { vote_score } = await response.json();
+
+      // Update local state
+      setTopics(topics => 
+        topics.map(topic => 
+          topic.id === topicId
+            ? { ...topic, vote_score, user_vote: newVoteType }
+            : topic
+        )
+      );
+    } catch (error) {
+      console.error('Error voting:', error);
+    }
+  };
+
   const sortedTopics = [...topics].sort((a, b) => {
     if (a.is_pinned && !b.is_pinned) return -1;
     if (!a.is_pinned && b.is_pinned) return 1;
@@ -160,20 +241,24 @@ export default function ForumCategoryPage() {
 
   if (!category) {
     return (
-      <MainLayout>
         <div className="min-h-screen bg-background flex items-center justify-center">
           <div className="text-center">
             <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
             <p className="text-muted-foreground">Yükleniyor...</p>
           </div>
         </div>
-      </MainLayout>
     );
   }
 
   return (
-    <MainLayout>
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
+      <div className={`min-h-screen transition-colors duration-200 ${
+        isDarkMode ? 'bg-background' : 'bg-gray-50'
+      }`}>
+      {/* Forum Sidebar Component */}
+      <ForumSidebar activeCategory={categorySlug} />
+
+      {/* Main Content with Left Margin for Fixed Sidebar */}
+      <div className="md:ml-60">
       {/* Header */}
       <div className="bg-background/95 backdrop-blur-xl border-b border-border/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -297,102 +382,120 @@ export default function ForumCategoryPage() {
           </div>
         ) : (
           <>
-            <div className="space-y-3">
-              {sortedTopics.map((topic) => (
-                <Link
-                  key={topic.id}
-                  href={`/forum/${category.slug}/${topic.slug}`}
-                  className="block group"
-                >
-                  <div className="bg-card hover:bg-card/80 border border-border hover:border-primary/50 rounded-lg p-4 transition-all hover:shadow-md">
-                    <div className="flex items-start gap-4">
-                      {/* Avatar */}
-                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-                        {topic.author.avatar_url ? (
-                          <img
-                            src={topic.author.avatar_url}
-                            alt={topic.author.name}
-                            className="w-full h-full rounded-full object-cover"
-                          />
-                        ) : (
-                          <span className="text-sm font-medium text-muted-foreground">
-                            {topic.author.name?.charAt(0).toUpperCase()}
-                          </span>
-                        )}
+            {/* Reddit-Style Posts */}
+            <div className="space-y-2">
+              {sortedTopics.map((topic) => {
+                const voteScore = topic.vote_score || 0;
+                
+                return (
+                  <div key={topic.id} className={`rounded-lg border transition-colors duration-200 hover:shadow-sm ${
+                    isDarkMode ? 'bg-card border-border hover:bg-background' : 'bg-white border-gray-200 hover:bg-gray-50'
+                  }`}>
+                    <div className="flex p-3">
+                      {/* Vote section */}
+                      <div className="flex flex-col items-center w-10 mr-3">
+                        <button 
+                          onClick={() => handleVote('up', topic.id)}
+                          className={`p-1 rounded transition-colors ${
+                            topic.user_vote === 1
+                              ? 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30'
+                              : (isDarkMode ? 'text-muted-foreground hover:bg-muted hover:text-emerald-500' : 'text-gray-400 hover:bg-gray-100 hover:text-emerald-500')
+                          }`}
+                        >
+                          <ArrowUp className="w-4 h-4" />
+                        </button>
+                        <span className={`text-xs font-bold py-1 ${
+                          voteScore > 0 ? 'text-emerald-500' : voteScore < 0 ? 'text-red-500' : (isDarkMode ? 'text-foreground' : 'text-gray-600')
+                        }`}>
+                          {Math.abs(voteScore) > 1000 ? `${(Math.abs(voteScore)/1000).toFixed(1)}k` : voteScore}
+                        </span>
+                        <button 
+                          onClick={() => handleVote('down', topic.id)}
+                          className={`p-1 rounded transition-colors ${
+                            topic.user_vote === -1
+                              ? 'text-red-600 bg-red-100 dark:bg-red-900/30'
+                              : (isDarkMode ? 'text-muted-foreground hover:bg-muted hover:text-red-500' : 'text-gray-400 hover:bg-gray-100 hover:text-red-500')
+                          }`}
+                        >
+                          <ArrowDown className="w-4 h-4" />
+                        </button>
                       </div>
-
+                      
                       {/* Content */}
                       <div className="flex-1 min-w-0">
-                        {/* Title & Badges */}
-                        <div className="flex items-start gap-2 mb-2">
+                        {/* Meta */}
+                        <div className="flex items-center gap-2 mb-2">
+                          <div 
+                            className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                            style={{ backgroundColor: category.color }}
+                          >
+                            {category.name.charAt(0)}
+                          </div>
+                          <Link href={`/forum/${category.slug}`} className={`text-xs font-medium hover:underline ${
+                            isDarkMode ? 'text-foreground' : 'text-gray-900'
+                          }`}>
+                            r/{category.name}
+                          </Link>
+                          <span className={`text-xs ${
+                            isDarkMode ? 'text-muted-foreground' : 'text-gray-500'
+                          }`}>
+                            • u/{topic.author.username} • {formatDate(topic.created_at)} önce
+                          </span>
                           {topic.is_pinned && (
-                            <span className="flex items-center gap-1 px-2 py-0.5 bg-primary/10 text-primary rounded text-xs font-medium">
-                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
-                              </svg>
-                              Sabit
+                            <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-emerald-100 text-emerald-800 rounded-full">
+                              📌 Sabitlenmiş
                             </span>
                           )}
-                          {topic.is_locked && (
-                            <span className="flex items-center gap-1 px-2 py-0.5 bg-muted text-muted-foreground rounded text-xs font-medium">
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                              </svg>
-                              Kilitli
-                            </span>
-                          )}
-                          <h3 className="font-medium text-foreground group-hover:text-primary transition-colors line-clamp-1 flex-1">
+                        </div>
+                        
+                        {/* Title and Content */}
+                        <Link href={`/forum/${category.slug}/${topic.slug}`} className="block group">
+                          <h3 className={`font-medium text-base mb-2 line-clamp-2 group-hover:text-primary transition-colors ${
+                            isDarkMode ? 'text-foreground' : 'text-gray-900'
+                          }`}>
                             {topic.title}
                           </h3>
-                        </div>
-
-                        {/* Description */}
-                        <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-                          {topic.content}
-                        </p>
-
-                        {/* Meta Info */}
-                        <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                            </svg>
-                            {topic.author.name}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                            </svg>
-                            {topic.reply_count} yanıt
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                            </svg>
-                            {topic.view_count} görüntüleme
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
-                            </svg>
-                            {topic.vote_score}
-                          </span>
-                          {topic.last_reply_at && (
-                            <>
-                              <span>•</span>
-                              <span>Son yanıt: {formatDate(topic.last_reply_at)}</span>
-                              {topic.last_reply_user && (
-                                <span className="font-medium">{topic.last_reply_user.name}</span>
-                              )}
-                            </>
+                          
+                          {topic.content && topic.content.length > 50 && (
+                            <p className={`text-sm mb-3 line-clamp-3 ${
+                              isDarkMode ? 'text-muted-foreground' : 'text-gray-600'
+                            }`}>
+                              {topic.content}
+                            </p>
                           )}
+                        </Link>
+                        
+                        {/* Actions */}
+                        <div className="flex items-center gap-4 text-xs">
+                          <button className={`flex items-center gap-1 px-2 py-1 rounded transition-colors ${
+                            isDarkMode ? 'text-muted-foreground hover:bg-muted hover:text-foreground' : 'text-gray-500 hover:bg-gray-100'
+                          }`}>
+                            <MessageCircle className="w-3 h-3" />
+                            {topic.reply_count} Yorum
+                          </button>
+                          <button className={`flex items-center gap-1 px-2 py-1 rounded transition-colors ${
+                            isDarkMode ? 'text-muted-foreground hover:bg-muted hover:text-foreground' : 'text-gray-500 hover:bg-gray-100'
+                          }`}>
+                            <Share2 className="w-3 h-3" />
+                            Paylaş
+                          </button>
+                          <button className={`flex items-center gap-1 px-2 py-1 rounded transition-colors ${
+                            isDarkMode ? 'text-muted-foreground hover:bg-muted hover:text-foreground' : 'text-gray-500 hover:bg-gray-100'
+                          }`}>
+                            <Bookmark className="w-3 h-3" />
+                            Kaydet
+                          </button>
+                          <button className={`flex items-center gap-1 px-2 py-1 rounded transition-colors ${
+                            isDarkMode ? 'text-muted-foreground hover:bg-muted hover:text-foreground' : 'text-gray-500 hover:bg-gray-100'
+                          }`}>
+                            <MoreHorizontal className="w-3 h-3" />
+                          </button>
                         </div>
                       </div>
                     </div>
                   </div>
-                </Link>
-              ))}
+                );
+              })}
             </div>
 
             {topics.length === 0 && (
@@ -417,6 +520,6 @@ export default function ForumCategoryPage() {
         )}
       </div>
       </div>
-    </MainLayout>
+      </div>
   );
 }

@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   // Prevent hydration mismatch
   useEffect(() => {
@@ -18,63 +19,89 @@ export function ThemeToggle() {
     );
   }
 
-  const toggleTheme = () => {
-    setTheme(theme === 'light' ? 'dark' : 'light');
+  const currentTheme = theme || 'auto';
+
+  const themes = [
+    { value: 'light', label: 'Light', icon: '☀️' },
+    { value: 'dark', label: 'Dark', icon: '🌙' },
+    { value: 'auto', label: 'Auto', icon: '🕐' }
+  ];
+
+  const handleThemeChange = (newTheme: string) => {
+    setTheme(newTheme);
+    if (newTheme !== 'auto') {
+      localStorage.setItem('theme', newTheme);
+    } else {
+      localStorage.setItem('theme', 'auto');
+    }
+    setIsDropdownOpen(false);
+  };
+
+  const getCurrentIcon = () => {
+    switch (currentTheme) {
+      case 'light':
+        return '☀️';
+      case 'dark':
+        return '🌙';
+      case 'auto':
+      default:
+        return '🕐';
+    }
   };
 
   return (
-    <button
-      onClick={toggleTheme}
-      className="relative h-10 w-10 rounded-full bg-gradient-to-b from-primary/10 to-primary/5 backdrop-blur-sm border border-primary/20 flex items-center justify-center group transition-all duration-300 hover:from-primary/20 hover:to-primary/10 hover:scale-105 hover:shadow-lg hover:shadow-primary/20"
-      aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-      title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-    >
-      <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-      
-      <div className="relative w-full h-full flex items-center justify-center">
-        {theme === 'light' ? (
-          // Moon icon for light mode
-          <svg
-            className="h-5 w-5 text-primary transition-all duration-300 group-hover:rotate-12 group-hover:scale-110"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              fill="currentColor"
-              d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"
-            />
-          </svg>
-        ) : (
-          // Sun icon for dark mode
-          <div className="relative">
-            <svg
-              className="h-5 w-5 text-primary transition-all duration-300 group-hover:rotate-45 group-hover:scale-110"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle cx="12" cy="12" r="4" fill="currentColor" />
-              <path
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeWidth="2"
-                d="M12 2v2m0 16v2m10-10h-2M4 12H2m15.364 6.364l-1.414-1.414M7.05 7.05L5.636 5.636m12.728 0l-1.414 1.414M7.05 16.95l-1.414 1.414"
-              />
-            </svg>
-            <div className="absolute inset-0 animate-pulse">
-              <svg
-                className="h-5 w-5 text-primary/30"
-                fill="none"
-                viewBox="0 0 24 24"
+    <div className="relative">
+      <button
+        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+        className="relative h-10 w-10 rounded-full bg-gradient-to-b from-primary/10 to-primary/5 backdrop-blur-sm border border-primary/20 flex items-center justify-center group transition-all duration-300 hover:from-primary/20 hover:to-primary/10 hover:scale-105 hover:shadow-lg hover:shadow-primary/20"
+        aria-label={`Current theme: ${currentTheme}`}
+        title={`Current theme: ${currentTheme} (Click to change)`}
+      >
+        <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        
+        <div className="relative w-full h-full flex items-center justify-center">
+          <span className="text-lg transition-transform duration-300 group-hover:scale-110">
+            {getCurrentIcon()}
+          </span>
+        </div>
+        
+        {/* Glow effect */}
+        <div className="absolute -inset-1 rounded-full bg-primary/20 blur-lg opacity-0 group-hover:opacity-50 transition-opacity duration-300" />
+      </button>
+
+      {/* Dropdown Menu */}
+      {isDropdownOpen && (
+        <>
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 z-10" 
+            onClick={() => setIsDropdownOpen(false)}
+          />
+          
+          {/* Dropdown */}
+          <div className="absolute right-0 top-12 z-20 w-32 bg-card border border-border rounded-lg shadow-lg py-1 backdrop-blur-sm">
+            {themes.map((themeOption) => (
+              <button
+                key={themeOption.value}
+                onClick={() => handleThemeChange(themeOption.value)}
+                className={`w-full px-3 py-2 text-left text-sm transition-colors hover:bg-muted flex items-center gap-2 ${
+                  currentTheme === themeOption.value 
+                    ? 'bg-primary/10 text-primary font-medium' 
+                    : 'text-foreground hover:text-foreground'
+                }`}
               >
-                <circle cx="12" cy="12" r="4" fill="currentColor" />
-              </svg>
-            </div>
+                <span>{themeOption.icon}</span>
+                <span>{themeOption.label}</span>
+                {themeOption.value === 'auto' && (
+                  <span className="text-xs text-muted-foreground ml-auto">
+                    7AM-7PM
+                  </span>
+                )}
+              </button>
+            ))}
           </div>
-        )}
-      </div>
-      
-      {/* Glow effect */}
-      <div className="absolute -inset-1 rounded-full bg-primary/20 blur-lg opacity-0 group-hover:opacity-50 transition-opacity duration-300" />
-    </button>
+        </>
+      )}
+    </div>
   );
 }

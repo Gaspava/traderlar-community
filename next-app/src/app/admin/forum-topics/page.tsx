@@ -18,7 +18,10 @@ import {
   Filter,
   MoreHorizontal,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  CheckSquare,
+  Square,
+  AlertTriangle
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
@@ -57,6 +60,8 @@ export default function AdminForumTopicsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [selectedTopics, setSelectedTopics] = useState<Set<string>>(new Set());
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const ITEMS_PER_PAGE = 10;
 
@@ -186,8 +191,58 @@ export default function AdminForumTopicsPage() {
       // Remove from local state
       setTopics(topics.filter(topic => topic.id !== topicId));
       setTotalCount(prev => prev - 1);
+      setSelectedTopics(prev => {
+        const newSelected = new Set(prev);
+        newSelected.delete(topicId);
+        return newSelected;
+      });
     } catch (error) {
       console.error('Error deleting topic:', error);
+    }
+  };
+
+  const handleToggleSelect = (topicId: string) => {
+    setSelectedTopics(prev => {
+      const newSelected = new Set(prev);
+      if (newSelected.has(topicId)) {
+        newSelected.delete(topicId);
+      } else {
+        newSelected.add(topicId);
+      }
+      return newSelected;
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectedTopics.size === topics.length) {
+      setSelectedTopics(new Set());
+    } else {
+      setSelectedTopics(new Set(topics.map(topic => topic.id)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedTopics.size === 0) return;
+    
+    setIsDeleteModalOpen(false);
+    
+    try {
+      const supabase = createClient();
+      const topicIds = Array.from(selectedTopics);
+      
+      const { error } = await supabase
+        .from('forum_topics')
+        .delete()
+        .in('id', topicIds);
+
+      if (error) throw error;
+
+      // Remove from local state
+      setTopics(topics.filter(topic => !selectedTopics.has(topic.id)));
+      setTotalCount(prev => prev - selectedTopics.size);
+      setSelectedTopics(new Set());
+    } catch (error) {
+      console.error('Error deleting topics:', error);
     }
   };
 
@@ -226,6 +281,31 @@ export default function AdminForumTopicsPage() {
               Yeni Konu
             </Link>
           </div>
+
+          {/* Bulk Actions */}
+          {selectedTopics.size > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-4 p-4 bg-primary/10 border border-primary/20 rounded-xl"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <CheckSquare className="w-5 h-5 text-primary" />
+                  <span className="font-medium text-primary">
+                    {selectedTopics.size} konu seçildi
+                  </span>
+                </div>
+                <button
+                  onClick={() => setIsDeleteModalOpen(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Seçilileri Sil
+                </button>
+              </div>
+            </motion.div>
+          )}
 
           {/* Search and Filter */}
           <div className="flex flex-col lg:flex-row gap-4">
@@ -329,6 +409,28 @@ export default function AdminForumTopicsPage() {
           </motion.div>
         ) : (
           <div className="space-y-4">
+            {/* Select All */}
+            {topics.length > 0 && (
+              <div className="flex items-center gap-3 p-4 bg-card rounded-xl border border-border">
+                <button
+                  onClick={handleSelectAll}
+                  className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {selectedTopics.size === topics.length ? (
+                    <CheckSquare className="w-5 h-5 text-primary" />
+                  ) : (
+                    <Square className="w-5 h-5" />
+                  )}
+                  <span className="font-medium">
+                    {selectedTopics.size === topics.length ? 'Tümünün seçimini kaldır' : 'Tümünü seç'}
+                  </span>
+                </button>
+                <div className="text-sm text-muted-foreground">
+                  ({topics.length} konu)
+                </div>
+              </div>
+            )}
+            
             {topics.map((topic, index) => (
               <motion.div
                 key={topic.id}
@@ -338,6 +440,20 @@ export default function AdminForumTopicsPage() {
                 className="bg-gradient-to-br from-card via-card/95 to-card/90 rounded-xl p-6 border border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 backdrop-blur-sm"
               >
                 <div className="flex items-start gap-4">
+                  {/* Selection Checkbox */}
+                  <div className="flex-shrink-0 pt-1">
+                    <button
+                      onClick={() => handleToggleSelect(topic.id)}
+                      className="p-1 hover:bg-muted/50 rounded transition-colors"
+                    >
+                      {selectedTopics.has(topic.id) ? (
+                        <CheckSquare className="w-5 h-5 text-primary" />
+                      ) : (
+                        <Square className="w-5 h-5 text-muted-foreground" />
+                      )}
+                    </button>
+                  </div>
+                  
                   {/* Category Color */}
                   <div 
                     className="w-1 h-16 rounded-full flex-shrink-0"
@@ -497,6 +613,45 @@ export default function AdminForumTopicsPage() {
               <ChevronRight className="w-5 h-5" />
             </button>
           </motion.div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {isDeleteModalOpen && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-card rounded-xl p-6 max-w-md w-full border border-border shadow-xl"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-red-500/10 rounded-lg">
+                  <AlertTriangle className="w-6 h-6 text-red-500" />
+                </div>
+                <h3 className="text-lg font-semibold text-foreground">
+                  Konuları Sil
+                </h3>
+              </div>
+              
+              <p className="text-muted-foreground mb-6">
+                Seçili {selectedTopics.size} konuyu silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
+              </p>
+              
+              <div className="flex items-center gap-3 justify-end">
+                <button
+                  onClick={() => setIsDeleteModalOpen(false)}
+                  className="px-4 py-2 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors"
+                >
+                  İptal
+                </button>
+                <button
+                  onClick={handleBulkDelete}
+                  className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition-colors"
+                >
+                  Sil
+                </button>
+              </div>
+            </motion.div>
+          </div>
         )}
       </div>
     </div>

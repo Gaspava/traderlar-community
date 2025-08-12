@@ -30,6 +30,38 @@ export async function updateSession(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser()
+  
+  // Auto-create user profile if authenticated user doesn't have one
+  if (user && !request.nextUrl.pathname.startsWith('/auth/')) {
+    try {
+      const { data: profile } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', user.id)
+        .single();
+      
+      if (!profile) {
+        // Create missing user profile
+        const userName = user.user_metadata?.name || user.email?.split('@')[0] || 'Kullanıcı';
+        const username = user.user_metadata?.username || 
+          user.email?.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '') || 
+          `user_${user.id.slice(0, 8)}`;
+        
+        await supabase
+          .from('users')
+          .insert({
+            id: user.id,
+            email: user.email!,
+            name: userName,
+            username: username,
+            avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`,
+            role: 'user'
+          });
+      }
+    } catch (error) {
+      console.error('Error auto-creating user profile:', error);
+    }
+  }
 
   // Protected routes that require authentication
   const protectedRoutes = ['/admin', '/profile', '/settings', '/articles/new']
@@ -44,8 +76,7 @@ export async function updateSession(request: NextRequest) {
   )
 
   // Redirect to login if accessing protected route without auth
-  // For development: bypass admin auth protection
-  if (!user && isProtectedRoute && !request.nextUrl.pathname.startsWith('/admin')) {
+  if (!user && isProtectedRoute) {
     const url = request.nextUrl.clone()
     url.pathname = '/auth/login'
     url.searchParams.set('redirect', request.nextUrl.pathname)
@@ -59,20 +90,20 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Check admin routes - disabled for development
-  // if (request.nextUrl.pathname.startsWith('/admin') && user) {
-  //   const { data: profile } = await supabase
-  //     .from('users')
-  //     .select('role')
-  //     .eq('id', user.id)
-  //     .single()
+  // Check admin routes
+  if (request.nextUrl.pathname.startsWith('/admin') && user) {
+    const { data: profile } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .single()
 
-  //   if (!profile || profile.role !== 'admin') {
-  //     const url = request.nextUrl.clone()
-  //     url.pathname = '/'
-  //     return NextResponse.redirect(url)
-  //   }
-  // }
+    if (!profile || profile.role !== 'admin') {
+      const url = request.nextUrl.clone()
+      url.pathname = '/'
+      return NextResponse.redirect(url)
+    }
+  }
 
   return supabaseResponse
 }

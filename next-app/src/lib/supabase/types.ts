@@ -413,3 +413,151 @@ export interface StrategyUploadData {
   filename: string;
   fileSize: number;
 }
+
+// Manual Backtest System Types
+export interface ManualBacktest {
+  id: string;
+  name: string;
+  description?: string;
+  user_id: string;
+  
+  // Configuration
+  initial_capital: number;
+  risk_per_trade_percent: number;
+  max_risk_percent: number;
+  commission_per_trade: number;
+  currency: string;
+  
+  // Strategy Details
+  category: string;
+  timeframe: string;
+  market: string;
+  tags: string[];
+  
+  // Status
+  status: 'active' | 'completed' | 'paused';
+  start_date: string;
+  end_date?: string;
+  
+  // Performance Summary
+  current_balance: number;
+  total_trades: number;
+  winning_trades: number;
+  losing_trades: number;
+  win_rate: number;
+  total_pnl: number;
+  total_pnl_percent: number;
+  max_drawdown_amount: number;
+  max_drawdown_percent: number;
+  profit_factor: number;
+  sharpe_ratio: number;
+  largest_win: number;
+  largest_loss: number;
+  average_win: number;
+  average_loss: number;
+  max_consecutive_wins: number;
+  max_consecutive_losses: number;
+  
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ManualBacktestTrade {
+  id: string;
+  backtest_id: string;
+  
+  // Trade Info
+  symbol: string;
+  trade_type: 'long' | 'short';
+  position_size: number;
+  
+  // Entry
+  entry_date: string;
+  entry_time: string;
+  entry_price: number;
+  stop_loss?: number;
+  take_profit?: number;
+  
+  // Exit
+  exit_date?: string;
+  exit_time?: string;
+  exit_price?: number;
+  exit_reason?: 'tp' | 'sl' | 'manual' | 'time';
+  
+  // Risk Management
+  risk_amount: number;
+  risk_reward_ratio?: number;
+  
+  // Results
+  pnl: number;
+  pnl_percent: number;
+  commission: number;
+  duration_minutes?: number;
+  
+  // Status
+  status: 'open' | 'closed';
+  
+  // Notes
+  entry_notes?: string;
+  exit_notes?: string;
+  
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ManualBacktestDailyMetrics {
+  id: string;
+  backtest_id: string;
+  date: string;
+  
+  starting_balance: number;
+  ending_balance: number;
+  daily_pnl: number;
+  daily_pnl_percent: number;
+  trades_count: number;
+  winning_trades: number;
+  losing_trades: number;
+  
+  cumulative_pnl: number;
+  cumulative_pnl_percent: number;
+  drawdown_amount: number;
+  drawdown_percent: number;
+  
+  created_at: string;
+}
+
+export interface CreateManualBacktestData {
+  name: string;
+  description?: string;
+  initial_capital: number;
+  risk_per_trade_percent?: number;
+  max_risk_percent?: number;
+  commission_per_trade?: number;
+  currency?: string;
+  category?: string;
+  timeframe?: string;
+  market?: string;
+  tags?: string[];
+}
+
+export interface CreateTradeData {
+  symbol: string;
+  trade_type: 'long' | 'short';
+  position_size: number;
+  entry_date: string;
+  entry_time: string;
+  entry_price: number;
+  stop_loss?: number;
+  take_profit?: number;
+  risk_amount: number;
+  entry_notes?: string;
+}
+
+export interface UpdateTradeData {
+  exit_date?: string;
+  exit_time?: string;
+  exit_price?: number;
+  exit_reason?: 'tp' | 'sl' | 'manual' | 'time';
+  exit_notes?: string;
+}
+

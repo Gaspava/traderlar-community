@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import MainLayout from '@/components/layout/MainLayout';
+
 import { motion } from 'framer-motion';
 import { 
   Search,
@@ -153,7 +153,7 @@ export default function TradingStrategiesPage() {
   };
 
   return (
-    <MainLayout>
+    
       <div className="min-h-screen bg-background">
         {/* Header */}
         <div className="bg-gradient-to-br from-background via-card/30 to-background border-b border-border/50">
@@ -469,6 +469,6 @@ export default function TradingStrategiesPage() {
           </div>
         </div>
       </div>
-    </MainLayout>
+    
   );
 }

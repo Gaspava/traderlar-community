@@ -32,8 +32,7 @@ export async function GET(
           name,
           username
         ),
-        vote_count:forum_post_votes(count),
-        user_vote:forum_post_votes!inner(vote_type)
+        vote_count:forum_post_votes(count)
       `, { count: 'exact' })
       .eq('topic_id', id)
       .is('parent_id', null) // Only get top-level posts
@@ -79,7 +78,8 @@ export async function GET(
             id,
             name,
             username
-          )
+          ),
+          vote_count:forum_post_votes(count)
         `)
         .in('parent_id', postIds)
         .order('created_at', { ascending: true });
@@ -99,23 +99,38 @@ export async function GET(
       });
     }
 
-    // Get current user's votes
+    // Get current user's votes and calculate vote scores
     const { data: { user } } = await supabase.auth.getUser();
-    if (user && posts) {
+    if (posts) {
       const allPostIds = posts.flatMap(p => [p.id, ...(p.replies?.map((r: any) => r.id) || [])]);
-      const { data: userVotes } = await supabase
+      
+      // Get all votes for these posts
+      const { data: allVotes } = await supabase
         .from('forum_post_votes')
-        .select('post_id, vote_type')
-        .eq('user_id', user.id)
+        .select('post_id, vote_type, user_id')
         .in('post_id', allPostIds);
 
-      // Map user votes
-      const voteMap = new Map(userVotes?.map(v => [v.post_id, v.vote_type]));
+      // Calculate vote scores and user votes
+      const voteScores = new Map();
+      const userVotes = new Map();
+      
+      allVotes?.forEach(vote => {
+        // Calculate vote score
+        const currentScore = voteScores.get(vote.post_id) || 0;
+        voteScores.set(vote.post_id, currentScore + vote.vote_type);
+        
+        // Track user's vote
+        if (user && vote.user_id === user.id) {
+          userVotes.set(vote.post_id, vote.vote_type);
+        }
+      });
       
       posts.forEach(post => {
-        post.user_vote = voteMap.get(post.id) || null;
+        post.vote_score = voteScores.get(post.id) || 0;
+        post.user_vote = userVotes.get(post.id) || null;
         post.replies?.forEach((reply: any) => {
-          reply.user_vote = voteMap.get(reply.id) || null;
+          reply.vote_score = voteScores.get(reply.id) || 0;
+          reply.user_vote = userVotes.get(reply.id) || null;
         });
       });
     }
@@ -204,6 +219,10 @@ export async function POST(
       console.error('Error creating post:', error);
       return NextResponse.json({ error: 'Failed to create post' }, { status: 500 });
     }
+
+    // Add vote score to the response
+    post.vote_score = 0;
+    post.user_vote = null;
 
     return NextResponse.json({ post }, { status: 201 });
   } catch (error) {

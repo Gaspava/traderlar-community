@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import MainLayout from '@/components/layout/MainLayout';
+
 import ProfileHeader from '@/components/profile/ProfileHeader';
 import ProfileTabs from '@/components/profile/ProfileTabs';
 import ProfileStats from '@/components/profile/ProfileStats';
@@ -15,11 +15,22 @@ interface ProfilePageProps {
 async function getProfile(username: string) {
   const supabase = await createClient();
   
-  const { data: user } = await supabase
+  // Try to find user by username first, then by email prefix if username is not found
+  let { data: user } = await supabase
     .from('users')
     .select('*')
     .eq('username', username)
     .single();
+    
+  // If not found by username, try to find by id (for debugging/admin purposes)
+  if (!user) {
+    const { data: userById } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', username)
+      .single();
+    user = userById;
+  }
     
   if (!user) return null;
   
@@ -103,7 +114,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   }
   
   return (
-    <MainLayout>
+    
       <div className="min-h-screen bg-background">
         {/* Profile Header */}
         <ProfileHeader 
@@ -138,6 +149,6 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
           </div>
         </div>
       </div>
-    </MainLayout>
+    
   );
 }

@@ -15,6 +15,7 @@ import {
   Tag
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { slugify } from '@/lib/utils/slugify';
 import Link from 'next/link';
 
 interface Category {
@@ -103,12 +104,7 @@ export default function NewForumTopicPage() {
       }
 
       // Generate slug from title
-      const slug = formData.title
-        .toLowerCase()
-        .replace(/[^a-z0-9ğüşıöç\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .trim();
+      const slug = slugify(formData.title);
 
       const { data, error } = await supabase
         .from('forum_topics')

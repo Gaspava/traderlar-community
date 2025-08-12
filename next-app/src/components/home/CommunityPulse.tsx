@@ -188,7 +188,7 @@ const CommunityPulse = () => {
           <div className="w-1 h-8 bg-gradient-to-b from-purple-500 to-purple-600 rounded-full"></div>
           <div>
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
-              Topluluktan Canlı
+              Forumdan Canlı
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               En aktif konular ve sorular

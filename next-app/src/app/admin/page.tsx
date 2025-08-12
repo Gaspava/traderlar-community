@@ -10,8 +10,12 @@ import {
   Heart,
   Calendar,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  Settings,
+  Shield,
+  Trash2
 } from 'lucide-react';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Line } from 'react-chartjs-2';
 import {
@@ -224,6 +228,72 @@ export default function AdminDashboard() {
         <h2 className="text-xl font-semibold text-white mb-6">Site İstatistikleri</h2>
         <div className="h-80">
           <Line data={chartData} options={chartOptions} />
+        </div>
+      </div>
+
+      {/* Management Tools */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        {/* Forum Management */}
+        <Link
+          href="/admin/forum-yonetimi"
+          className="bg-black rounded-xl p-6 border border-neutral-800 hover:border-red-500/50 transition-all duration-200 group"
+        >
+          <div className="flex items-center gap-4 mb-4">
+            <div className="p-3 rounded-lg bg-red-500">
+              <Trash2 className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold text-white group-hover:text-red-400 transition-colors">
+                Forum Yönetimi
+              </h3>
+              <p className="text-sm text-neutral-400">
+                Konuları toplu sil
+              </p>
+            </div>
+          </div>
+          <p className="text-neutral-300 text-sm">
+            Forum konularını yönetin, spam içerikleri ve kural ihlallerini toplu olarak silin.
+          </p>
+        </Link>
+
+        {/* User Management */}
+        <div className="bg-black rounded-xl p-6 border border-neutral-800 opacity-50">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="p-3 rounded-lg bg-blue-500">
+              <Users className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold text-white">
+                Kullanıcı Yönetimi
+              </h3>
+              <p className="text-sm text-neutral-400">
+                Yakında gelecek
+              </p>
+            </div>
+          </div>
+          <p className="text-neutral-300 text-sm">
+            Kullanıcıları yönetmek için özellikler yakında eklenecek.
+          </p>
+        </div>
+
+        {/* Settings */}
+        <div className="bg-black rounded-xl p-6 border border-neutral-800 opacity-50">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="p-3 rounded-lg bg-purple-500">
+              <Settings className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold text-white">
+                Site Ayarları
+              </h3>
+              <p className="text-sm text-neutral-400">
+                Yakında gelecek
+              </p>
+            </div>
+          </div>
+          <p className="text-neutral-300 text-sm">
+            Site genelinde ayarları düzenlemek için panel yakında eklenecek.
+          </p>
         </div>
       </div>
 

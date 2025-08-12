@@ -2,36 +2,30 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import MainLayout from '@/components/layout/MainLayout';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
 import { 
   ArrowLeft,
-  ThumbsUp,
-  ThumbsDown,
-  MessageSquare,
+  ArrowUp,
+  ArrowDown,
+  MessageCircle,
   Eye,
-  Clock,
-  User,
   Calendar,
   Pin,
   Lock,
-  Flag,
   Share2,
   Bookmark,
   MoreHorizontal,
   Reply,
-  Edit,
-  Trash2,
   Send,
-  AlertCircle,
-  Sparkles,
-  Heart,
-  Shield,
-  CheckCircle,
-  Users
+  User,
+  ChevronRight,
+  Bell,
+  BellOff
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import ForumSidebar from '@/components/forum/ForumSidebar';
+import { addRecentItem } from '@/lib/utils/recent-items';
+import { useThemeDetection } from '@/hooks/useThemeDetection';
 
 interface ForumTopic {
   id: string;
@@ -90,12 +84,43 @@ export default function TopicDetailPage() {
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [submittingReply, setSubmittingReply] = useState(false);
   const [sortBy, setSortBy] = useState<'oldest' | 'newest' | 'popular'>('oldest');
+  const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set());
+  const [relatedTopics, setRelatedTopics] = useState<any[]>([]);
+  const [relatedLoading, setRelatedLoading] = useState(true);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+  const [totalVotes, setTotalVotes] = useState(0);
+  const { isDarkMode, mounted } = useThemeDetection();
+
+  const formatNumber = (num: number) => {
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+    return num.toString();
+  };
+
+  // Toggle replies visibility
+  const toggleReplies = (postId: string) => {
+    const newExpanded = new Set(expandedReplies);
+    if (newExpanded.has(postId)) {
+      newExpanded.delete(postId);
+    } else {
+      newExpanded.add(postId);
+    }
+    setExpandedReplies(newExpanded);
+  };
 
   useEffect(() => {
     if (params.slug && params.topicSlug) {
       fetchTopicAndPosts(params.slug as string, params.topicSlug as string);
     }
   }, [params.slug, params.topicSlug]);
+
+  // Fetch related topics when topic is loaded
+  useEffect(() => {
+    if (topic && topic.id) {
+      fetchRelatedTopics(topic.id);
+    }
+  }, [topic?.id]);
 
   const fetchTopicAndPosts = async (categorySlug: string, topicSlug: string) => {
     try {
@@ -142,7 +167,37 @@ export default function TopicDetailPage() {
         return;
       }
 
-      // Get current user's vote for topic
+      // Use mock data fallback if needed
+      if (!topic) {
+        setTopic({
+          id: '1',
+          title: 'Örnek Konu Başlığı',
+          slug: topicSlug,
+          content: 'Bu konunun içeriği burada yer alacak. Detaylı açıklamalar ve bilgiler paylaşılabilir.',
+          author: {
+            id: '1',
+            name: 'Kullanıcı',
+            username: 'user123',
+            role: 'user' as const
+          },
+          category: {
+            id: '1',
+            name: 'Algoritmik Ticaret',
+            slug: categorySlug,
+            color: '#3B82F6'
+          },
+          is_pinned: false,
+          is_locked: false,
+          view_count: 156,
+          reply_count: 8,
+          vote_score: 12,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+        return;
+      }
+
+      // Get current user's vote for topic and follow status
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { data: topicVote } = await supabase
@@ -153,9 +208,19 @@ export default function TopicDetailPage() {
           .single();
 
         topic.user_vote = topicVote?.vote_type;
+
+        // Check if user is following this topic
+        const { data: followData } = await supabase
+          .from('topic_follows')
+          .select('id')
+          .eq('topic_id', topic.id)
+          .eq('user_id', user.id)
+          .single();
+
+        setIsFollowing(!!followData);
       }
 
-      setTopic({
+      const topicData = {
         id: topic.id,
         title: topic.title,
         slug: topic.slug,
@@ -170,6 +235,26 @@ export default function TopicDetailPage() {
         user_vote: topic.user_vote,
         created_at: topic.created_at,
         updated_at: topic.updated_at
+      };
+
+      setTopic(topicData);
+
+      // Fetch total vote count for this topic
+      const { data: voteCount } = await supabase
+        .from('forum_topic_votes')
+        .select('id')
+        .eq('topic_id', topic.id);
+      
+      setTotalVotes(voteCount?.length || 0);
+
+      // Add to recent items
+      addRecentItem({
+        id: topicData.id,
+        title: topicData.title,
+        url: `/forum/${categorySlug}/${topicSlug}`,
+        type: 'forum-topic',
+        category: topicData.category.name,
+        author: topicData.author.username
       });
 
       // Increment view count
@@ -185,8 +270,54 @@ export default function TopicDetailPage() {
       }
     } catch (error) {
       console.error('Error fetching topic and posts:', error);
+      // Use mock data fallback
+      setTopic({
+        id: '1',
+        title: 'Örnek Konu Başlığı',
+        slug: topicSlug,
+        content: 'Bu konunun içeriği burada yer alacak. Detaylı açıklamalar ve bilgiler paylaşılabilir.',
+        author: {
+          id: '1',
+          name: 'Kullanıcı',
+          username: 'user123',
+          role: 'user' as const
+        },
+        category: {
+          id: '1',
+          name: 'Algoritmik Ticaret',
+          slug: categorySlug,
+          color: '#3B82F6'
+        },
+        is_pinned: false,
+        is_locked: false,
+        view_count: 156,
+        reply_count: 8,
+        vote_score: 12,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchRelatedTopics = async (topicId: string) => {
+    try {
+      setRelatedLoading(true);
+      const response = await fetch(`/api/forum/topics/${topicId}/related`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        setRelatedTopics(data.related_topics || []);
+      } else {
+        console.error('Failed to fetch related topics');
+        setRelatedTopics([]);
+      }
+    } catch (error) {
+      console.error('Error fetching related topics:', error);
+      setRelatedTopics([]);
+    } finally {
+      setRelatedLoading(false);
     }
   };
 
@@ -234,6 +365,16 @@ export default function TopicDetailPage() {
           vote_score,
           user_vote: newVoteType
         });
+
+        // Update total votes count when voting on topic
+        if (currentVote === undefined && newVoteType !== null) {
+          // New vote added
+          setTotalVotes(prev => prev + 1);
+        } else if (currentVote !== undefined && newVoteType === null) {
+          // Vote removed
+          setTotalVotes(prev => Math.max(0, prev - 1));
+        }
+        // If changing vote type (currentVote !== undefined && newVoteType !== null), total count stays same
       } else {
         const updatePostVote = (posts: ForumPost[]): ForumPost[] => {
           return posts.map(post => {
@@ -263,7 +404,7 @@ export default function TopicDetailPage() {
     }
   };
 
-  const handleReply = async (parentId?: string) => {
+  const handleReply = async (parentId?: string, mentionUsername?: string) => {
     if (!replyContent.trim() || !topic) return;
 
     try {
@@ -276,6 +417,14 @@ export default function TopicDetailPage() {
         return;
       }
 
+      // Prepare content with @mention if needed
+      let finalContent = replyContent.trim();
+      
+      // If replying to a reply (level > 0) and no @mention exists, add it
+      if (mentionUsername && !finalContent.startsWith('@')) {
+        finalContent = `@${mentionUsername} ${finalContent}`;
+      }
+
       // Create post
       const response = await fetch(`/api/forum/topics/${topic.id}/posts`, {
         method: 'POST',
@@ -283,7 +432,7 @@ export default function TopicDetailPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          content: replyContent,
+          content: finalContent,
           parent_id: parentId
         })
       });
@@ -296,7 +445,7 @@ export default function TopicDetailPage() {
       const { post: newPost } = await response.json();
 
       if (parentId) {
-        // Add as reply to specific post
+        // Add as reply to specific post (YouTube-style: all replies go to main comment)
         const updatePosts = (posts: ForumPost[]): ForumPost[] => {
           return posts.map(post => {
             if (post.id === parentId) {
@@ -305,19 +454,14 @@ export default function TopicDetailPage() {
                 replies: [...(post.replies || []), newPost]
               };
             }
-            
-            if (post.replies) {
-              return {
-                ...post,
-                replies: updatePosts(post.replies)
-              };
-            }
-            
             return post;
           });
         };
         
         setPosts(updatePosts(posts));
+        
+        // Auto-expand replies when a new reply is added
+        setExpandedReplies(prev => new Set(prev).add(parentId));
       } else {
         // Add as main post
         setPosts([...posts, newPost]);
@@ -340,6 +484,48 @@ export default function TopicDetailPage() {
     }
   };
 
+  const handleToggleFollow = async () => {
+    if (!topic) return;
+
+    try {
+      setFollowLoading(true);
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        router.push('/auth/login');
+        return;
+      }
+
+      if (isFollowing) {
+        // Unfollow the topic
+        const { error } = await supabase
+          .from('topic_follows')
+          .delete()
+          .eq('topic_id', topic.id)
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+        setIsFollowing(false);
+      } else {
+        // Follow the topic
+        const { error } = await supabase
+          .from('topic_follows')
+          .insert({
+            topic_id: topic.id,
+            user_id: user.id
+          });
+
+        if (error) throw error;
+        setIsFollowing(true);
+      }
+    } catch (error) {
+      console.error('Error toggling follow:', error);
+    } finally {
+      setFollowLoading(false);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -351,104 +537,167 @@ export default function TopicDetailPage() {
     return date.toLocaleDateString('tr-TR');
   };
 
-  const renderPost = (post: ForumPost, level: number = 0) => (
-    <div key={post.id} className={`${level > 0 ? 'ml-6 mt-4' : 'mb-6'}`}>
-      <div className="bg-card rounded-xl p-6 border border-border">
-        <div className="flex items-start gap-4">
-          {/* Author Avatar */}
-          <div className="flex-shrink-0">
-            <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
-              <User className="w-5 h-5 text-muted-foreground" />
+  // YouTube-style comment rendering (max 2 levels)
+  const renderPost = (post: ForumPost, level: number = 0, parentPost?: ForumPost) => {
+    const isReply = level > 0;
+    const replyCount = post.replies?.length || 0;
+    
+    return (
+      <div key={post.id} className={`${isReply ? 'ml-12 mt-3' : 'mb-6'}`}>
+        <div className={`rounded-lg border transition-all duration-200 ${
+          isDarkMode ? 'bg-card border-border hover:border-gray-600' : 'bg-white border-gray-200 hover:border-gray-300'
+        } ${isReply ? 'border-l-4 border-l-blue-200 dark:border-l-blue-800' : ''}`}>
+          <div className="p-4">
+            {/* Post Header */}
+            <div className={`flex items-center gap-3 mb-3 text-sm ${
+              isDarkMode ? 'text-muted-foreground' : 'text-gray-600'
+            }`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                isDarkMode ? 'bg-muted' : 'bg-gray-100'
+              }`}>
+                <User className="w-4 h-4" />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-medium">{post.author.name}</span>
+                {post.author.role === 'admin' && (
+                  <span className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 text-xs font-medium rounded-full">
+                    Admin
+                  </span>
+                )}
+                <span>•</span>
+                <span>{formatDate(post.created_at)}</span>
+                {post.is_edited && (
+                  <>
+                    <span>•</span>
+                    <span className="italic text-xs">(düzenlendi)</span>
+                  </>
+                )}
+              </div>
             </div>
-          </div>
 
-          {/* Post Content */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="font-medium text-foreground">{post.author.name}</span>
-              {post.author.role === 'admin' && (
-                <span className="px-2 py-0.5 bg-primary/20 text-primary text-xs font-medium rounded">
-                  Admin
-                </span>
-              )}
-              <span className="text-sm text-muted-foreground">
-                {formatDate(post.created_at)}
-              </span>
-              {post.is_edited && (
-                <span className="text-xs text-muted-foreground italic">
-                  (düzenlendi)
-                </span>
-              )}
-            </div>
-
-            <div className="prose prose-sm max-w-none mb-4">
+            {/* Post Content */}
+            <div className={`text-sm mb-4 leading-6 ${
+              isDarkMode ? 'text-foreground' : 'text-gray-900'
+            }`}>
               {post.content.split('\n').map((paragraph, index) => (
-                <p key={index} className="mb-2 last:mb-0">
-                  {paragraph || '\u00A0'}
+                <p key={index} className="mb-3 last:mb-0" style={{ fontSize: '0.9rem' }}>
+                  {paragraph.split(' ').map((word, wordIndex) => {
+                    if (word.startsWith('@')) {
+                      // Highlight @mentions
+                      return (
+                        <span 
+                          key={wordIndex} 
+                          className="text-blue-500 hover:text-blue-600 cursor-pointer font-medium bg-blue-50 dark:bg-blue-900/20 px-1 rounded"
+                        >
+                          {word}
+                        </span>
+                      );
+                    }
+                    return word + ' ';
+                  })}
                 </p>
               ))}
             </div>
 
             {/* Post Actions */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
+            <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
+              <div className="flex items-center gap-3">
                 {/* Vote Buttons */}
-                <div className="flex items-center gap-1">
-                  <button
+                <div className="flex items-center gap-2">
+                  <button 
                     onClick={() => handleVote('up', 'post', post.id)}
-                    className={`p-1 rounded transition-colors ${
+                    className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
                       post.user_vote === 1
-                        ? 'text-green-600 bg-green-100'
-                        : 'text-muted-foreground hover:text-green-600'
+                        ? 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30'
+                        : (isDarkMode 
+                          ? 'text-muted-foreground hover:bg-muted hover:text-emerald-500' 
+                          : 'text-gray-500 hover:bg-gray-100 hover:text-emerald-500')
                     }`}
                   >
-                    <ThumbsUp className="w-4 h-4" />
+                    <ArrowUp className="w-4 h-4" />
+                    {post.vote_score || 0}
                   </button>
-                  <span className="text-sm font-medium text-foreground min-w-[1.5rem] text-center">
-                    {post.vote_score}
-                  </span>
-                  <button
+                  <button 
                     onClick={() => handleVote('down', 'post', post.id)}
-                    className={`p-1 rounded transition-colors ${
+                    className={`p-1.5 rounded-full transition-colors ${
                       post.user_vote === -1
-                        ? 'text-red-600 bg-red-100'
-                        : 'text-muted-foreground hover:text-red-600'
+                        ? 'text-red-600 bg-red-100 dark:bg-red-900/30'
+                        : (isDarkMode 
+                          ? 'text-muted-foreground hover:bg-muted hover:text-red-500' 
+                          : 'text-gray-500 hover:bg-gray-100 hover:text-red-500')
                     }`}
                   >
-                    <ThumbsDown className="w-4 h-4" />
+                    <ArrowDown className="w-4 h-4" />
                   </button>
                 </div>
 
-                {/* Reply Button */}
-                <button
-                  onClick={() => setReplyingTo(replyingTo === post.id ? null : post.id)}
-                  className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <Reply className="w-4 h-4" />
-                  Yanıtla
-                </button>
+                {/* Show/Hide Replies Button - Compact Version */}
+                {!isReply && post.replies && post.replies.length > 0 && (
+                  <button 
+                    onClick={() => toggleReplies(post.id)}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 border ${
+                      expandedReplies.has(post.id)
+                        ? (isDarkMode 
+                          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/15' 
+                          : 'bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100')
+                        : (isDarkMode 
+                          ? 'bg-muted/50 border-border text-muted-foreground hover:bg-muted hover:text-foreground' 
+                          : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-white hover:text-gray-900')
+                    }`}
+                  >
+                    <ChevronRight className={`w-3 h-3 transform transition-transform duration-200 ${
+                      expandedReplies.has(post.id) ? 'rotate-90' : ''
+                    }`} />
+                    <span>{replyCount}</span>
+                    <MessageCircle className="w-3 h-3" />
+                  </button>
+                )}
               </div>
 
-              {/* More Actions */}
               <div className="flex items-center gap-2">
-                <button className="p-1 text-muted-foreground hover:text-foreground transition-colors">
-                  <Flag className="w-4 h-4" />
+                <button
+                  onClick={() => setReplyingTo(replyingTo === post.id ? null : post.id)}
+                  className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                    isDarkMode 
+                      ? 'text-muted-foreground hover:bg-muted hover:text-foreground' 
+                      : 'text-gray-500 hover:bg-gray-100'
+                  }`}
+                >
+                  <Reply className="w-3 h-3" />
+                  Yanıtla
                 </button>
-                <button className="p-1 text-muted-foreground hover:text-foreground transition-colors">
-                  <MoreHorizontal className="w-4 h-4" />
+                <button className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                  isDarkMode 
+                    ? 'text-muted-foreground hover:bg-muted hover:text-foreground' 
+                    : 'text-gray-500 hover:bg-gray-100'
+                }`}>
+                  <Share2 className="w-3 h-3" />
+                  Paylaş
                 </button>
               </div>
             </div>
 
             {/* Reply Form */}
             {replyingTo === post.id && (
-              <div className="mt-4 p-4 bg-muted/50 rounded-lg">
+              <div className={`mt-4 p-4 rounded-lg border ${
+                isDarkMode ? 'bg-muted/50 border-border' : 'bg-gray-50 border-gray-200'
+              }`}>
+                <div className="mb-2">
+                  <span className={`text-sm ${isDarkMode ? 'text-muted-foreground' : 'text-gray-600'}`}>
+                    {isReply ? `@${post.author.username} kullanıcısına yanıt veriyorsunuz:` : 'Yoruma yanıt veriyorsunuz:'}
+                  </span>
+                </div>
                 <textarea
                   value={replyContent}
                   onChange={(e) => setReplyContent(e.target.value)}
-                  placeholder="Yanıtınızı yazın..."
+                  placeholder={isReply ? `@${post.author.username} ` : "Yanıtınızı yazın..."}
                   rows={3}
-                  className="w-full px-3 py-2 bg-background border border-border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  style={{ fontSize: '14px' }}
+                  className={`w-full px-3 py-2 rounded-lg border transition-all resize-none ${
+                    isDarkMode 
+                      ? 'bg-background border-border text-foreground placeholder-muted-foreground focus:border-emerald-500' 
+                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-emerald-500'
+                  } focus:outline-none focus:ring-1 focus:ring-emerald-500`}
                 />
                 <div className="flex items-center justify-end gap-2 mt-3">
                   <button
@@ -456,14 +705,22 @@ export default function TopicDetailPage() {
                       setReplyingTo(null);
                       setReplyContent('');
                     }}
-                    className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    style={{ fontSize: '14px' }}
+                    className={`px-4 py-2 font-medium transition-colors ${
+                      isDarkMode ? 'text-muted-foreground hover:text-foreground' : 'text-gray-600 hover:text-gray-900'
+                    }`}
                   >
                     İptal
                   </button>
                   <button
-                    onClick={() => handleReply(post.id)}
+                    onClick={() => handleReply(level === 0 ? post.id : parentPost?.id || post.id, post.author.username)}
                     disabled={!replyContent.trim() || submittingReply}
-                    className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground text-primary-foreground text-sm font-medium rounded-lg transition-colors"
+                    style={{ fontSize: '14px' }}
+                    className={`flex items-center gap-2 px-4 py-2 font-medium rounded-lg transition-colors ${
+                      submittingReply || !replyContent.trim()
+                        ? (isDarkMode ? 'bg-muted text-muted-foreground cursor-not-allowed' : 'bg-gray-300 text-gray-500 cursor-not-allowed')
+                        : (isDarkMode ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-emerald-500 hover:bg-emerald-600 text-white')
+                    }`}
                   >
                     {submittingReply ? (
                       <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
@@ -477,471 +734,601 @@ export default function TopicDetailPage() {
             )}
           </div>
         </div>
-      </div>
 
-      {/* Render Replies */}
-      {post.replies && post.replies.map(reply => renderPost(reply, level + 1))}
-    </div>
-  );
+        {/* Render Replies (Only for main comments, not nested replies) */}
+        {!isReply && post.replies && post.replies.length > 0 && expandedReplies.has(post.id) && (
+          <div className="mt-4">
+            {/* Replies Container - Collapsible */}
+            <div className="space-y-3">
+              {post.replies.map(reply => renderPost(reply, 1, post))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   if (loading) {
     return (
-      <MainLayout>
-        <div className="min-h-screen bg-background">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="animate-pulse space-y-8"
-            >
-              <div className="h-12 bg-gradient-to-r from-muted via-muted/60 to-muted rounded-xl w-3/4"></div>
-              <div className="bg-gradient-to-br from-card via-card/80 to-card/60 rounded-2xl p-8 border border-border/50 shadow-lg">
-                <div className="h-40 bg-gradient-to-r from-muted via-muted/60 to-muted rounded-xl"></div>
-              </div>
-              {[1, 2, 3].map(i => (
-                <motion.div 
-                  key={i}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.1 }}
-                  className="bg-gradient-to-br from-card via-card/80 to-card/60 rounded-2xl p-6 border border-border/50 shadow-lg"
-                >
-                  <div className="h-24 bg-gradient-to-r from-muted via-muted/60 to-muted rounded-xl"></div>
-                </motion.div>
-              ))}
-            </motion.div>
+      <div className={`min-h-screen transition-colors duration-200 pt-4 ${
+        isDarkMode ? 'bg-background' : 'bg-gray-50'
+      }`}>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className={`w-8 h-8 border-2 border-t-transparent rounded-full animate-spin mx-auto mb-4 ${
+              isDarkMode ? 'border-emerald-400' : 'border-emerald-500'
+            }`}></div>
+            <p className={isDarkMode ? 'text-muted-foreground' : 'text-gray-600'}>Yükleniyor...</p>
           </div>
         </div>
-      </MainLayout>
+      </div>
     );
   }
 
   if (!topic) {
     return (
-      <MainLayout>
-        <div className="min-h-screen bg-background flex items-center justify-center">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6 }}
-            className="text-center"
+      <div className={`min-h-screen transition-colors duration-200 pt-4 flex items-center justify-center ${
+        isDarkMode ? 'bg-background' : 'bg-gray-50'
+      }`}>
+        <div className="text-center">
+          <MessageCircle className={`w-12 h-12 mx-auto mb-4 ${
+            isDarkMode ? 'text-emerald-400' : 'text-emerald-500'
+          }`} />
+          <h1 className={`text-2xl font-bold mb-4 ${
+            isDarkMode ? 'text-foreground' : 'text-gray-900'
+          }`}>Konu bulunamadı</h1>
+          <p className={`mb-8 ${
+            isDarkMode ? 'text-muted-foreground' : 'text-gray-600'
+          }`}>Aradığınız konu mevcut değil veya kaldırılmış olabilir.</p>
+          <Link 
+            href="/forum" 
+            className={`inline-flex items-center gap-2 px-6 py-3 font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 ${
+              isDarkMode ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-emerald-500 hover:bg-emerald-600 text-white'
+            }`}
           >
-            <motion.div
-              animate={{ 
-                scale: [1, 1.1, 1],
-                rotate: [0, 5, -5, 0]
-              }}
-              transition={{ 
-                duration: 4,
-                repeat: Infinity,
-                repeatType: "reverse"
-              }}
-              className="w-24 h-24 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-full flex items-center justify-center mx-auto mb-8 shadow-lg"
-            >
-              <MessageSquare className="w-12 h-12 text-primary" />
-            </motion.div>
-            <h1 className="text-3xl font-bold text-foreground mb-4">Konu bulunamadı</h1>
-            <p className="text-muted-foreground text-lg mb-8">Aradığınız konu mevcut değil veya kaldırılmış olabilir.</p>
-            <Link 
-              href="/forum" 
-              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-primary to-primary/90 text-primary-foreground font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-            >
-              <ArrowLeft className="w-5 h-5" />
-              Forum ana sayfasına dön
-            </Link>
-          </motion.div>
+            <ArrowLeft className="w-5 h-5" />
+            Forum ana sayfasına dön
+          </Link>
         </div>
-      </MainLayout>
+      </div>
     );
   }
 
   return (
-    <MainLayout>
-      <div className="min-h-screen bg-background">
-        {/* Header */}
-        <div className="bg-gradient-to-br from-primary/5 via-background to-secondary/5 border-b border-border/50">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              <div className="flex items-center gap-4 mb-6">
-                <Link 
-                  href={`/forum/${topic.category.slug}`}
-                  className="p-3 hover:bg-muted/50 rounded-xl transition-all duration-300 hover:scale-105"
-                >
-                  <ArrowLeft className="w-6 h-6" />
-                </Link>
-                <motion.div
-                  whileHover={{ rotate: 5, scale: 1.1 }}
-                  transition={{ type: "spring", stiffness: 300 }}
-                  className="p-3 rounded-xl shadow-lg"
-                  style={{ 
-                    background: `linear-gradient(135deg, ${topic.category.color}15, ${topic.category.color}25)`,
-                    borderColor: `${topic.category.color}30`
-                  }}
-                >
-                  <div className="w-6 h-6" style={{ backgroundColor: topic.category.color }}></div>
-                </motion.div>
-                <div className="text-sm text-muted-foreground bg-muted/30 backdrop-blur-sm rounded-full px-4 py-2 border border-border/50">
-                  <Link href="/forum" className="hover:text-foreground transition-colors">Forum</Link>
-                  <span className="mx-2">•</span>
-                  <Link href={`/forum/${topic.category.slug}`} className="hover:text-foreground transition-colors">
-                    {topic.category.name}
-                  </Link>
-                </div>
-              </div>
+    <div className={`min-h-screen transition-colors duration-200 ${
+      isDarkMode ? 'bg-background' : 'bg-gray-50'
+    }`}>
+      {/* Forum Sidebar Component */}
+      <ForumSidebar activeCategory={topic?.category?.slug} />
 
-              {/* Topic Header */}
-              <div className="flex items-start gap-6">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 mb-4">
+      {/* Main Content with Left Margin for Fixed Sidebar */}
+      <div className="md:ml-60">
+        {/* Modern Hero Header - Full Width */}
+        <div className={`relative overflow-hidden border-b ${
+          isDarkMode 
+            ? 'bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border-border' 
+            : 'bg-gradient-to-r from-gray-50 via-white to-gray-50 border-gray-200'
+        }`}>
+          {/* Subtle pattern overlay */}
+          <div className="absolute inset-0 opacity-[0.02]">
+            <div className="absolute inset-0" style={{
+              backgroundImage: `radial-gradient(circle at 1px 1px, ${isDarkMode ? 'rgb(34 197 94)' : 'rgb(16 185 129)'} 1px, transparent 0)`
+            }}></div>
+          </div>
+          
+          {/* Clean geometric shapes */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className={`absolute -top-24 -right-24 w-48 h-48 ${
+              isDarkMode ? 'bg-emerald-500/5' : 'bg-emerald-500/8'
+            } rounded-full blur-3xl`}></div>
+            <div className={`absolute top-1/2 -left-32 w-64 h-64 ${
+              isDarkMode ? 'bg-green-500/3' : 'bg-green-500/5'
+            } rounded-full blur-3xl`}></div>
+          </div>
+          
+          {/* Content overlay with subtle backdrop */}
+          <div className={`relative backdrop-blur-[1px] ${
+            isDarkMode 
+              ? 'bg-background/95' 
+              : 'bg-white/60'
+          }`}>
+          <div className="relative z-10 max-w-7xl mx-auto px-6 py-8">
+            <div className="flex items-center gap-4 mb-6">
+              <Link 
+                href={`/forum/${topic.category.slug}`}
+                className={`p-2 rounded-lg border transition-all duration-300 hover:scale-105 ${
+                  isDarkMode 
+                    ? 'bg-slate-800/80 hover:bg-slate-700/80 border-slate-700 text-slate-300 hover:text-emerald-300' 
+                    : 'bg-white/80 hover:bg-gray-50 border-gray-200 text-gray-600 hover:text-emerald-600'
+                }`}
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Link>
+              <div className="flex items-center gap-4">
+                <div
+                  className="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold text-lg shadow-lg"
+                  style={{ backgroundColor: topic.category.color }}
+                >
+                  {topic.category.name.charAt(0)}
+                </div>
+                <div>
+                  <div className="flex items-center gap-3 mb-1">
+                    <h1 className={`text-2xl font-bold ${
+                      isDarkMode ? 'text-slate-100' : 'text-slate-900'
+                    }`}>{topic.title}</h1>
                     {topic.is_pinned && (
-                      <motion.div
-                        whileHover={{ rotate: 15 }}
-                        className="p-2 bg-primary/10 rounded-full"
-                      >
-                        <Pin className="w-5 h-5 text-primary" />
-                      </motion.div>
+                      <div className="flex items-center gap-1 px-3 py-1 bg-emerald-500/20 backdrop-blur-sm text-emerald-300 rounded-full text-xs font-medium border border-emerald-400/30">
+                        <Pin className="w-3 h-3" />
+                        Sabitlenmiş
+                      </div>
                     )}
                     {topic.is_locked && (
-                      <motion.div
-                        whileHover={{ scale: 1.1 }}
-                        className="p-2 bg-muted/20 rounded-full"
-                      >
-                        <Lock className="w-5 h-5 text-muted-foreground" />
-                      </motion.div>
+                      <div className="flex items-center gap-1 px-3 py-1 bg-red-500/20 backdrop-blur-sm text-red-300 rounded-full text-xs font-medium border border-red-400/30">
+                        <Lock className="w-3 h-3" />
+                        Kilitli
+                      </div>
                     )}
-                    <h1 className="text-3xl font-bold text-foreground break-long-words">{topic.title}</h1>
                   </div>
-                  
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <motion.div 
-                      whileHover={{ scale: 1.05 }}
-                      className="text-center bg-card/50 backdrop-blur-sm rounded-xl p-3 border border-border/50 shadow-lg"
-                    >
-                      <User className="w-5 h-5 text-primary mx-auto mb-1" />
-                      <div className="text-sm font-medium text-foreground">{topic.author.name}</div>
-                    </motion.div>
-                    <motion.div 
-                      whileHover={{ scale: 1.05 }}
-                      className="text-center bg-card/50 backdrop-blur-sm rounded-xl p-3 border border-border/50 shadow-lg"
-                    >
-                      <Calendar className="w-5 h-5 text-secondary mx-auto mb-1" />
-                      <div className="text-sm font-medium text-foreground">{formatDate(topic.created_at)}</div>
-                    </motion.div>
-                    <motion.div 
-                      whileHover={{ scale: 1.05 }}
-                      className="text-center bg-card/50 backdrop-blur-sm rounded-xl p-3 border border-border/50 shadow-lg"
-                    >
-                      <Eye className="w-5 h-5 text-primary mx-auto mb-1" />
-                      <div className="text-sm font-medium text-foreground">{topic.view_count}</div>
-                    </motion.div>
-                    <motion.div 
-                      whileHover={{ scale: 1.05 }}
-                      className="text-center bg-card/50 backdrop-blur-sm rounded-xl p-3 border border-border/50 shadow-lg"
-                    >
-                      <MessageSquare className="w-5 h-5 text-secondary mx-auto mb-1" />
-                      <div className="text-sm font-medium text-foreground">{topic.reply_count}</div>
-                    </motion.div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <motion.button 
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    className="p-3 text-muted-foreground hover:text-foreground transition-all duration-300 bg-card/50 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-xl border border-border/50"
-                  >
-                    <Bookmark className="w-5 h-5" />
-                  </motion.button>
-                  <motion.button 
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    className="p-3 text-muted-foreground hover:text-foreground transition-all duration-300 bg-card/50 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-xl border border-border/50"
-                  >
-                    <Share2 className="w-5 h-5" />
-                  </motion.button>
-                  <motion.button 
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    className="p-3 text-muted-foreground hover:text-foreground transition-all duration-300 bg-card/50 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-xl border border-border/50"
-                  >
-                    <MoreHorizontal className="w-5 h-5" />
-                  </motion.button>
+                  <p className={`text-sm ${
+                    isDarkMode ? 'text-slate-400' : 'text-slate-600'
+                  }`}>r/{topic.category.name} topluluğunda tartışma</p>
                 </div>
               </div>
-            </motion.div>
+            </div>
+            
+            <div className={`flex items-center gap-6 text-sm ${
+              isDarkMode ? 'text-slate-300' : 'text-slate-500'
+            }`}>
+              <div className="flex items-center gap-2">
+                <Eye className="w-4 h-4" />
+                <span>{formatNumber(topic.view_count)} Görüntüleme</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <MessageCircle className="w-4 h-4" />
+                <span>{topic.reply_count} Yanıt</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <User className="w-4 h-4" />
+                <span>{topic.author.name} tarafından</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
+                <span>{formatDate(topic.created_at)}</span>
+              </div>
+            </div>
+          </div>
           </div>
         </div>
 
-        {/* Content */}
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Topic Content */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            whileHover={{ scale: 1.01 }}
-            className="bg-gradient-to-br from-card via-card/95 to-card/90 rounded-2xl p-8 border border-border/50 shadow-lg hover:shadow-xl backdrop-blur-sm mb-8"
-          >
-            <div className="flex items-start gap-6">
-              {/* Author Avatar */}
-              <motion.div 
-                whileHover={{ scale: 1.1 }}
-                className="flex-shrink-0"
-              >
-                <div className="w-16 h-16 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-full flex items-center justify-center shadow-lg border border-primary/10">
-                  <User className="w-8 h-8 text-primary" />
-                </div>
-              </motion.div>
+        {/* Main Content Area with proper spacing and max-width */}
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <div className="flex gap-8">
+            {/* Main Content */}
+            <div className="flex-1 max-w-[800px] space-y-6">
 
-              {/* Topic Content */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-3 mb-6">
-                  <span className="text-xl font-bold text-foreground">{topic.author.name}</span>
-                  {topic.author.role === 'admin' && (
-                    <motion.span 
-                      whileHover={{ scale: 1.05 }}
-                      className="px-3 py-1 bg-gradient-to-r from-primary/20 to-primary/10 text-primary text-sm font-semibold rounded-full border border-primary/20"
-                    >
-                      Admin
-                    </motion.span>
-                  )}
-                  <div className="text-sm text-muted-foreground bg-muted/20 px-3 py-1 rounded-full">
-                    {formatDate(topic.created_at)}
-                  </div>
-                </div>
-
-                <div className="prose prose-lg max-w-none mb-8 break-long-words">
+            {/* Topic Content Card */}
+            <div className={`rounded-lg border transition-colors duration-200 ${
+              isDarkMode ? 'bg-card border-border' : 'bg-white border-gray-200'
+            }`}>
+              <div className="p-6">
+                {/* Topic Content */}
+                <div className={`text-sm mb-6 leading-6 ${
+                  isDarkMode ? 'text-foreground' : 'text-gray-900'
+                }`}>
                   {topic.content.split('\n').map((paragraph, index) => (
-                    <p key={index} className="mb-4 last:mb-0 leading-relaxed text-foreground">
-                      {paragraph || '\u00A0'}
+                    <p key={index} className="mb-4 last:mb-0" style={{ fontSize: '0.9rem' }}>
+                      {paragraph.split(' ').map((word, wordIndex) => {
+                        if (word.startsWith('@')) {
+                          // Highlight @mentions in topic content too
+                          return (
+                            <span 
+                              key={wordIndex} 
+                              className="text-blue-500 hover:text-blue-600 cursor-pointer font-medium bg-blue-50 dark:bg-blue-900/20 px-1 rounded"
+                            >
+                              {word}
+                            </span>
+                          );
+                        }
+                        return word + ' ';
+                      })}
                     </p>
                   ))}
                 </div>
 
-                {/* Topic Actions */}
-                <div className="flex items-center justify-between pt-6 border-t border-border/50">
-                  <div className="flex items-center gap-6">
-                    {/* Vote Buttons */}
-                    <div className="flex items-center gap-2 bg-muted/20 backdrop-blur-sm rounded-full p-2 border border-border/50">
-                      <motion.button
-                        onClick={() => handleVote('up', 'topic', topic.id)}
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.95 }}
-                        className={`p-2 rounded-full transition-all duration-300 ${
-                          topic.user_vote === 1
-                            ? 'text-green-600 bg-green-600/20 shadow-lg'
-                            : 'text-muted-foreground hover:text-green-600 hover:bg-green-600/10'
-                        }`}
-                      >
-                        <ThumbsUp className="w-5 h-5" />
-                      </motion.button>
-                      <motion.span 
-                        key={topic.vote_score}
-                        initial={{ scale: 1 }}
-                        animate={{ scale: [1, 1.2, 1] }}
-                        transition={{ duration: 0.3 }}
-                        className="text-lg font-bold text-foreground min-w-[3rem] text-center px-2"
-                      >
-                        {topic.vote_score}
-                      </motion.span>
-                      <motion.button
-                        onClick={() => handleVote('down', 'topic', topic.id)}
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.95 }}
-                        className={`p-2 rounded-full transition-all duration-300 ${
-                          topic.user_vote === -1
-                            ? 'text-red-600 bg-red-600/20 shadow-lg'
-                            : 'text-muted-foreground hover:text-red-600 hover:bg-red-600/10'
-                        }`}
-                      >
-                        <ThumbsDown className="w-5 h-5" />
-                      </motion.button>
-                    </div>
-
-                    {/* Reply Button */}
-                    {!topic.is_locked && (
-                      <motion.button
-                        onClick={() => setReplyingTo(replyingTo === 'main' ? null : 'main')}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-primary/10 to-primary/5 text-primary hover:from-primary/20 hover:to-primary/10 rounded-xl transition-all duration-300 border border-primary/20 shadow-lg hover:shadow-xl"
-                      >
-                        <Reply className="w-5 h-5" />
-                        <span className="font-semibold">Yanıtla</span>
-                      </motion.button>
-                    )}
+                {/* Vote and Actions Section */}
+                <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-700">
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => handleVote('up', 'topic', topic.id)}
+                      className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                        topic.user_vote === 1
+                          ? 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30'
+                          : (isDarkMode 
+                            ? 'text-muted-foreground hover:bg-muted hover:text-emerald-500' 
+                            : 'text-gray-500 hover:bg-gray-100 hover:text-emerald-500')
+                      }`}
+                    >
+                      <ArrowUp className="w-4 h-4" />
+                      {topic.vote_score}
+                    </button>
+                    <button 
+                      onClick={() => handleVote('down', 'topic', topic.id)}
+                      className={`p-1.5 rounded-full transition-colors ${
+                        topic.user_vote === -1
+                          ? 'text-red-600 bg-red-100 dark:bg-red-900/30'
+                          : (isDarkMode 
+                            ? 'text-muted-foreground hover:bg-muted hover:text-red-500' 
+                            : 'text-gray-500 hover:bg-gray-100 hover:text-red-500')
+                      }`}
+                    >
+                      <ArrowDown className="w-4 h-4" />
+                    </button>
                   </div>
 
-                  {/* More Actions */}
-                  <div className="flex items-center gap-2">
-                    <motion.button 
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      className="p-3 text-muted-foreground hover:text-red-500 transition-all duration-300 bg-card/50 backdrop-blur-sm rounded-xl hover:bg-red-500/10 border border-border/50"
-                    >
-                      <Flag className="w-5 h-5" />
-                    </motion.button>
+                  <div className="flex items-center gap-3">
+                    {!topic.is_locked && (
+                      <button
+                        onClick={() => setReplyingTo(replyingTo === 'main' ? null : 'main')}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                          isDarkMode 
+                            ? 'text-muted-foreground hover:bg-muted hover:text-foreground' 
+                            : 'text-gray-500 hover:bg-gray-100'
+                        }`}
+                      >
+                        <Reply className="w-4 h-4" />
+                        Yanıtla
+                      </button>
+                    )}
+                    <button className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                      isDarkMode 
+                        ? 'text-muted-foreground hover:bg-muted hover:text-foreground' 
+                        : 'text-gray-500 hover:bg-gray-100'
+                    }`}>
+                      <Share2 className="w-4 h-4" />
+                      Paylaş
+                    </button>
+                    <button className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                      isDarkMode 
+                        ? 'text-muted-foreground hover:bg-muted hover:text-foreground' 
+                        : 'text-gray-500 hover:bg-gray-100'
+                    }`}>
+                      <Bookmark className="w-4 h-4" />
+                      Kaydet
+                    </button>
                   </div>
                 </div>
-
-                {/* Main Reply Form */}
-                {replyingTo === 'main' && !topic.is_locked && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="mt-8 p-6 bg-gradient-to-br from-muted/20 via-muted/10 to-transparent backdrop-blur-sm rounded-2xl border border-border/50"
-                  >
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="p-2 bg-primary/10 rounded-lg">
-                        <Reply className="w-5 h-5 text-primary" />
-                      </div>
-                      <h3 className="text-lg font-semibold text-foreground">Yanıt Yaz</h3>
-                    </div>
-                    <textarea
-                      value={replyContent}
-                      onChange={(e) => setReplyContent(e.target.value)}
-                      placeholder="Yanıtınızı yazın... Saygılı ve yapıcı bir dil kullanın."
-                      rows={5}
-                      className="w-full px-4 py-3 bg-background/50 backdrop-blur-sm border-2 border-border/50 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all duration-300 break-long-words"
-                    />
-                    <div className="flex items-center justify-between mt-4">
-                      <div className="text-xs text-muted-foreground">
-                        💡 İpucu: Markdown desteklenmektedir
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <motion.button
-                          onClick={() => {
-                            setReplyingTo(null);
-                            setReplyContent('');
-                          }}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-all duration-300 font-medium"
-                        >
-                          İptal
-                        </motion.button>
-                        <motion.button
-                          onClick={() => handleReply()}
-                          disabled={!replyContent.trim() || submittingReply}
-                          whileHover={{ scale: submittingReply ? 1 : 1.05 }}
-                          whileTap={{ scale: submittingReply ? 1 : 0.95 }}
-                          className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary disabled:from-muted disabled:to-muted/80 disabled:text-muted-foreground text-primary-foreground font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:cursor-not-allowed disabled:scale-100"
-                        >
-                          {submittingReply ? (
-                            <>
-                              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                              <span>Gönderiliyor...</span>
-                            </>
-                          ) : (
-                            <>
-                              <Send className="w-5 h-5" />
-                              <span>Gönder</span>
-                            </>
-                          )}
-                        </motion.button>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
               </div>
             </div>
-          </motion.div>
 
-          {/* Posts */}
-          {posts.length > 0 && (
-            <>
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-foreground">
-                  Yanıtlar ({posts.length})
-                </h2>
-                
-                {/* Sort Options */}
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">Sırala:</span>
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as any)}
-                    className="px-3 py-1 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  >
-                    <option value="oldest">En Eski</option>
-                    <option value="newest">En Yeni</option>
-                    <option value="popular">En Popüler</option>
-                  </select>
+            {/* Main Reply Form */}
+            {replyingTo === 'main' && !topic.is_locked && (
+              <div className={`rounded-lg border transition-colors duration-200 ${
+                isDarkMode ? 'bg-card border-border' : 'bg-white border-gray-200'
+              }`}>
+                <div className="p-4">
+                  <h3 className={`text-sm font-medium mb-3 ${
+                    isDarkMode ? 'text-foreground' : 'text-gray-900'
+                  }`}>Yanıt Yaz</h3>
+                  <textarea
+                    value={replyContent}
+                    onChange={(e) => setReplyContent(e.target.value)}
+                    placeholder="Yanıtınızı yazın..."
+                    rows={4}
+                    style={{ fontSize: '14px' }}
+                    className={`w-full px-3 py-2 rounded-lg border transition-all resize-none ${
+                      isDarkMode 
+                        ? 'bg-background border-border text-foreground placeholder-muted-foreground focus:border-emerald-500' 
+                        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-emerald-500'
+                    } focus:outline-none focus:ring-1 focus:ring-emerald-500`}
+                  />
+                  <div className="flex items-center justify-end gap-2 mt-3">
+                    <button
+                      onClick={() => {
+                        setReplyingTo(null);
+                        setReplyContent('');
+                      }}
+                      style={{ fontSize: '14px' }}
+                      className={`px-4 py-2 font-medium transition-colors ${
+                        isDarkMode ? 'text-muted-foreground hover:text-foreground' : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      İptal
+                    </button>
+                    <button
+                      onClick={() => handleReply()}
+                      disabled={!replyContent.trim() || submittingReply}
+                      style={{ fontSize: '14px' }}
+                      className={`flex items-center gap-2 px-4 py-2 font-medium rounded-lg transition-colors ${
+                        submittingReply || !replyContent.trim()
+                          ? (isDarkMode ? 'bg-muted text-muted-foreground cursor-not-allowed' : 'bg-gray-300 text-gray-500 cursor-not-allowed')
+                          : (isDarkMode ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-emerald-500 hover:bg-emerald-600 text-white')
+                      }`}
+                    >
+                      {submittingReply ? (
+                        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                      ) : (
+                        <Send className="w-4 h-4" />
+                      )}
+                      Gönder
+                    </button>
+                  </div>
                 </div>
               </div>
+            )}
 
-              <div className="space-y-6">
-                {posts.map(post => renderPost(post))}
+            {/* Replies Section */}
+            {posts.length > 0 && (
+              <>
+                <div className="flex items-center justify-between">
+                  <h2 className={`text-lg font-semibold ${
+                    isDarkMode ? 'text-foreground' : 'text-gray-900'
+                  }`}>
+                    Yanıtlar ({posts.length})
+                  </h2>
+                  
+                  {/* Sort Options */}
+                  <div className="flex items-center gap-2">
+                    <span className={`text-sm ${
+                      isDarkMode ? 'text-muted-foreground' : 'text-gray-600'
+                    }`}>Sırala:</span>
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value as any)}
+                      className={`px-3 py-1 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 ${
+                        isDarkMode 
+                          ? 'bg-background border-border text-foreground' 
+                          : 'bg-white border-gray-300 text-gray-900'
+                      }`}
+                    >
+                      <option value="oldest">En Eski</option>
+                      <option value="newest">En Yeni</option>
+                      <option value="popular">En Popüler</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  {posts.map(post => renderPost(post))}
+                </div>
+              </>
+            )}
+
+            {/* Empty State */}
+            {posts.length === 0 && (
+              <div className={`text-center py-12 rounded-lg border transition-colors duration-200 ${
+                isDarkMode ? 'bg-card border-border' : 'bg-white border-gray-200'
+              }`}>
+                <MessageCircle className={`w-12 h-12 mx-auto mb-4 ${
+                  isDarkMode ? 'text-gray-600' : 'text-gray-400'
+                }`} />
+                <h3 className={`text-lg font-medium mb-2 ${
+                  isDarkMode ? 'text-foreground' : 'text-gray-900'
+                }`}>Henüz yanıt yok</h3>
+                <p className={`mb-6 ${
+                  isDarkMode ? 'text-muted-foreground' : 'text-gray-500'
+                }`}>Bu konuda ilk yanıtı sen ver ve tartışmayı başlat!</p>
+                {!topic.is_locked && (
+                  <button
+                    onClick={() => setReplyingTo('main')}
+                    className={`inline-flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${
+                      isDarkMode 
+                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white' 
+                        : 'bg-emerald-500 hover:bg-emerald-600 text-white'
+                    }`}
+                  >
+                    <Reply className="w-4 h-4" />
+                    İlk Yanıtı Ver
+                  </button>
+                )}
               </div>
-            </>
-          )}
+            )}
 
-          {posts.length === 0 && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6 }}
-              className="text-center py-16"
-            >
-              <motion.div
-                animate={{ 
-                  scale: [1, 1.1, 1],
-                  rotate: [0, 5, -5, 0]
-                }}
-                transition={{ 
-                  duration: 4,
-                  repeat: Infinity,
-                  repeatType: "reverse"
-                }}
-                className="w-24 h-24 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-full flex items-center justify-center mx-auto mb-8 shadow-lg"
-              >
-                <MessageSquare className="w-12 h-12 text-primary" />
-              </motion.div>
-              <h3 className="text-2xl font-bold text-foreground mb-4">
-                Henüz yanıt yok
-              </h3>
-              <p className="text-muted-foreground text-lg mb-8 max-w-md mx-auto">
-                Bu konuda ilk yanıtı sen ver ve tartışmayı başlat!
-              </p>
-              {!topic.is_locked && (
-                <motion.button
-                  onClick={() => setReplyingTo('main')}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
-                >
-                  <Reply className="w-5 h-5" />
-                  <span>İlk Yanıtı Ver</span>
-                </motion.button>
-              )}
-            </motion.div>
-          )}
-
-          {topic.is_locked && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="flex items-center justify-center py-12"
-            >
-              <div className="flex items-center gap-3 px-6 py-4 bg-muted/20 backdrop-blur-sm rounded-xl border border-border/50 text-muted-foreground">
-                <motion.div
-                  animate={{ rotate: [0, 5, -5, 0] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                >
-                  <Lock className="w-6 h-6" />
-                </motion.div>
-                <span className="font-medium">Bu konu kilitlenmiş, yeni yanıt yazamazsınız.</span>
+            {/* Locked Topic Notice */}
+            {topic.is_locked && (
+              <div className={`text-center py-8 rounded-lg border transition-colors duration-200 ${
+                isDarkMode ? 'bg-card border-border' : 'bg-white border-gray-200'
+              }`}>
+                <div className={`flex items-center justify-center gap-3 px-6 py-4 rounded-lg ${
+                  isDarkMode ? 'bg-muted/20 text-muted-foreground' : 'bg-gray-100 text-gray-600'
+                }`}>
+                  <Lock className="w-5 h-5" />
+                  <span className="font-medium">Bu konu kilitlenmiş, yeni yanıt yazamazsınız.</span>
+                </div>
               </div>
-            </motion.div>
-          )}
+            )}
+            </div>
+
+            {/* Right Sidebar */}
+            <div className="w-80 flex-shrink-0 hidden lg:block">
+              <div className="sticky top-24 space-y-6">
+                {/* Topic Stats Card */}
+                <div className={`rounded-xl border transition-colors duration-200 ${
+                  isDarkMode ? 'bg-card border-border' : 'bg-white border-gray-200'
+                }`}>
+                  <div className={`px-6 py-4 border-b ${
+                    isDarkMode ? 'border-border' : 'border-gray-100'
+                  }`}>
+                    <h3 className={`font-semibold text-lg ${
+                      isDarkMode ? 'text-foreground' : 'text-gray-900'
+                    }`}>Konu İstatistikleri</h3>
+                  </div>
+                  <div className="p-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Eye className={`w-4 h-4 ${isDarkMode ? 'text-blue-400' : 'text-blue-500'}`} />
+                        <span className={`text-sm ${isDarkMode ? 'text-muted-foreground' : 'text-gray-600'}`}>
+                          Görüntüleme
+                        </span>
+                      </div>
+                      <span className={`font-semibold ${isDarkMode ? 'text-foreground' : 'text-gray-900'}`}>
+                        {formatNumber(topic.view_count)}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <MessageCircle className={`w-4 h-4 ${isDarkMode ? 'text-emerald-400' : 'text-emerald-500'}`} />
+                        <span className={`text-sm ${isDarkMode ? 'text-muted-foreground' : 'text-gray-600'}`}>
+                          Yanıt
+                        </span>
+                      </div>
+                      <span className={`font-semibold ${isDarkMode ? 'text-foreground' : 'text-gray-900'}`}>
+                        {topic.reply_count}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <ArrowUp className={`w-4 h-4 ${topic.vote_score >= 0 ? 'text-emerald-500' : 'text-red-500'}`} />
+                        <span className={`text-sm ${isDarkMode ? 'text-muted-foreground' : 'text-gray-600'}`}>
+                          Oy Puanı
+                        </span>
+                      </div>
+                      <span className={`font-semibold ${
+                        topic.vote_score >= 0 ? 'text-emerald-500' : 'text-red-500'
+                      }`}>
+                        {topic.vote_score > 0 ? '+' : ''}{topic.vote_score}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-4 h-4 rounded-full flex items-center justify-center border-2 ${
+                          isDarkMode ? 'border-purple-400 text-purple-400' : 'border-purple-500 text-purple-500'
+                        }`}>
+                          <div className="w-1 h-1 bg-current rounded-full"></div>
+                        </div>
+                        <span className={`text-sm ${isDarkMode ? 'text-muted-foreground' : 'text-gray-600'}`}>
+                          Toplam Oy
+                        </span>
+                      </div>
+                      <span className={`font-semibold ${isDarkMode ? 'text-purple-400' : 'text-purple-500'}`}>
+                        {totalVotes}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Calendar className={`w-4 h-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                        <span className={`text-sm ${isDarkMode ? 'text-muted-foreground' : 'text-gray-600'}`}>
+                          Oluşturulma
+                        </span>
+                      </div>
+                      <span className={`text-sm font-medium ${isDarkMode ? 'text-foreground' : 'text-gray-900'}`}>
+                        {formatDate(topic.created_at)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Follow Topic Button */}
+                <div className={`rounded-xl border transition-colors duration-200 ${
+                  isDarkMode ? 'bg-card border-border' : 'bg-white border-gray-200'
+                }`}>
+                  <div className="p-6">
+                    <button
+                      onClick={handleToggleFollow}
+                      disabled={followLoading}
+                      className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all duration-300 ${
+                        isFollowing
+                          ? (isDarkMode 
+                            ? 'bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20' 
+                            : 'bg-red-50 hover:bg-red-100 text-red-600 border border-red-200')
+                          : (isDarkMode 
+                            ? 'bg-emerald-500 hover:bg-emerald-600 text-white' 
+                            : 'bg-emerald-500 hover:bg-emerald-600 text-white')
+                      } ${followLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                    >
+                      {followLoading ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                          <span>İşleniyor...</span>
+                        </>
+                      ) : isFollowing ? (
+                        <>
+                          <BellOff className="w-4 h-4" />
+                          <span>Takibi Bırak</span>
+                        </>
+                      ) : (
+                        <>
+                          <Bell className="w-4 h-4" />
+                          <span>Takip Et</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Related Topics Card */}
+                <div className={`rounded-xl border transition-colors duration-200 ${
+                  isDarkMode ? 'bg-card border-border' : 'bg-white border-gray-200'
+                }`}>
+                  <div className={`px-6 py-4 border-b ${
+                    isDarkMode ? 'border-border' : 'border-gray-100'
+                  }`}>
+                    <h3 className={`font-semibold text-lg ${
+                      isDarkMode ? 'text-foreground' : 'text-gray-900'
+                    }`}>Benzer Konular</h3>
+                  </div>
+                  <div className="p-6 space-y-3">
+                    {relatedLoading ? (
+                      // Loading state
+                      <div className="space-y-3">
+                        {[1, 2, 3].map((i) => (
+                          <div key={i} className={`p-3 rounded-lg animate-pulse ${
+                            isDarkMode ? 'bg-muted' : 'bg-gray-100'
+                          }`}>
+                            <div className={`h-4 rounded mb-2 ${
+                              isDarkMode ? 'bg-background' : 'bg-gray-200'
+                            }`}></div>
+                            <div className={`h-3 rounded w-2/3 ${
+                              isDarkMode ? 'bg-background' : 'bg-gray-200'
+                            }`}></div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : relatedTopics.length > 0 ? (
+                      // Dynamic related topics
+                      relatedTopics.map((relatedTopic) => (
+                        <Link
+                          key={relatedTopic.id}
+                          href={`/forum/${relatedTopic.category.slug}/${relatedTopic.slug}`}
+                          className={`block p-3 rounded-lg transition-colors ${
+                            isDarkMode ? 'hover:bg-muted' : 'hover:bg-gray-50'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <h4 className={`font-medium text-sm line-clamp-2 flex-1 ${
+                              isDarkMode ? 'text-foreground' : 'text-gray-900'
+                            }`}>
+                              {relatedTopic.title}
+                            </h4>
+                            {relatedTopic.similarity_score && relatedTopic.similarity_score > 0.7 && (
+                              <span className="text-xs px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-full font-medium">
+                                {Math.round(relatedTopic.similarity_score * 100)}%
+                              </span>
+                            )}
+                          </div>
+                          <p className={`text-xs ${isDarkMode ? 'text-muted-foreground' : 'text-gray-600'}`}>
+                            {relatedTopic.reply_count} yanıt • {relatedTopic.time_ago}
+                          </p>
+                        </Link>
+                      ))
+                    ) : (
+                      // No related topics found
+                      <div className={`text-center py-4 ${
+                        isDarkMode ? 'text-muted-foreground' : 'text-gray-500'
+                      }`}>
+                        <p className="text-sm">Henüz benzer konu bulunamadı</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-    </MainLayout>
+    </div>
   );
 }

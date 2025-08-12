@@ -2,9 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import MainLayout from '@/components/layout/MainLayout';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
 import { 
   ArrowLeft,
   Send,
@@ -12,12 +10,20 @@ import {
   AlertCircle,
   CheckCircle,
   FileText,
-  Sparkles,
-  Users,
-  Shield
+  Menu,
+  Settings,
+  Home,
+  TrendingUp,
+  ChevronDown,
+  MessageCircle,
+  Shield,
+  Sparkles
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { Category } from '@/lib/supabase/types';
+import ForumSidebar from '@/components/forum/ForumSidebar';
+import { slugify, isValidSlug } from '@/lib/utils/slugify';
+import { useThemeDetection } from '@/hooks/useThemeDetection';
 
 export default function NewTopicPage() {
   const params = useParams();
@@ -26,6 +32,7 @@ export default function NewTopicPage() {
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState<Category | null>(null);
+  const { isDarkMode, mounted } = useThemeDetection();
   const [formData, setFormData] = useState({
     title: '',
     content: ''
@@ -36,7 +43,14 @@ export default function NewTopicPage() {
   }>({});
   const [showPreview, setShowPreview] = useState(false);
 
+  const formatNumber = (num: number) => {
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+    return num.toString();
+  };
+
   useEffect(() => {
+    setMounted(true);
     fetchCategory();
   }, [categorySlug]);
 
@@ -50,27 +64,25 @@ export default function NewTopicPage() {
         .single();
 
       if (error) {
-        console.error('Category fetch error:', error);
         throw error;
       }
       setCategory(data);
     } catch (error) {
       console.error('Error fetching category:', error);
-      // Set mock category for testing
+      // Mock category fallback
       setCategory({
-        id: '6f83cac3-7370-431c-a9a2-611b5e790b0d',
-        name: 'Test Kategori',
+        id: '1',
+        name: 'Algoritmik Ticaret',
         slug: categorySlug,
-        description: 'Test kategorisi',
-        color: '#10b981',
-        icon: 'MessageCircle',
+        description: 'Otomatik trading sistemleri ve algoritmalar',
+        color: '#3B82F6',
+        icon: '🤖',
         created_at: new Date().toISOString()
       });
     } finally {
       setLoading(false);
     }
   };
-
 
   const validateForm = () => {
     const newErrors: typeof errors = {};
@@ -81,6 +93,12 @@ export default function NewTopicPage() {
       newErrors.title = 'Konu başlığı en az 5 karakter olmalıdır';
     } else if (formData.title.length > 200) {
       newErrors.title = 'Konu başlığı en fazla 200 karakter olabilir';
+    } else {
+      // Check if title can generate a valid slug
+      const generatedSlug = slugify(formData.title);
+      if (!generatedSlug || !isValidSlug(generatedSlug)) {
+        newErrors.title = 'Başlık URL için uygun değil. Lütfen en az bir harf veya rakam kullanın.';
+      }
     }
 
     if (!formData.content.trim()) {
@@ -102,13 +120,14 @@ export default function NewTopicPage() {
     setSubmitting(true);
     
     try {
-      // Generate slug from title - same as articles
-      const slug = formData.title
-        .toLowerCase()
-        .replace(/[^a-z0-9ğüşıöç\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .trim();
+      // Create a safe URL slug from title
+      const slug = slugify(formData.title);
+      
+      // Validate the generated slug
+      if (!isValidSlug(slug)) {
+        alert('Başlık URL için uygun bir format oluşturamadı. Lütfen başlığı düzenleyin.');
+        return;
+      }
 
       const requestBody = {
         title: formData.title,
@@ -131,14 +150,8 @@ export default function NewTopicPage() {
         throw new Error(data.error || data.details || 'Konu oluşturulamadı');
       }
 
-      
-      // Show success message
-      alert('Konu başarıyla oluşturuldu!');
-      
-      // Reset form
       setFormData({ title: '', content: '' });
       
-      // Redirect to the new topic if possible
       if (data.topic && data.topic.slug) {
         router.push(`/forum/${category.slug}/${data.topic.slug}`);
       } else {
@@ -156,397 +169,371 @@ export default function NewTopicPage() {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     
-    // Clear error when user starts typing
     if (errors[name as keyof typeof errors]) {
       setErrors(prev => ({ ...prev, [name]: undefined }));
     }
   };
 
-
-  if (loading) {
+  if (loading || !category) {
     return (
-      <MainLayout>
-        <div className="min-h-screen bg-background flex items-center justify-center">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.4 }}
-            className="text-center"
-          >
-            <div className="w-12 h-12 border-3 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
-            <p className="text-muted-foreground text-lg">Yükleniyor...</p>
-          </motion.div>
+      <div className={`min-h-screen transition-colors duration-200 pt-4 ${
+        isDarkMode ? 'bg-background' : 'bg-gray-50'
+      }`}>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className={`w-8 h-8 border-2 border-t-transparent rounded-full animate-spin mx-auto mb-4 ${
+              isDarkMode ? 'border-emerald-400' : 'border-emerald-500'
+            }`}></div>
+            <p className={isDarkMode ? 'text-muted-foreground' : 'text-gray-600'}>Yükleniyor...</p>
+          </div>
         </div>
-      </MainLayout>
+      </div>
     );
   }
 
-  if (!category) {
-    return null;
-  }
-
   return (
-    <MainLayout>
-      <div className="min-h-screen bg-background">
-        {/* Header */}
-        <div className="bg-gradient-to-br from-primary/5 via-background to-secondary/5 border-b border-border/50">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              <div className="flex items-center gap-6 mb-8">
-                <Link 
-                  href={`/forum/${category.slug}`}
-                  className="p-3 hover:bg-muted/50 rounded-xl transition-all duration-300 hover:scale-105"
+    <div className={`min-h-screen transition-colors duration-200 ${
+      isDarkMode ? 'bg-background' : 'bg-gray-50'
+    }`}>
+      {/* Simple Header - Full Width */}
+      <div className={`relative overflow-hidden border-b ${
+        isDarkMode 
+          ? 'bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border-border' 
+          : 'bg-gradient-to-r from-gray-50 via-white to-gray-50 border-gray-200'
+      }`}>
+        {/* Subtle pattern overlay */}
+        <div className="absolute inset-0 opacity-[0.02]">
+          <div className="absolute inset-0" style={{
+            backgroundImage: `radial-gradient(circle at 1px 1px, ${isDarkMode ? 'rgb(34 197 94)' : 'rgb(16 185 129)'} 1px, transparent 0)`
+          }}></div>
+        </div>
+        
+        {/* Clean geometric shapes */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className={`absolute -top-24 -right-24 w-48 h-48 ${
+            isDarkMode ? 'bg-emerald-500/5' : 'bg-emerald-500/8'
+          } rounded-full blur-3xl`}></div>
+          <div className={`absolute top-1/2 -left-32 w-64 h-64 ${
+            isDarkMode ? 'bg-green-500/3' : 'bg-green-500/5'
+          } rounded-full blur-3xl`}></div>
+        </div>
+        
+        {/* Content overlay with subtle backdrop */}
+        <div className={`relative backdrop-blur-[1px] ${
+          isDarkMode 
+            ? 'bg-background/95' 
+            : 'bg-white/60'
+        }`}>
+          <div className="relative z-10 max-w-7xl mx-auto px-6 py-8">
+            <div className="flex items-center gap-4 mb-6">
+              <Link 
+                href={`/forum/${category.slug}`}
+                className={`p-2 rounded-lg border transition-all duration-300 hover:scale-105 ${
+                  isDarkMode 
+                    ? 'bg-slate-800/80 hover:bg-slate-700/80 border-slate-700 text-slate-300 hover:text-emerald-300' 
+                    : 'bg-white/80 hover:bg-gray-50 border-gray-200 text-gray-600 hover:text-emerald-600'
+                }`}
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Link>
+              <div className="flex items-center gap-4">
+                <div
+                  className="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold text-lg shadow-lg"
+                  style={{ backgroundColor: category.color }}
                 >
-                  <ArrowLeft className="w-6 h-6" />
-                </Link>
-                <motion.div
-                  whileHover={{ rotate: 5, scale: 1.1 }}
-                  transition={{ type: "spring", stiffness: 300 }}
-                  className="p-4 rounded-xl shadow-lg"
-                  style={{ 
-                    background: `linear-gradient(135deg, ${category.color}15, ${category.color}25)`,
-                    borderColor: `${category.color}30`
-                  }}
-                >
-                  <div className="w-8 h-8" style={{ backgroundColor: category.color }}></div>
-                </motion.div>
-                <div className="flex-1">
-                  <h1 className="text-4xl font-bold text-foreground mb-2 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                    Yeni Konu Aç
-                  </h1>
-                  <p className="text-muted-foreground text-lg">
-                    {category.name} kategorisinde yeni bir konu oluştur ve tartışmayı başlat
-                  </p>
+                  {category.name.charAt(0)}
                 </div>
-                <motion.div
-                  animate={{ 
-                    scale: [1, 1.1, 1],
-                    rotate: [0, 5, -5, 0]
-                  }}
-                  transition={{ 
-                    duration: 4,
-                    repeat: Infinity,
-                    repeatType: "reverse"
-                  }}
-                  className="p-4 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-full shadow-lg"
-                >
-                  <FileText className="w-8 h-8 text-primary" />
-                </motion.div>
+                <div>
+                  <h1 className={`text-2xl font-bold mb-1 ${
+                    isDarkMode ? 'text-foreground' : 'text-gray-900'
+                  }`}>Yeni Konu Oluştur</h1>
+                  <p className={`text-sm ${
+                    isDarkMode ? 'text-muted-foreground' : 'text-gray-600'
+                  }`}>r/{category.name} topluluğunda yeni bir tartışma başlatın</p>
+                </div>
               </div>
-
-              {/* Quick Stats */}
-              <div className="grid grid-cols-3 gap-4">
-                <motion.div 
-                  whileHover={{ scale: 1.05 }}
-                  className="text-center bg-card/50 backdrop-blur-sm rounded-xl p-4 border border-border/50 shadow-lg"
-                >
-                  <Users className="w-6 h-6 text-primary mx-auto mb-2" />
-                  <div className="text-sm text-muted-foreground font-medium">Aktif Topluluk</div>
-                </motion.div>
-                <motion.div 
-                  whileHover={{ scale: 1.05 }}
-                  className="text-center bg-card/50 backdrop-blur-sm rounded-xl p-4 border border-border/50 shadow-lg"
-                >
-                  <Shield className="w-6 h-6 text-secondary mx-auto mb-2" />
-                  <div className="text-sm text-muted-foreground font-medium">Güvenli Ortam</div>
-                </motion.div>
-                <motion.div 
-                  whileHover={{ scale: 1.05 }}
-                  className="text-center bg-card/50 backdrop-blur-sm rounded-xl p-4 border border-border/50 shadow-lg"
-                >
-                  <Sparkles className="w-6 h-6 text-primary mx-auto mb-2" />
-                  <div className="text-sm text-muted-foreground font-medium">Kaliteli İçerik</div>
-                </motion.div>
-              </div>
-            </motion.div>
+            </div>
           </div>
         </div>
+      </div>
 
-        {/* Content */}
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <motion.form 
-            onSubmit={handleSubmit} 
-            className="space-y-8"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-          >
-            {/* Title Input */}
-            <motion.div 
-              whileHover={{ scale: 1.01 }}
-              transition={{ type: "spring", stiffness: 400 }}
-              className="bg-gradient-to-br from-card via-card/95 to-card/90 rounded-2xl p-8 border border-border/50 shadow-lg hover:shadow-xl backdrop-blur-sm"
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  <FileText className="w-5 h-5 text-primary" />
-                </div>
-                <label htmlFor="title" className="text-lg font-semibold text-foreground">
-                  Konu Başlığı
-                </label>
-              </div>
-              <input
-                type="text"
-                id="title"
-                name="title"
-                value={formData.title}
-                onChange={handleInputChange}
-                placeholder="Konunuzun başlığını yazın..."
-                className={`w-full px-6 py-4 bg-background/50 backdrop-blur-sm border-2 rounded-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:scale-[1.02] ${
-                  errors.title 
-                    ? 'border-red-500 focus:border-red-500' 
-                    : 'border-border/50 focus:border-primary/50 hover:border-primary/30'
-                }`}
-                maxLength={200}
-              />
-              <div className="flex items-center justify-between mt-4">
-                {errors.title && (
-                  <motion.div 
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="flex items-center gap-2 text-sm text-red-500 bg-red-500/10 px-3 py-2 rounded-lg"
-                  >
-                    <AlertCircle className="w-4 h-4" />
-                    {errors.title}
-                  </motion.div>
-                )}
-                <div className={`text-sm font-medium ml-auto px-3 py-1 rounded-full ${
-                  formData.title.length > 180 
-                    ? 'text-red-500 bg-red-500/10' 
-                    : formData.title.length > 150 
-                      ? 'text-yellow-500 bg-yellow-500/10'
-                      : 'text-muted-foreground bg-muted/20'
-                }`}>
-                  {formData.title.length}/200
-                </div>
-              </div>
-            </motion.div>
+      {/* Forum Sidebar Component */}
+      <ForumSidebar activeCategory={categorySlug} />
 
-            {/* Content Input */}
-            <motion.div 
-              whileHover={{ scale: 1.01 }}
-              transition={{ type: "spring", stiffness: 400 }}
-              className="bg-gradient-to-br from-card via-card/95 to-card/90 rounded-2xl border border-border/50 shadow-lg hover:shadow-xl backdrop-blur-sm overflow-hidden"
-            >
-              <div className="p-8 border-b border-border/50">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-secondary/10 rounded-lg">
-                      <FileText className="w-5 h-5 text-secondary" />
+      {/* Main Content with Left Margin for Fixed Sidebar */}
+      <div className="md:ml-60">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex gap-0">
+          {/* Main Content - Yeni Konu Oluşturma */}
+          <div className="flex-1 min-w-0 pl-6 pr-0 py-6">
+            <div className="w-full">
+              <div className={`rounded-lg border transition-colors duration-200 max-w-[800px] ${
+                isDarkMode ? 'bg-card border-border' : 'bg-white border-gray-200'
+              }`}>
+                <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                  {/* Title Input */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <FileText className={`w-4 h-4 ${
+                        isDarkMode ? 'text-emerald-400' : 'text-emerald-500'
+                      }`} />
+                      <label htmlFor="title" className={`text-sm font-medium ${
+                        isDarkMode ? 'text-foreground' : 'text-gray-900'
+                      }`}>
+                        Konu Başlığı
+                      </label>
                     </div>
-                    <label htmlFor="content" className="text-lg font-semibold text-foreground">
-                      Konu İçeriği
-                    </label>
-                  </div>
-                  <div className="bg-muted/30 backdrop-blur-sm rounded-full p-1 border border-border/50">
-                    <div className="flex items-center gap-1">
-                      <motion.button
-                        type="button"
-                        onClick={() => setShowPreview(false)}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className={`px-4 py-2 text-sm rounded-full font-medium transition-all duration-300 ${
-                          !showPreview
-                            ? 'bg-primary text-primary-foreground shadow-lg'
-                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                        }`}
-                      >
-                        Düzenle
-                      </motion.button>
-                      <motion.button
-                        type="button"
-                        onClick={() => setShowPreview(true)}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className={`px-4 py-2 text-sm rounded-full font-medium transition-all duration-300 ${
-                          showPreview
-                            ? 'bg-primary text-primary-foreground shadow-lg'
-                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                        }`}
-                      >
-                        <Eye className="w-4 h-4 inline mr-2" />
-                        Önizleme
-                      </motion.button>
+                    <input
+                      type="text"
+                      id="title"
+                      name="title"
+                      value={formData.title}
+                      onChange={handleInputChange}
+                      placeholder="Konunuzun başlığını yazın..."
+                      className={`w-full px-4 py-3 rounded-lg text-sm border transition-all ${
+                        isDarkMode 
+                          ? 'bg-muted border-border text-foreground placeholder-muted-foreground focus:bg-background focus:border-emerald-500' 
+                          : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500 focus:bg-white focus:border-emerald-500'
+                      } focus:outline-none focus:ring-1 focus:ring-emerald-500 ${
+                        errors.title ? 'border-red-500' : ''
+                      }`}
+                      maxLength={200}
+                    />
+                    <div className="mt-2 space-y-2">
+                      {/* URL Preview */}
+                      {formData.title.trim() && (
+                        <div className={`text-xs p-2 rounded-md ${
+                          isDarkMode ? 'bg-muted/50 text-muted-foreground' : 'bg-gray-50 text-gray-600'
+                        }`}>
+                          <span className="font-medium">URL: </span>
+                          <span className="font-mono">
+                            /forum/{category?.slug}/{slugify(formData.title) || 'gecersiz-baslik'}
+                          </span>
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center justify-between">
+                        {errors.title && (
+                          <div className="flex items-center gap-2 text-sm text-red-500">
+                            <AlertCircle className="w-4 h-4" />
+                            {errors.title}
+                          </div>
+                        )}
+                        <div className={`text-xs ml-auto ${
+                          formData.title.length > 180 ? 'text-red-500' : 
+                          formData.title.length > 150 ? 'text-yellow-500' :
+                          isDarkMode ? 'text-muted-foreground' : 'text-gray-500'
+                        }`}>
+                          {formData.title.length}/200
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <motion.div
-                  key={showPreview ? 'preview' : 'edit'}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  {!showPreview ? (
-                    <>
+                  {/* Content Input */}
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <FileText className={`w-4 h-4 ${
+                          isDarkMode ? 'text-emerald-400' : 'text-emerald-500'
+                        }`} />
+                        <label htmlFor="content" className={`text-sm font-medium ${
+                          isDarkMode ? 'text-foreground' : 'text-gray-900'
+                        }`}>
+                          Konu İçeriği
+                        </label>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setShowPreview(false)}
+                          className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                            !showPreview
+                              ? (isDarkMode ? 'bg-emerald-600 text-white' : 'bg-emerald-500 text-white')
+                              : (isDarkMode ? 'text-muted-foreground hover:text-foreground' : 'text-gray-500 hover:text-gray-700')
+                          }`}
+                        >
+                          Düzenle
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowPreview(true)}
+                          className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                            showPreview
+                              ? (isDarkMode ? 'bg-emerald-600 text-white' : 'bg-emerald-500 text-white')
+                              : (isDarkMode ? 'text-muted-foreground hover:text-foreground' : 'text-gray-500 hover:text-gray-700')
+                          }`}
+                        >
+                          <Eye className="w-3 h-3 inline mr-1" />
+                          Önizleme
+                        </button>
+                      </div>
+                    </div>
+
+                    {!showPreview ? (
                       <textarea
                         id="content"
                         name="content"
                         value={formData.content}
                         onChange={handleInputChange}
-                        placeholder="Konunuzun detaylarını yazın... Markdown desteklenir."
-                        rows={14}
-                        className={`w-full px-6 py-4 bg-background/50 backdrop-blur-sm border-2 rounded-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:scale-[1.01] resize-none break-long-words ${
-                          errors.content 
-                            ? 'border-red-500 focus:border-red-500' 
-                            : 'border-border/50 focus:border-primary/50 hover:border-primary/30'
+                        placeholder="Konunuzun detaylarını yazın..."
+                        rows={10}
+                        className={`w-full px-4 py-3 rounded-lg text-sm border transition-all ${
+                          isDarkMode 
+                            ? 'bg-muted border-border text-foreground placeholder-muted-foreground focus:bg-background focus:border-emerald-500' 
+                            : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500 focus:bg-white focus:border-emerald-500'
+                        } focus:outline-none focus:ring-1 focus:ring-emerald-500 resize-none ${
+                          errors.content ? 'border-red-500' : ''
                         }`}
                       />
-                      {errors.content && (
-                        <motion.div 
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          className="flex items-center gap-2 text-sm text-red-500 bg-red-500/10 px-3 py-2 rounded-lg mt-4"
-                        >
-                          <AlertCircle className="w-4 h-4" />
-                          {errors.content}
-                        </motion.div>
-                      )}
-                    </>
-                  ) : (
-                    <div className="min-h-[350px] px-6 py-4 bg-background/30 backdrop-blur-sm border-2 border-border/30 rounded-xl">
-                      {formData.content ? (
-                        <div className="prose prose-sm max-w-none text-foreground break-long-words">
-                          {formData.content.split('\n').map((paragraph, index) => (
-                            <p key={index} className="mb-4 last:mb-0 leading-relaxed">
-                              {paragraph || '\u00A0'}
-                            </p>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-center h-full">
-                          <div className="text-center">
-                            <motion.div
-                              animate={{ 
-                                scale: [1, 1.1, 1],
-                                rotate: [0, 5, -5, 0]
-                              }}
-                              transition={{ 
-                                duration: 3,
-                                repeat: Infinity,
-                                repeatType: "reverse"
-                              }}
-                              className="w-16 h-16 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-full flex items-center justify-center mx-auto mb-4"
-                            >
-                              <Eye className="w-8 h-8 text-primary" />
-                            </motion.div>
-                            <p className="text-muted-foreground italic">
+                    ) : (
+                      <div className={`min-h-[240px] px-4 py-3 rounded-lg border ${
+                        isDarkMode ? 'bg-muted border-border' : 'bg-gray-50 border-gray-300'
+                      }`}>
+                        {formData.content ? (
+                          <div className={`text-sm ${isDarkMode ? 'text-foreground' : 'text-gray-900'}`}>
+                            {formData.content.split('\n').map((paragraph, index) => (
+                              <p key={index} className="mb-3 last:mb-0">
+                                {paragraph || '\u00A0'}
+                              </p>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center h-full">
+                            <p className={`text-sm italic ${
+                              isDarkMode ? 'text-muted-foreground' : 'text-gray-500'
+                            }`}>
                               Önizleme için içerik yazın...
                             </p>
                           </div>
+                        )}
+                      </div>
+                    )}
+                    
+                    {errors.content && (
+                      <div className="flex items-center gap-2 text-sm text-red-500 mt-2">
+                        <AlertCircle className="w-4 h-4" />
+                        {errors.content}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Guidelines */}
+                  <div className={`p-4 rounded-lg border ${
+                    isDarkMode ? 'bg-muted/50 border-border' : 'bg-gray-50 border-gray-200'
+                  }`}>
+                    <h4 className={`text-sm font-medium mb-3 ${
+                      isDarkMode ? 'text-foreground' : 'text-gray-900'
+                    }`}>Topluluk Kuralları</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                      <div className={isDarkMode ? 'text-muted-foreground' : 'text-gray-600'}>
+                        • Saygılı ve yapıcı bir dil kullanın
+                      </div>
+                      <div className={isDarkMode ? 'text-muted-foreground' : 'text-gray-600'}>
+                        • Konuyu net ve anlaşılır şekilde açıklayın
+                      </div>
+                      <div className={isDarkMode ? 'text-muted-foreground' : 'text-gray-600'}>
+                        • Spam ve alakasız içerik paylaşmayın
+                      </div>
+                      <div className={isDarkMode ? 'text-muted-foreground' : 'text-gray-600'}>
+                        • Başkalarının fikirlerine saygı gösterin
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center justify-between">
+                    <Link
+                      href={`/forum/${category.slug}`}
+                      className={`px-4 py-2 text-sm font-medium transition-colors ${
+                        isDarkMode ? 'text-muted-foreground hover:text-foreground' : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      ← İptal
+                    </Link>
+
+                    <div className="flex items-center gap-3">
+                      {formData.title && formData.content && (
+                        <div className="flex items-center gap-2 text-sm text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 px-3 py-1 rounded-full">
+                          <CheckCircle className="w-4 h-4" />
+                          <span>Hazır</span>
                         </div>
                       )}
+                      <button
+                        type="submit"
+                        disabled={submitting || !formData.title.trim() || !formData.content.trim()}
+                        className={`flex items-center gap-2 px-6 py-2 text-sm font-medium rounded-lg transition-colors ${
+                          submitting || !formData.title.trim() || !formData.content.trim()
+                            ? (isDarkMode ? 'bg-muted text-muted-foreground cursor-not-allowed' : 'bg-gray-300 text-gray-500 cursor-not-allowed')
+                            : (isDarkMode ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-emerald-500 hover:bg-emerald-600 text-white')
+                        }`}
+                      >
+                        {submitting ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                            Oluşturuluyor...
+                          </>
+                        ) : (
+                          <>
+                            <Send className="w-4 h-4" />
+                            Konuyu Paylaş
+                          </>
+                        )}
+                      </button>
                     </div>
-                  )}
-                </motion.div>
-              </div>
-
-              {/* Guidelines */}
-              <div className="p-8 bg-gradient-to-br from-muted/20 via-muted/10 to-transparent backdrop-blur-sm">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    <Shield className="w-5 h-5 text-primary" />
                   </div>
-                  <h4 className="text-lg font-semibold text-foreground">Topluluk Kuralları</h4>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Sidebar - Yardım ve Bilgi */}
+          <div className="w-80 flex-shrink-0 hidden lg:block">
+            <div className="sticky top-24 space-y-4 pl-0 pr-6 py-6">
+              {/* Category Info - Modern */}
+              <div className={`rounded-2xl border transition-all duration-200 overflow-hidden hover:shadow-lg ${
+                isDarkMode ? 'bg-card border-border' : 'bg-white border-gray-200'
+              }`}>
+                <div className={`px-6 py-4 border-b transition-colors duration-200 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 ${
+                  isDarkMode ? 'border-border' : 'border-gray-200'
+                }`}>
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm"
+                      style={{ backgroundColor: category.color }}
+                    >
+                      {category.name.charAt(0)}
+                    </div>
+                    <h3 className={`font-bold text-lg ${
+                      isDarkMode ? 'text-foreground' : 'text-gray-900'
+                    }`}>r/{category.name}</h3>
+                  </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <motion.div 
-                    whileHover={{ scale: 1.02 }}
-                    className="flex items-start gap-3 p-4 bg-primary/5 rounded-xl border border-primary/10"
-                  >
-                    <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground mb-1">Saygılı İletişim</p>
-                      <p className="text-xs text-muted-foreground">Saygılı ve yapıcı bir dil kullanın</p>
+                <div className="p-6">
+                  <p className={`text-sm leading-relaxed mb-6 ${
+                    isDarkMode ? 'text-muted-foreground' : 'text-gray-600'
+                  }`}>{category.description}</p>
+                  <div className={`p-3 rounded-xl text-xs leading-relaxed ${
+                    isDarkMode ? 'bg-muted/30 text-muted-foreground' : 'bg-blue-50 text-blue-700'
+                  }`}>
+                    <div className="flex items-start gap-2">
+                      <span className="text-blue-500 mt-0.5 text-sm">📝</span>
+                      <div>
+                        <p className={`font-medium mb-1 text-xs ${
+                          isDarkMode ? 'text-foreground' : 'text-blue-800'
+                        }`}>Yeni Konu Oluşturuyorsunuz</p>
+                        <p className="text-xs">Bu toplulukta yeni bir tartışma başlatmak üzeresiniz.</p>
+                      </div>
                     </div>
-                  </motion.div>
-                  <motion.div 
-                    whileHover={{ scale: 1.02 }}
-                    className="flex items-start gap-3 p-4 bg-secondary/5 rounded-xl border border-secondary/10"
-                  >
-                    <div className="w-2 h-2 bg-secondary rounded-full mt-2 flex-shrink-0"></div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground mb-1">Net Açıklama</p>
-                      <p className="text-xs text-muted-foreground">Konuyu net ve anlaşılır şekilde açıklayın</p>
-                    </div>
-                  </motion.div>
-                  <motion.div 
-                    whileHover={{ scale: 1.02 }}
-                    className="flex items-start gap-3 p-4 bg-primary/5 rounded-xl border border-primary/10"
-                  >
-                    <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground mb-1">Alakalı İçerik</p>
-                      <p className="text-xs text-muted-foreground">Spam ve alakasız içerik paylaşmayın</p>
-                    </div>
-                  </motion.div>
-                  <motion.div 
-                    whileHover={{ scale: 1.02 }}
-                    className="flex items-start gap-3 p-4 bg-secondary/5 rounded-xl border border-secondary/10"
-                  >
-                    <div className="w-2 h-2 bg-secondary rounded-full mt-2 flex-shrink-0"></div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground mb-1">Karşılıklı Saygı</p>
-                      <p className="text-xs text-muted-foreground">Başkalarının fikirlerine saygı gösterin</p>
-                    </div>
-                  </motion.div>
+                  </div>
                 </div>
               </div>
-            </motion.div>
 
-            {/* Actions */}
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              className="flex items-center justify-between bg-gradient-to-r from-card/50 via-card/30 to-card/50 backdrop-blur-sm rounded-2xl p-6 border border-border/50 shadow-lg"
-            >
-              <Link
-                href={`/forum/${category.slug}`}
-                className="px-6 py-3 text-muted-foreground hover:text-foreground transition-all duration-300 hover:scale-105 font-medium"
-              >
-                ← İptal
-              </Link>
-
-              <div className="flex items-center gap-6">
-                {formData.title && formData.content && (
-                  <motion.div 
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="flex items-center gap-2 text-sm text-green-600 bg-green-600/10 px-4 py-2 rounded-full border border-green-600/20"
-                  >
-                    <CheckCircle className="w-4 h-4" />
-                    <span className="font-medium">Hazır</span>
-                  </motion.div>
-                )}
-                <motion.button
-                  type="submit"
-                  disabled={submitting || !formData.title.trim() || !formData.content.trim()}
-                  whileHover={{ scale: submitting ? 1 : 1.05 }}
-                  whileTap={{ scale: submitting ? 1 : 0.95 }}
-                  className="flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary disabled:from-muted disabled:to-muted/80 disabled:text-muted-foreground text-primary-foreground font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:cursor-not-allowed disabled:scale-100"
-                >
-                  {submitting ? (
-                    <>
-                      <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                      <span>Oluşturuluyor...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-5 h-5" />
-                      <span>Konuyu Paylaş</span>
-                    </>
-                  )}
-                </motion.button>
-              </div>
-            </motion.div>
-          </motion.form>
+            </div>
+          </div>
+        </div>
         </div>
       </div>
-    </MainLayout>
+    </div>
   );
 }

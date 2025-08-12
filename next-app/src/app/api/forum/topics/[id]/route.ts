@@ -3,10 +3,11 @@ import { createClient } from '@/lib/supabase/server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
+    const { id } = await params;
     
     // Get topic by id or slug
     let query = supabase
@@ -33,19 +34,37 @@ export async function GET(
         )
       `);
 
-    // Check if params.id is a UUID or slug
-    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(params.id);
+    // Check if id is a UUID or slug
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
     
     if (isUUID) {
-      query = query.eq('id', params.id);
+      query = query.eq('id', id);
     } else {
-      query = query.eq('slug', params.id);
+      query = query.eq('slug', id);
     }
 
     const { data: topic, error } = await query.single();
 
     if (error || !topic) {
       return NextResponse.json({ error: 'Topic not found' }, { status: 404 });
+    }
+
+    // Calculate and update vote score from database
+    const { data: allVotes } = await supabase
+      .from('forum_topic_votes')
+      .select('vote_type')
+      .eq('topic_id', topic.id);
+    
+    const actualVoteScore = allVotes?.reduce((sum, vote) => sum + vote.vote_type, 0) || 0;
+    
+    // Update topic with correct vote score if it differs
+    if (topic.vote_score !== actualVoteScore) {
+      await supabase
+        .from('forum_topics')
+        .update({ vote_score: actualVoteScore })
+        .eq('id', topic.id);
+      
+      topic.vote_score = actualVoteScore;
     }
 
     // Get current user's vote
@@ -76,10 +95,11 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
+    const { id } = await params;
     
     // Check authentication
     const { data: { user } } = await supabase.auth.getUser();
@@ -94,7 +114,7 @@ export async function PATCH(
     const { data: topic } = await supabase
       .from('forum_topics')
       .select('author_id')
-      .eq('id', params.id)
+      .eq('id', id)
       .single();
 
     if (!topic) {
@@ -126,7 +146,7 @@ export async function PATCH(
     const { data: updatedTopic, error } = await supabase
       .from('forum_topics')
       .update(updateData)
-      .eq('id', params.id)
+      .eq('id', id)
       .select(`
         *,
         author:users!author_id (
@@ -159,10 +179,11 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
+    const { id } = await params;
     
     // Check authentication
     const { data: { user } } = await supabase.auth.getUser();
@@ -174,7 +195,7 @@ export async function DELETE(
     const { data: topic } = await supabase
       .from('forum_topics')
       .select('author_id')
-      .eq('id', params.id)
+      .eq('id', id)
       .single();
 
     if (!topic) {
@@ -199,7 +220,7 @@ export async function DELETE(
     const { error } = await supabase
       .from('forum_topics')
       .delete()
-      .eq('id', params.id);
+      .eq('id', id);
 
     if (error) {
       console.error('Error deleting topic:', error);

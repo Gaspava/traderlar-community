@@ -148,13 +148,13 @@ export default function ProfileStats({
         </Card>
       )}
       
-      {/* Community Stats */}
+      {/* Forum Stats */}
       {stats && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Activity className="h-5 w-5" />
-              Topluluk İstatistikleri
+              Forum İstatistikleri
             </CardTitle>
           </CardHeader>
           <CardContent>

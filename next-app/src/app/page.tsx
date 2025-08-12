@@ -2,7 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
+import { createClient } from '@/lib/supabase/client';
+import { ArrowUp, ArrowDown } from 'lucide-react';
 import { 
   LeaderboardAd, 
   RectangleAd, 
@@ -12,6 +15,7 @@ import {
   InContentAd
 } from '@/components/ads';
 import { DEFAULT_AD_CONFIG } from '@/components/ads';
+import RecentItems from '@/components/RecentItems';
 
 interface ForumTopic {
   id: string;
@@ -23,6 +27,8 @@ interface ForumTopic {
   category: string;
   isHot: boolean;
   isPinned: boolean;
+  vote_score?: number;
+  user_vote?: number;
 }
 
 interface Strategy {
@@ -75,202 +81,525 @@ interface Article {
 
 export default function HomePage() {
   const [mounted, setMounted] = useState(false);
+  const [hotTopics, setHotTopics] = useState<ForumTopic[]>([]);
+  const [topicsLoading, setTopicsLoading] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     setMounted(true);
+    fetchHotTopics();
   }, []);
 
-  // Mock data
-  const hotTopics: ForumTopic[] = [
-    {
-      id: '1',
-      title: 'Bitcoin 50.000$ seviyesine çıkabilir mi?',
-      author: 'CryptoExpert',
-      replies: 124,
-      views: 2341,
-      lastActivity: '2 dk önce',
-      category: 'Kripto',
-      isHot: true,
-      isPinned: true
-    },
-    {
-      id: '2', 
-      title: 'EUR/USD paritesi için haftalık analiz',
-      author: 'ForexPro',
-      replies: 89,
-      views: 1567,
-      lastActivity: '15 dk önce',
-      category: 'Forex',
-      isHot: true,
-      isPinned: false
-    },
-    {
-      id: '3',
-      title: 'Altcoin sezonuna hazır mıyız?',
-      author: 'AltTrader',
-      replies: 67,
-      views: 923,
-      lastActivity: '1 saat önce', 
-      category: 'Kripto',
-      isHot: false,
-      isPinned: false
-    }
-  ];
+  // Fetch hot forum topics from API
+  const fetchHotTopics = async () => {
+    setTopicsLoading(true);
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from('forum_topics')
+        .select(`
+          *,
+          author:users!forum_topics_author_id_fkey (
+            id,
+            name,
+            username,
+            avatar_url
+          ),
+          category:categories!forum_topics_category_id_fkey (
+            id,
+            name,
+            slug,
+            color
+          )
+        `)
+        .order('vote_score', { ascending: false })
+        .order('reply_count', { ascending: false })
+        .limit(3);
 
-  const topStrategies: Strategy[] = [
-    {
-      id: '1',
-      name: 'Bitcoin Momentum Pro',
-      description: 'AI destekli Bitcoin momentum yakalama stratejisi',
-      author: {
-        name: 'CryptoMaster',
-        verified: true,
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=CryptoMaster'
-      },
-      performance: {
-        weekly: 12.4,
-        monthly: 67.8,
-        yearly: 234.5
-      },
-      metrics: {
-        profitFactor: 2.34,
-        sharpeRatio: 1.87,
-        maxDrawdown: 12.3,
-        winRate: 74.2,
-        avgTrade: 1.8,
-        totalTrades: 247,
-        rrRatio: 2.8,
-        calmarRatio: 1.95
-      },
-      followers: 2847,
-      isLive: true,
-      riskLevel: 'Yüksek',
-      category: 'MOMENTUM',
-      chartData: [100, 103, 101, 108, 112, 115, 118, 122, 119, 125, 134, 142, 138, 145, 152, 148, 155, 162, 159, 167, 174, 172, 178, 185, 192, 188, 195, 203, 198, 208],
-      lastSignal: {
-        asset: 'BTC/USDT',
-        direction: 'LONG',
-        price: '67,450$',
-        time: '5 dk önce'
-      },
-      tags: ['AI', 'Momentum', 'High-Frequency'],
-      roi: 108.0
-    },
-    {
-      id: '2',
-      name: 'Forex Scalping Elite',
-      description: 'Ultra hızlı scalping stratejisi',
-      author: {
-        name: 'ForexGuru',
-        verified: true,
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=ForexGuru'
-      },
-      performance: {
-        weekly: 8.3,
-        monthly: 45.2,
-        yearly: 198.7
-      },
-      metrics: {
-        profitFactor: 1.89,
-        sharpeRatio: 2.14,
-        maxDrawdown: 8.7,
-        winRate: 82.4,
-        avgTrade: 0.6,
-        totalTrades: 1847,
-        rrRatio: 1.9,
-        calmarRatio: 2.31
-      },
-      followers: 1934,
-      isLive: true,
-      riskLevel: 'Orta',
-      category: 'SCALPING',
-      chartData: [100, 102, 104, 103, 106, 108, 107, 110, 112, 115, 113, 117, 119, 122, 120, 124, 127, 125, 129, 132, 135, 133, 137, 140, 138, 142, 145, 148, 146, 151],
-      lastSignal: {
-        asset: 'EUR/USD',
-        direction: 'SHORT',
-        price: '1.0875',
-        time: '2 dk önce'
-      },
-      tags: ['Scalping', 'Forex', 'High-Win-Rate'],
-      roi: 51.0
-    },
-    {
-      id: '3',
-      name: 'DeFi Yield Harvester',
-      description: 'Otomatik yield farming stratejisi',
-      author: {
-        name: 'DeFiExpert',
-        verified: true,
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=DeFiExpert'
-      },
-      performance: {
-        weekly: 2.8,
-        monthly: 18.4,
-        yearly: 87.3
-      },
-      metrics: {
-        profitFactor: 3.12,
-        sharpeRatio: 1.45,
-        maxDrawdown: 15.2,
-        winRate: 68.9,
-        avgTrade: 2.4,
-        totalTrades: 89,
-        rrRatio: 3.7,
-        calmarRatio: 1.73
-      },
-      followers: 1256,
-      isLive: true,
-      riskLevel: 'Düşük',
-      category: 'DEFI',
-      chartData: [100, 101, 103, 105, 104, 107, 109, 111, 108, 112, 115, 118, 116, 119, 122, 120, 124, 127, 125, 128, 131, 129, 133, 136, 134, 137, 140, 138, 142, 145],
-      lastSignal: {
-        asset: 'USDC-USDT LP',
-        direction: 'LONG',
-        price: '14.2% APY',
-        time: '1 saat önce'
-      },
-      tags: ['DeFi', 'Yield-Farming', 'Low-Risk'],
-      roi: 45.0
-    },
-    {
-      id: '4',
-      name: 'Altcoin Swing Master',
-      description: 'Orta vadeli altcoin swing trading',
-      author: {
-        name: 'AltTrader',
-        verified: false,
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=AltTrader'
-      },
-      performance: {
-        weekly: 18.7,
-        monthly: 89.3,
-        yearly: 312.8
-      },
-      metrics: {
-        profitFactor: 2.67,
-        sharpeRatio: 1.73,
-        maxDrawdown: 22.1,
-        winRate: 71.6,
-        avgTrade: 4.3,
-        totalTrades: 134,
-        rrRatio: 3.2,
-        calmarRatio: 1.41
-      },
-      followers: 892,
-      isLive: true,
-      riskLevel: 'Yüksek',
-      category: 'SWING',
-      chartData: [100, 98, 104, 110, 108, 115, 122, 118, 126, 134, 131, 140, 148, 145, 153, 162, 158, 167, 175, 172, 181, 189, 186, 195, 203, 200, 209, 218, 215, 225],
-      lastSignal: {
-        asset: 'AVAX/USDT',
-        direction: 'LONG',
-        price: '38.4$',
-        time: '30 dk önce'
-      },
-      tags: ['Swing', 'Altcoin', 'Technical-Analysis'],
-      roi: 212.8
+      if (error) throw error;
+
+      // Get current user's votes for these topics
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user && data) {
+        const topicIds = data.map(topic => topic.id);
+        const { data: userVotes } = await supabase
+          .from('forum_topic_votes')
+          .select('topic_id, vote_type')
+          .eq('user_id', user.id)
+          .in('topic_id', topicIds);
+
+        // Map user votes to topics
+        const voteMap = new Map(userVotes?.map(v => [v.topic_id, v.vote_type]));
+        data.forEach(topic => {
+          topic.user_vote = voteMap.get(topic.id) || null;
+        });
+      }
+
+      // Transform to interface format
+      const transformedTopics: ForumTopic[] = data?.map(topic => ({
+        id: topic.id,
+        title: topic.title,
+        author: topic.author?.username || 'Unknown',
+        replies: topic.reply_count,
+        views: topic.view_count,
+        lastActivity: formatTimeAgo(topic.created_at),
+        category: topic.category?.name || 'General',
+        isHot: topic.vote_score > 10,
+        isPinned: topic.is_pinned,
+        vote_score: topic.vote_score || 0,
+        user_vote: topic.user_vote || null
+      })) || [];
+
+      setHotTopics(transformedTopics);
+    } catch (error) {
+      console.error('Error fetching hot topics:', error);
+      // Fallback to mock data
+      setHotTopics([
+        {
+          id: '1',
+          title: 'Bitcoin 50.000$ seviyesine çıkabilir mi?',
+          author: 'CryptoExpert',
+          replies: 124,
+          views: 2341,
+          lastActivity: '2 dk önce',
+          category: 'Kripto',
+          isHot: true,
+          isPinned: true,
+          vote_score: 45,
+          user_vote: null
+        },
+        {
+          id: '2', 
+          title: 'EUR/USD paritesi için haftalık analiz',
+          author: 'ForexPro',
+          replies: 89,
+          views: 1567,
+          lastActivity: '15 dk önce',
+          category: 'Forex',
+          isHot: true,
+          isPinned: false,
+          vote_score: 23,
+          user_vote: null
+        },
+        {
+          id: '3',
+          title: 'Altcoin sezonuna hazır mıyız?',
+          author: 'AltTrader',
+          replies: 67,
+          views: 923,
+          lastActivity: '1 saat önce', 
+          category: 'Kripto',
+          isHot: false,
+          isPinned: false,
+          vote_score: 12,
+          user_vote: null
+        }
+      ]);
+    } finally {
+      setTopicsLoading(false);
     }
-  ];
+  };
+
+  // Helper function to format time ago
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+    
+    if (diffInHours < 1) return 'Az önce';
+    if (diffInHours < 24) return `${diffInHours} saat önce`;
+    if (diffInHours < 168) return `${Math.floor(diffInHours / 24)} gün önce`;
+    return date.toLocaleDateString('tr-TR');
+  };
+
+  // Handle vote for forum topics
+  const handleTopicVote = async (type: 'up' | 'down', topicId: string) => {
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        router.push('/auth/login');
+        return;
+      }
+
+      const voteValue = type === 'up' ? 1 : -1;
+      const currentTopic = hotTopics.find(t => t.id === topicId);
+      const currentVote = currentTopic?.user_vote;
+      
+      const newVoteType = currentVote === voteValue ? null : voteValue;
+
+      // Send vote request
+      const response = await fetch(`/api/forum/topics/${topicId}/vote`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ vote_type: newVoteType })
+      });
+
+      if (!response.ok) {
+        console.error('Error voting');
+        return;
+      }
+
+      const { vote_score } = await response.json();
+
+      // Update local state
+      setHotTopics(topics => 
+        topics.map(topic => 
+          topic.id === topicId
+            ? { ...topic, vote_score, user_vote: newVoteType }
+            : topic
+        )
+      );
+    } catch (error) {
+      console.error('Error voting:', error);
+    }
+  };
+
+  // Real strategy data from trading-stratejileri
+  const [topStrategies, setTopStrategies] = useState<any[]>([]);
+  const [strategiesLoading, setStrategiesLoading] = useState(false);
+
+  // Fetch top strategies
+  const fetchTopStrategies = async () => {
+    setStrategiesLoading(true);
+    try {
+      const response = await fetch('/api/strategies?limit=4&sortBy=En+Yüksek+Getiri');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.strategies && data.strategies.length > 0) {
+          setTopStrategies(data.strategies);
+        } else {
+          // Fallback to mock data if API returns empty
+          setTopStrategies([
+            {
+              id: '1',
+              name: 'RSI Divergence Master',
+              description: 'RSI divergence tespit ile güçlü giriş noktalarını bulun momentum stratejisi yüksek başarı.',
+              author: 'AlgoTrader',
+              authorAvatar: '👤',
+              category: 'Forex',
+              tags: ['H4', 'Momentum'],
+              performance: {
+                totalReturn: 156.8,
+                winRate: 68.5,
+                maxDrawdown: -12.3,
+                sharpeRatio: 2.1,
+                profitFactor: 1.85,
+                totalTrades: 1245,
+                percentageReturn: 156.8
+              },
+              rating: 4.5,
+              likes: 234,
+              downloads: 5678,
+              views: 1234,
+              isPremium: false,
+              timeframe: 'H4',
+              createdAt: '2024-01-15'
+            },
+            {
+              id: '2',
+              name: 'Bollinger Band Breakout Pro',
+              description: 'Bollinger bantları ve volume analizi ile breakout fırsatlarını yakalayan güçlü strateji.',
+              author: 'QuantMaster',
+              authorAvatar: '👤',
+              category: 'Crypto',
+              tags: ['H1', 'Breakout', 'Premium'],
+              performance: {
+                totalReturn: 289.5,
+                winRate: 72.3,
+                maxDrawdown: -18.7,
+                sharpeRatio: 1.8,
+                profitFactor: 2.1,
+                totalTrades: 856,
+                percentageReturn: 289.5
+              },
+              rating: 4.8,
+              likes: 567,
+              downloads: 8901,
+              views: 2341,
+              isPremium: true,
+              timeframe: 'H1',
+              createdAt: '2024-01-10'
+            },
+            {
+              id: '3',
+              name: 'MACD Momentum Pro',
+              description: 'MACD göstergesi ile momentum tabanlı alım satım sinyalleri üreten yüksek performanslı strateji.',
+              author: 'ProTrader',
+              authorAvatar: '👤',
+              authorUsername: 'protrader',
+              category: 'Forex',
+              tags: ['H1', 'MACD'],
+              performance: {
+                totalReturn: 4390573.39,
+                winRate: 73.39,
+                maxDrawdown: -15.52,
+                sharpeRatio: 1.28,
+                profitFactor: 1.75,
+                totalTrades: 218,
+                percentageReturn: 4390573.39
+              },
+              rating: 4.7,
+              likes: 890,
+              downloads: 12345,
+              views: 3456,
+              isPremium: false,
+              timeframe: 'H1',
+              createdAt: '2024-01-25'
+            },
+            {
+              id: '4',
+              name: 'Fibonacci Retracement',
+              description: 'Fibonacci seviyeleri ile destek ve direnç noktalarını tespit eden gelişmiş strateji.',
+              author: 'FiboExpert',
+              authorAvatar: '👤',
+              authorUsername: 'fiboexpert',
+              category: 'Emtia',
+              tags: ['D1', 'Fibonacci'],
+              performance: {
+                totalReturn: 16516.70,
+                winRate: 70.09,
+                maxDrawdown: -8.37,
+                sharpeRatio: 2.43,
+                profitFactor: 2.85,
+                totalTrades: 866,
+                percentageReturn: 16516.70
+              },
+              rating: 4.9,
+              likes: 1234,
+              downloads: 23456,
+              views: 5678,
+              isPremium: false,
+              timeframe: 'D1',
+              createdAt: '2024-01-12'
+            }
+          ]);
+        }
+      } else {
+        // Fallback to mock data
+        setTopStrategies([
+          {
+            id: '1',
+            name: 'RSI Divergence Master',
+            description: 'RSI divergence tespit ile güçlü giriş noktalarını bulun momentum stratejisi yüksek başarı.',
+            author: 'AlgoTrader',
+            authorAvatar: '👤',
+            category: 'Forex',
+            tags: ['H4', 'Momentum'],
+            performance: {
+              totalReturn: 156.8,
+              winRate: 68.5,
+              maxDrawdown: -12.3,
+              sharpeRatio: 2.1,
+              profitFactor: 1.85,
+              totalTrades: 1245,
+              percentageReturn: 156.8
+            },
+            rating: 4.5,
+            likes: 234,
+            downloads: 5678,
+            views: 1234,
+            isPremium: false,
+            timeframe: 'H4',
+            createdAt: '2024-01-15'
+          },
+          {
+            id: '2',
+            name: 'Bollinger Band Breakout Pro',
+            description: 'Bollinger bantları ve volume analizi ile breakout fırsatlarını yakalayan güçlü strateji.',
+            author: 'QuantMaster',
+            authorAvatar: '👤',
+            category: 'Crypto',
+            tags: ['H1', 'Breakout', 'Premium'],
+            performance: {
+              totalReturn: 289.5,
+              winRate: 72.3,
+              maxDrawdown: -18.7,
+              sharpeRatio: 1.8,
+              profitFactor: 2.1,
+              totalTrades: 856,
+              percentageReturn: 289.5
+            },
+            rating: 4.8,
+            likes: 567,
+            downloads: 8901,
+            views: 2341,
+            isPremium: true,
+            timeframe: 'H1',
+            createdAt: '2024-01-10'
+          },
+          {
+            id: '3',
+            name: 'MACD Momentum Pro',
+            description: 'MACD göstergesi ile momentum tabanlı alım satım sinyalleri üreten yüksek performanslı strateji.',
+            author: 'ProTrader',
+            authorAvatar: '👤',
+            authorUsername: 'protrader',
+            category: 'Forex',
+            tags: ['H1', 'MACD'],
+            performance: {
+              totalReturn: 4390573.39,
+              winRate: 73.39,
+              maxDrawdown: -15.52,
+              sharpeRatio: 1.28,
+              profitFactor: 1.75,
+              totalTrades: 218,
+              percentageReturn: 4390573.39
+            },
+            rating: 4.7,
+            likes: 890,
+            downloads: 12345,
+            views: 3456,
+            isPremium: false,
+            timeframe: 'H1',
+            createdAt: '2024-01-25'
+          },
+          {
+            id: '4',
+            name: 'Fibonacci Retracement',
+            description: 'Fibonacci seviyeleri ile destek ve direnç noktalarını tespit eden gelişmiş strateji.',
+            author: 'FiboExpert',
+            authorAvatar: '👤',
+            authorUsername: 'fiboexpert',
+            category: 'Emtia',
+            tags: ['D1', 'Fibonacci'],
+            performance: {
+              totalReturn: 16516.70,
+              winRate: 70.09,
+              maxDrawdown: -8.37,
+              sharpeRatio: 2.43,
+              profitFactor: 2.85,
+              totalTrades: 866,
+              percentageReturn: 16516.70
+            },
+            rating: 4.9,
+            likes: 1234,
+            downloads: 23456,
+            views: 5678,
+            isPremium: false,
+            timeframe: 'D1',
+            createdAt: '2024-01-12'
+          }
+        ]);
+      }
+    } catch (error) {
+      console.error('Error fetching top strategies:', error);
+      // Fallback to mock data
+      setTopStrategies([
+        {
+          id: '1',
+          name: 'RSI Divergence Master',
+          description: 'RSI divergence tespit ile güçlü giriş noktalarını bulun momentum stratejisi yüksek başarı.',
+          author: 'AlgoTrader',
+          authorAvatar: '👤',
+          category: 'Forex',
+          tags: ['H4', 'Momentum'],
+          performance: {
+            totalReturn: 156.8,
+            winRate: 68.5,
+            maxDrawdown: -12.3,
+            sharpeRatio: 2.1,
+            profitFactor: 1.85,
+            totalTrades: 1245,
+            percentageReturn: 156.8
+          },
+          rating: 4.5,
+          likes: 234,
+          downloads: 5678,
+          views: 1234,
+          isPremium: false,
+          timeframe: 'H4',
+          createdAt: '2024-01-15'
+        },
+        {
+          id: '2',
+          name: 'Bollinger Band Breakout Pro',
+          description: 'Bollinger bantları ve volume analizi ile breakout fırsatlarını yakalayan güçlü strateji.',
+          author: 'QuantMaster',
+          authorAvatar: '👤',
+          category: 'Crypto',
+          tags: ['H1', 'Breakout', 'Premium'],
+          performance: {
+            totalReturn: 289.5,
+            winRate: 72.3,
+            maxDrawdown: -18.7,
+            sharpeRatio: 1.8,
+            profitFactor: 2.1,
+            totalTrades: 856,
+            percentageReturn: 289.5
+          },
+          rating: 4.8,
+          likes: 567,
+          downloads: 8901,
+          views: 2341,
+          isPremium: true,
+          timeframe: 'H1',
+          createdAt: '2024-01-10'
+        },
+        {
+          id: '3',
+          name: 'MACD Momentum Pro',
+          description: 'MACD göstergesi ile momentum tabanlı alım satım sinyalleri üreten yüksek performanslı strateji.',
+          author: 'ProTrader',
+          authorAvatar: '👤',
+          authorUsername: 'protrader',
+          category: 'Forex',
+          tags: ['H1', 'MACD'],
+          performance: {
+            totalReturn: 4390573.39,
+            winRate: 73.39,
+            maxDrawdown: -15.52,
+            sharpeRatio: 1.28,
+            profitFactor: 1.75,
+            totalTrades: 218,
+            percentageReturn: 4390573.39
+          },
+          rating: 4.7,
+          likes: 890,
+          downloads: 12345,
+          views: 3456,
+          isPremium: false,
+          timeframe: 'H1',
+          createdAt: '2024-01-25'
+        },
+        {
+          id: '4',
+          name: 'Fibonacci Retracement',
+          description: 'Fibonacci seviyeleri ile destek ve direnç noktalarını tespit eden gelişmiş strateji.',
+          author: 'FiboExpert',
+          authorAvatar: '👤',
+          authorUsername: 'fiboexpert',
+          category: 'Emtia',
+          tags: ['D1', 'Fibonacci'],
+          performance: {
+            totalReturn: 16516.70,
+            winRate: 70.09,
+            maxDrawdown: -8.37,
+            sharpeRatio: 2.43,
+            profitFactor: 2.85,
+            totalTrades: 866,
+            percentageReturn: 16516.70
+          },
+          rating: 4.9,
+          likes: 1234,
+          downloads: 23456,
+          views: 5678,
+          isPremium: false,
+          timeframe: 'D1',
+          createdAt: '2024-01-12'
+        }
+      ]);
+    } finally {
+      setStrategiesLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTopStrategies();
+  }, []);
 
   const latestArticles: Article[] = [
     {
@@ -317,292 +646,321 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-background dark:via-card/30 dark:to-background">
-      {/* Hero Section - Compact */}
-      <div className="bg-gradient-to-r from-green-600 via-emerald-500 to-teal-600 dark:from-green-700 dark:via-emerald-600 dark:to-teal-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="text-center">
-            <motion.h1 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-3xl md:text-4xl font-bold text-white mb-3"
-            >
-              Türkiye'nin En Büyük<br />Trader Topluluğu
-            </motion.h1>
-            <motion.p 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="text-lg text-green-100 mb-6 max-w-2xl mx-auto"
-            >
-              Bilgi, deneyim ve strateji etrafında birleşen, başarıyı hedefleyen kolektif bir gelişim ortamı.
-            </motion.p>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-8">
+        {/* Above-the-Fold Ad - High CPM Position */}
+        <div className="ad-container-wrapper my-8">
+          <div className="flex justify-center items-center p-4 bg-gradient-to-br from-gray-50/50 to-gray-100/50 dark:from-gray-800/30 dark:to-gray-900/30 rounded-xl border border-gray-200/40 dark:border-gray-700/40 min-h-[100px]">
+            <div className="ad-container ad-unit ad-large-rectangle large-rectangle-ad" style={{display: 'block', textAlign: 'center', minHeight: '280px'}}>
+              <div></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-6 lg:gap-8">
+
+          {/* Left Column - Main Content */}
+          <div className="lg:col-span-3 space-y-6">
+            {/* Popular Topics - Reddit Style */}
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="flex flex-wrap justify-center gap-4"
+              transition={{ delay: 0.3 }}
+              className="bg-white dark:bg-card border border-gray-200 dark:border-border rounded-lg overflow-hidden"
             >
-              <Link href="/strategies" className="bg-white/20 hover:bg-white/30 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 backdrop-blur-sm border border-white/20 hover:scale-105">
-                🚀 Stratejileri Keşfet
-              </Link>
-              <Link href="/forum" className="bg-white text-green-600 hover:bg-green-50 px-6 py-3 rounded-xl font-medium transition-all duration-300 hover:scale-105 shadow-lg">
-                💬 Foruma Katıl
-              </Link>
+              {/* Header */}
+              <div className="px-4 py-3 border-b border-gray-100 dark:border-border bg-gray-50 dark:bg-card/50">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <svg className="w-4 h-4 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03z" clipRule="evenodd"/>
+                    </svg>
+                    Popüler Konular
+                  </h2>
+                  <Link 
+                    href="/forum" 
+                    className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 font-medium"
+                  >
+                    Tümünü gör →
+                  </Link>
+                </div>
+              </div>
+
+              {/* Topics List */}
+              <div className="divide-y divide-gray-100 dark:divide-border">
+                {hotTopics.map((topic, index) => (
+                  <Link key={topic.id} href={`/forum/${topic.id}`} className="block">
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: index * 0.05 }}
+                      className="px-4 py-3 hover:bg-gray-50 dark:hover:bg-card/50 transition-colors"
+                    >
+                      <div className="flex items-start gap-3">
+                        {/* Vote Section - Reddit Style */}
+                        <div className="flex flex-col items-center text-center min-w-0 w-10">
+                          <button 
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleTopicVote('up', topic.id);
+                            }}
+                            className={`p-1 rounded transition-colors ${
+                              topic.user_vote === 1
+                                ? 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30'
+                                : 'text-gray-400 hover:bg-gray-100 hover:text-emerald-500 dark:text-gray-500 dark:hover:bg-gray-800 dark:hover:text-emerald-400'
+                            }`}
+                          >
+                            <ArrowUp className="w-3 h-3" />
+                          </button>
+                          <span className={`text-xs font-bold py-1 ${
+                            (topic.vote_score || 0) > 0 ? 'text-emerald-500' : (topic.vote_score || 0) < 0 ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'
+                          }`}>
+                            {Math.abs(topic.vote_score || 0) > 1000 ? `${(Math.abs(topic.vote_score || 0)/1000).toFixed(1)}k` : (topic.vote_score || 0)}
+                          </span>
+                          <button 
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleTopicVote('down', topic.id);
+                            }}
+                            className={`p-1 rounded transition-colors ${
+                              topic.user_vote === -1
+                                ? 'text-red-600 bg-red-100 dark:bg-red-900/30'
+                                : 'text-gray-400 hover:bg-gray-100 hover:text-red-500 dark:text-gray-500 dark:hover:bg-gray-800 dark:hover:text-red-400'
+                            }`}
+                          >
+                            <ArrowDown className="w-3 h-3" />
+                          </button>
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          {/* Title & Badges */}
+                          <div className="flex items-start gap-2 mb-1">
+                            <h3 className="text-sm font-medium text-gray-900 dark:text-white line-clamp-2 hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex-1">
+                              {topic.title}
+                            </h3>
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              {topic.isHot && (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">
+                                  🔥
+                                </span>
+                              )}
+                              {topic.isPinned && (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400">
+                                  📌
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Meta Information */}
+                          <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 leading-tight">
+                            <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${{
+                              'Kripto': 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400',
+                              'Forex': 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                            }[topic.category] || 'bg-gray-100 dark:bg-gray-900/30 text-gray-600 dark:text-gray-400'}`}>
+                              {topic.category}
+                            </span>
+                            <span>•</span>
+                            <span>u/{topic.author}</span>
+                            <span>•</span>
+                            <span>{topic.replies} yanıt</span>
+                            <span>•</span>
+                            <span>{topic.lastActivity}</span>
+                            <span>•</span>
+                            <span>{topic.views} görüntüleme</span>
+                          </div>
+                        </div>
+
+                        {/* Trend Indicator */}
+                        <div className="flex-shrink-0 w-2">
+                          {topic.isHot && (
+                            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  </Link>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Top Strategies - Reddit Style */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="bg-white dark:bg-card border border-gray-200 dark:border-border rounded-lg overflow-hidden"
+            >
+              {/* Header */}
+              <div className="px-4 py-3 border-b border-gray-100 dark:border-border bg-gray-50 dark:bg-card/50">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                    </svg>
+                    En İyi Stratejiler
+                  </h2>
+                  <Link 
+                    href="/trading-stratejileri" 
+                    className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 font-medium"
+                  >
+                    Tümünü gör →
+                  </Link>
+                </div>
+              </div>
+              
+              {/* Content */}
+              {strategiesLoading ? (
+                <div className="p-6 flex items-center justify-center">
+                  <div className="flex items-center gap-3">
+                    <div className="animate-spin w-4 h-4 border-2 border-gray-200 dark:border-border border-t-gray-600 dark:border-t-gray-400 rounded-full"></div>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">Yükleniyor...</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-100 dark:divide-border">
+                  {topStrategies.slice(0, 4).map((strategy, index) => {
+                    // Format large numbers
+                    const formatNumber = (num: number): string => {
+                      const absNum = Math.abs(num);
+                      if (absNum >= 1000000) {
+                        return (num / 1000000).toFixed(1) + 'M';
+                      } else if (absNum >= 1000) {
+                        return (num / 1000).toFixed(1) + 'K';
+                      }
+                      return Math.round(num).toString();
+                    };
+
+                    return (
+                      <Link key={strategy.id} href={`/trading-stratejileri/${strategy.id}`} className="block">
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: index * 0.05 }}
+                          className="px-4 py-4 hover:bg-gray-50 dark:hover:bg-card/50 transition-colors"
+                        >
+                          <div className="flex items-start gap-4">
+                            {/* Performance Score */}
+                            <div className="flex flex-col items-center text-center min-w-0 w-14">
+                              <div className={`text-sm font-bold ${
+                                strategy.performance.totalReturn > 0 
+                                  ? 'text-green-600 dark:text-green-400' 
+                                  : 'text-red-500 dark:text-red-400'
+                              }`}>
+                                {strategy.performance.totalReturn > 0 ? '+' : ''}{formatNumber(strategy.performance.totalReturn)}%
+                              </div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                                getiri
+                              </div>
+                            </div>
+
+                            {/* Strategy Content */}
+                            <div className="flex-1 min-w-0">
+                              {/* Title & Premium Badge */}
+                              <div className="flex items-start gap-2 mb-2">
+                                <h3 className="text-sm font-medium text-gray-900 dark:text-white line-clamp-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex-1">
+                                  {strategy.name}
+                                </h3>
+                                {strategy.isPremium && (
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400">
+                                    PRO
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Description */}
+                              <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-1 mb-2">
+                                {strategy.description}
+                              </p>
+
+                              {/* Meta Information - Two Rows */}
+                              <div className="space-y-1">
+                                {/* First Row: Category, Author, Timeframe */}
+                                <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 leading-tight">
+                                  <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${{
+                                    'Forex': 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400',
+                                    'Crypto': 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400',
+                                    'Hisse': 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400',
+                                    'Emtia': 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'
+                                  }[strategy.category] || 'bg-gray-100 dark:bg-gray-900/30 text-gray-600 dark:text-gray-400'}`}>
+                                    {strategy.category}
+                                  </span>
+                                  <span>•</span>
+                                  <span>u/{strategy.author}</span>
+                                  <span>•</span>
+                                  <span>{strategy.timeframe}</span>
+                                </div>
+                                
+                                {/* Second Row: Performance Metrics */}
+                                <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 leading-tight">
+                                  <span>{strategy.performance.winRate.toFixed(0)}% başarı</span>
+                                  <span>•</span>
+                                  <span>{formatNumber(strategy.performance.totalTrades)} işlem</span>
+                                  <span>•</span>
+                                  <span>{formatNumber(strategy.downloads || strategy.likes)} indirme</span>
+                                  {strategy.tags && strategy.tags.slice(0, 2).map(tag => (
+                                    <React.Fragment key={tag}>
+                                      <span>•</span>
+                                      <span className="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-xs">
+                                        {tag}
+                                      </span>
+                                    </React.Fragment>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Status Indicator */}
+                            <div className="flex-shrink-0 w-3 flex flex-col items-center">
+                              <div className={`w-2 h-2 rounded-full ${
+                                strategy.performance.totalReturn > 0 
+                                  ? 'bg-green-500' 
+                                  : 'bg-red-500'
+                              }`}></div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
             </motion.div>
           </div>
-        </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Above-the-Fold Ad - High CPM Position */}
-        <ResponsiveHeaderAd adSlot={DEFAULT_AD_CONFIG.adSlots.homepageTop} />
-
-        {/* Bento Grid Layout */}
-        <div className="grid grid-cols-12 gap-4 md:gap-6">
-          
-          {/* Live Stats Card */}
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.1 }}
-            className="col-span-12 md:col-span-6 lg:col-span-3 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-6 text-white relative overflow-hidden"
-          >
-            <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
-            <div className="relative z-10">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                <span className="text-sm font-medium text-emerald-100">CANLI</span>
-              </div>
-              <div className="text-2xl font-bold mb-1">₿67,450</div>
-              <div className="text-sm text-emerald-100">+2.4% (24h)</div>
-              <div className="text-xs text-emerald-200 mt-2">Bitcoin/USDT</div>
-            </div>
-          </motion.div>
-
-          {/* Quick Actions */}
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 }}
-            className="col-span-12 md:col-span-6 lg:col-span-3 bg-white dark:bg-card rounded-2xl p-6 border border-gray-200 dark:border-border"
-          >
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Hızlı Erişim</h3>
-            <div className="space-y-3">
-              <Link href="/forum/new" className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors group">
-                <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-                  <span className="text-white text-sm">💬</span>
-                </div>
-                <div className="flex-1">
-                  <div className="text-sm font-medium text-gray-900 dark:text-white">Konu Aç</div>
-                  <div className="text-xs text-blue-600 dark:text-blue-400">Forum</div>
-                </div>
-                <svg className="w-4 h-4 text-gray-400 group-hover:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"/>
-                </svg>
-              </Link>
-              
-              <Link href="/strategies" className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-xl hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors group">
-                <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
-                  <span className="text-white text-sm">📈</span>
-                </div>
-                <div className="flex-1">
-                  <div className="text-sm font-medium text-gray-900 dark:text-white">Stratejiler</div>
-                  <div className="text-xs text-green-600 dark:text-green-400">Keşfet</div>
-                </div>
-                <svg className="w-4 h-4 text-gray-400 group-hover:text-green-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"/>
-                </svg>
-              </Link>
-            </div>
-          </motion.div>
-
-          {/* Community Pulse */}
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.3 }}
-            className="col-span-12 md:col-span-6 lg:col-span-3 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl p-6 text-white relative overflow-hidden"
-          >
-            <div className="absolute bottom-0 left-0 w-16 h-16 bg-white/10 rounded-full -ml-8 -mb-8"></div>
-            <div className="relative z-10">
-              <div className="text-sm font-medium text-purple-100 mb-2">Topluluk</div>
-              <div className="text-2xl font-bold mb-1">2,847</div>
-              <div className="text-sm text-purple-100">Aktif kullanıcı</div>
-              <div className="flex items-center gap-1 mt-3">
-                <div className="flex -space-x-2">
-                  <div className="w-6 h-6 bg-white/20 rounded-full border-2 border-purple-400"></div>
-                  <div className="w-6 h-6 bg-white/20 rounded-full border-2 border-purple-400"></div>
-                  <div className="w-6 h-6 bg-white/20 rounded-full border-2 border-purple-400"></div>
-                </div>
-                <span className="text-xs text-purple-200 ml-2">+24 yeni üye</span>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Today's Performance */}
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.4 }}
-            className="col-span-12 md:col-span-6 lg:col-span-3 bg-white dark:bg-card rounded-2xl p-6 border border-gray-200 dark:border-border"
-          >
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Günün Performansı</h3>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600 dark:text-gray-300">En İyi Strateji</span>
-                <span className="text-sm font-bold text-green-600 dark:text-green-400">+12.4%</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600 dark:text-gray-300">Forum Aktivitesi</span>
-                <span className="text-sm font-bold text-blue-600 dark:text-blue-400">+89 yeni</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600 dark:text-gray-300">Canlı Sinyaller</span>
-                <span className="text-sm font-bold text-orange-600 dark:text-orange-400">4 aktif</span>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Hot Forum Topics - Compact */}
+          {/* Right Column - Sidebar */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="col-span-12 lg:col-span-6 bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border overflow-hidden"
+            className="lg:col-span-1 lg:sticky lg:top-8 space-y-6"
           >
-            <div className="p-6 border-b border-gray-200 dark:border-border">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
-                    <span className="text-white text-sm">🔥</span>
-                  </div>
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">Popüler Konular</h2>
+            {/* Recent Items */}
+            <RecentItems />
+            
+            {/* Sidebar Ad */}
+            <div className="ad-container-wrapper">
+              <div className="flex justify-center items-center p-6 bg-gradient-to-br from-gray-50/50 to-gray-100/50 dark:from-gray-800/30 dark:to-gray-900/30 rounded-xl border border-gray-200/40 dark:border-gray-700/40">
+                <div className="ad-container ad-unit ad-large-rectangle large-rectangle-ad w-full" style={{display: 'block', textAlign: 'center', minHeight: '400px'}}>
+                  <div></div>
                 </div>
-                <Link href="/forum" className="text-blue-600 dark:text-blue-400 text-sm font-medium hover:text-blue-700 transition-colors">
-                  Tümü →
-                </Link>
               </div>
             </div>
-            <div className="divide-y divide-gray-100 dark:divide-border">
-              {hotTopics.slice(0, 4).map((topic, index) => (
-                <Link key={topic.id} href={`/forum/${topic.id}`} className="block">
-                  <div className="p-4 hover:bg-gray-50 dark:hover:bg-muted/50 transition-colors">
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
-                        <span className="text-white text-xs font-bold">{topic.author[0]}</span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          {topic.isHot && <span className="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs rounded-full font-medium">Popüler</span>}
-                          <span className={`px-2 py-0.5 text-xs rounded-full font-medium ${
-                            topic.category === 'Kripto' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400' :
-                            topic.category === 'Forex' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' :
-                            'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
-                          }`}>{topic.category}</span>
-                        </div>
-                        <h3 className="text-sm font-semibold text-gray-900 dark:text-white line-clamp-2 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                          {topic.title}
-                        </h3>
-                        <div className="flex items-center gap-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
-                          <span>💬 {topic.replies}</span>
-                          <span>👁 {topic.views}</span>
-                          <span>⏰ {topic.lastActivity}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
           </motion.div>
 
-          {/* Sidebar Ad - Half Page for High CPM */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.55 }}
-            className="col-span-12 lg:col-span-6 xl:col-span-4 bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border overflow-hidden flex flex-col items-center justify-center p-6"
-          >
-            <div className="text-xs text-gray-400 text-center mb-2 uppercase tracking-wide">
-              Sponsor
-            </div>
-            <HalfPageAd adSlot={DEFAULT_AD_CONFIG.adSlots.homepageSidebar} />
-          </motion.div>
+        </div>
 
-          {/* Top Strategies - Compact Grid */}
+        {/* Bottom Sections */}
+        <div className="mt-8 space-y-8">
+          {/* In-Content Ad */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
-            className="col-span-12 lg:col-span-6 xl:col-span-8 bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border overflow-hidden"
-          >
-            <div className="p-6 border-b border-gray-200 dark:border-border">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
-                    <span className="text-white text-sm">📈</span>
-                  </div>
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">En İyi Stratejiler</h2>
-                </div>
-                <Link href="/strategies" className="text-green-600 dark:text-green-400 text-sm font-medium hover:text-green-700 transition-colors">
-                  Tümü →
-                </Link>
-              </div>
-            </div>
-            <div className="p-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {topStrategies.slice(0, 4).map((strategy) => (
-                  <Link key={strategy.id} href={`/strategies/${strategy.id}`}>
-                    <div className="bg-gray-50 dark:bg-muted rounded-xl p-4 hover:bg-gray-100 dark:hover:bg-muted/80 transition-colors border border-gray-200 dark:border-border hover:border-green-300 dark:hover:border-green-600">
-                      <div className="flex items-center gap-3 mb-3">
-                        <img src={strategy.author.avatar} alt="" className="w-8 h-8 rounded-full" />
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-sm font-bold text-gray-900 dark:text-white truncate hover:text-green-600 transition-colors">
-                            {strategy.name}
-                          </h3>
-                          <p className="text-xs text-gray-600 dark:text-gray-300">@{strategy.author.name}</p>
-                        </div>
-                        {strategy.isLive && (
-                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-3 gap-2 mb-3">
-                        <div className="text-center">
-                          <div className="text-lg font-bold text-green-600 dark:text-green-400">+{strategy.roi.toFixed(0)}%</div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400">ROI</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-lg font-bold text-gray-900 dark:text-white">{strategy.metrics.winRate.toFixed(0)}%</div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400">Win</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-lg font-bold text-gray-900 dark:text-white">{strategy.followers.toLocaleString()}</div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400">Takip</div>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className={`px-2 py-1 text-xs rounded-full font-medium ${
-                          strategy.riskLevel === 'Düşük' ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' :
-                          strategy.riskLevel === 'Orta' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400' :
-                          'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
-                        }`}>
-                          {strategy.riskLevel} Risk
-                        </span>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">{strategy.category}</span>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-
-          {/* In-Content Ad - Between Sections for High Engagement */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.65 }}
-            className="col-span-12 flex justify-center py-4"
+            className="flex justify-center"
           >
             <InContentAd 
               adSlot={DEFAULT_AD_CONFIG.adSlots.homepageMiddle} 
@@ -610,12 +968,12 @@ export default function HomePage() {
             />
           </motion.div>
 
-          {/* Latest Articles - Compact */}
+          {/* Latest Articles */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7 }}
-            className="col-span-12 bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border overflow-hidden"
+            className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border overflow-hidden"
           >
             <div className="p-6 border-b border-gray-200 dark:border-border">
               <div className="flex items-center justify-between">
@@ -623,7 +981,7 @@ export default function HomePage() {
                   <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
                     <span className="text-white text-sm">📰</span>
                   </div>
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">Güncel Makaleler</h2>
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Güncel Makaleler</h2>
                 </div>
                 <Link href="/articles" className="text-purple-600 dark:text-purple-400 text-sm font-medium hover:text-purple-700 transition-colors">
                   Tümü →
@@ -631,8 +989,8 @@ export default function HomePage() {
               </div>
             </div>
             <div className="p-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {latestArticles.map((article, index) => (
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                {latestArticles.map((article) => (
                   <Link key={article.id} href={`/articles/${article.id}`}>
                     <div className="bg-gray-50 dark:bg-muted rounded-xl overflow-hidden hover:bg-gray-100 dark:hover:bg-muted/80 transition-colors border border-gray-200 dark:border-border hover:border-purple-300 dark:hover:border-purple-600 group">
                       <div className="aspect-video overflow-hidden">
@@ -649,7 +1007,7 @@ export default function HomePage() {
                           </span>
                           <span className="text-xs text-gray-500 dark:text-gray-400">📖 {article.readTime}</span>
                         </div>
-                        <h3 className="text-sm font-semibold text-gray-900 dark:text-white line-clamp-2 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors mb-2">
+                        <h3 className="text-sm font-medium text-gray-900 dark:text-white line-clamp-2 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors mb-2">
                           {article.title}
                         </h3>
                         <div className="flex items-center gap-2">
@@ -666,56 +1024,21 @@ export default function HomePage() {
             </div>
           </motion.div>
 
-
-
-          {/* Community Activity */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8 }}
-            className="col-span-12 bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-border overflow-hidden"
-          >
-            <div className="p-6 border-b border-gray-200 dark:border-border">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-teal-500 rounded-lg flex items-center justify-center">
-                  <span className="text-white text-sm">👥</span>
-                </div>
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Topluluk Aktivitesi</h2>
+          {/* Custom Ad Container */}
+          <div className="ad-container-wrapper my-8">
+            <div className="flex justify-center items-center p-4 bg-gradient-to-br from-gray-50/50 to-gray-100/50 dark:from-gray-800/30 dark:to-gray-900/30 rounded-xl border border-gray-200/40 dark:border-gray-700/40 min-h-[100px]">
+              <div className="ad-container ad-unit ad-large-rectangle large-rectangle-ad" style={{display: 'block', textAlign: 'center', minHeight: '280px'}}>
+                <div></div>
               </div>
             </div>
-            <div className="p-6 space-y-4">
-              {[
-                { user: 'TradeMaster', action: 'yeni strateji paylaştı', time: '5 dk', avatar: 'T', color: 'from-blue-500 to-cyan-500' },
-                { user: 'CryptoKing', action: 'Bitcoin analizi yazdı', time: '12 dk', avatar: 'C', color: 'from-orange-500 to-red-500' },
-                { user: 'ForexPro', action: 'EUR/USD sinyali verdi', time: '18 dk', avatar: 'F', color: 'from-green-500 to-teal-500' },
-                { user: 'AnalystAli', action: 'forum konusu açtı', time: '25 dk', avatar: 'A', color: 'from-purple-500 to-pink-500' }
-              ].map((activity, index) => (
-                <div key={index} className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-muted rounded-xl transition-colors">
-                  <div className={`w-10 h-10 bg-gradient-to-br ${activity.color} rounded-full flex items-center justify-center flex-shrink-0`}>
-                    <span className="text-white font-bold text-sm">{activity.avatar}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-900 dark:text-white">
-                      <span className="font-semibold">{activity.user}</span> {activity.action}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{activity.time} önce</p>
-                  </div>
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                </div>
-              ))}
-              
-              <Link href="/forum" className="block w-full text-center py-3 bg-gray-50 dark:bg-muted rounded-xl text-green-600 dark:text-green-400 font-medium hover:bg-gray-100 dark:hover:bg-muted/80 transition-colors">
-                Tüm Aktiviteyi Gör →
-              </Link>
-            </div>
-          </motion.div>
+          </div>
 
-          {/* Bottom Page Ad - Leaderboard for Good Visibility */}
+          {/* Bottom Page Ad */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.9 }}
-            className="col-span-12 flex justify-center mt-6"
+            className="flex justify-center"
           >
             <div className="text-center">
               <div className="text-xs text-gray-400 mb-2 uppercase tracking-wide">
@@ -724,7 +1047,6 @@ export default function HomePage() {
               <LeaderboardAd adSlot={DEFAULT_AD_CONFIG.adSlots.homepageBottom} />
             </div>
           </motion.div>
-
         </div>
       </div>
     </div>

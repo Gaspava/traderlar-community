@@ -3,10 +3,11 @@ import { createClient } from '@/lib/supabase/server';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
+    const { id } = await params;
     
     // Check authentication
     const { data: { user } } = await supabase.auth.getUser();
@@ -25,8 +26,8 @@ export async function POST(
     // Check if post exists
     const { data: post } = await supabase
       .from('forum_posts')
-      .select('id, vote_score')
-      .eq('id', params.id)
+      .select('id')
+      .eq('id', id)
       .single();
 
     if (!post) {
@@ -37,11 +38,9 @@ export async function POST(
     const { data: existingVote } = await supabase
       .from('forum_post_votes')
       .select('vote_type')
-      .eq('post_id', params.id)
+      .eq('post_id', id)
       .eq('user_id', user.id)
       .single();
-
-    let newVoteScore = post.vote_score || 0;
 
     if (vote_type === null) {
       // Remove vote
@@ -49,16 +48,13 @@ export async function POST(
         const { error } = await supabase
           .from('forum_post_votes')
           .delete()
-          .eq('post_id', params.id)
+          .eq('post_id', id)
           .eq('user_id', user.id);
 
         if (error) {
           console.error('Error removing vote:', error);
           return NextResponse.json({ error: 'Failed to remove vote' }, { status: 500 });
         }
-
-        // Update vote score
-        newVoteScore -= existingVote.vote_type;
       }
     } else {
       if (existingVote) {
@@ -66,22 +62,19 @@ export async function POST(
         const { error } = await supabase
           .from('forum_post_votes')
           .update({ vote_type })
-          .eq('post_id', params.id)
+          .eq('post_id', id)
           .eq('user_id', user.id);
 
         if (error) {
           console.error('Error updating vote:', error);
           return NextResponse.json({ error: 'Failed to update vote' }, { status: 500 });
         }
-
-        // Update vote score
-        newVoteScore = newVoteScore - existingVote.vote_type + vote_type;
       } else {
         // Insert new vote
         const { error } = await supabase
           .from('forum_post_votes')
           .insert({
-            post_id: params.id,
+            post_id: id,
             user_id: user.id,
             vote_type
           });
@@ -90,25 +83,38 @@ export async function POST(
           console.error('Error creating vote:', error);
           return NextResponse.json({ error: 'Failed to create vote' }, { status: 500 });
         }
-
-        // Update vote score
-        newVoteScore += vote_type;
       }
     }
 
-    // Update post vote score
-    const { error: updateError } = await supabase
-      .from('forum_posts')
-      .update({ vote_score: newVoteScore })
-      .eq('id', params.id);
+    // Calculate new vote score from database
+    const { data: voteScoreResult, error: voteScoreError } = await supabase
+      .from('forum_post_votes')
+      .select('vote_type')
+      .eq('post_id', id);
 
-    if (updateError) {
-      console.error('Error updating vote score:', updateError);
+    if (voteScoreError) {
+      console.error('Error fetching votes for calculation:', voteScoreError);
+      return NextResponse.json({ error: 'Failed to calculate vote score' }, { status: 500 });
     }
 
+    const newVoteScore = voteScoreResult?.reduce((sum, vote) => sum + vote.vote_type, 0) || 0;
+
+    // Update post vote score in database (if posts table has vote_score column)
+    // Note: Uncomment if forum_posts table has vote_score column
+    // const { error: updateScoreError } = await supabase
+    //   .from('forum_posts')
+    //   .update({ vote_score: newVoteScore })
+    //   .eq('id', id);
+    // 
+    // if (updateScoreError) {
+    //   console.error('Error updating post vote score:', updateScoreError);
+    // }
+
     return NextResponse.json({ 
+      success: true,
       vote_type, 
-      vote_score: newVoteScore 
+      vote_score: newVoteScore,
+      total_votes: voteScoreResult?.length || 0
     });
   } catch (error) {
     console.error('Error in vote route:', error);

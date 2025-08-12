@@ -42,7 +42,7 @@ export const metadata: Metadata = {
   },
 };
 
-import DashboardLayout from "@/components/layout/DashboardLayout";
+import Navbar from "@/components/layout/Navbar";
 
 export default function RootLayout({
   children,
@@ -58,9 +58,10 @@ export default function RootLayout({
       <body className="antialiased font-jakarta">
         <AdSenseScript publisherId={DEFAULT_AD_CONFIG.publisherId} />
         <ThemeProvider>
-          <DashboardLayout>
+          <Navbar />
+          <main className="min-h-screen">
             {children}
-          </DashboardLayout>
+          </main>
         </ThemeProvider>
       </body>
     </html>
