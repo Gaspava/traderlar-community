@@ -12,26 +12,45 @@ export function useMentionDetection(text: string, textareaRef: React.RefObject<H
   const [mentionTrigger, setMentionTrigger] = useState<MentionTrigger | null>(null);
 
   useEffect(() => {
-    if (!textareaRef.current) return;
+    const checkMention = () => {
+      if (!textareaRef.current) return;
 
-    const textarea = textareaRef.current;
-    const cursorPosition = textarea.selectionStart;
-    
-    // @strateji pattern'ini ara
-    const beforeCursor = text.slice(0, cursorPosition);
-    const mentionMatch = beforeCursor.match(/@strateji(\s+\w*)?$/);
-
-    if (mentionMatch) {
-      const mentionStart = beforeCursor.length - mentionMatch[0].length;
-      const query = mentionMatch[1]?.trim() || '';
+      const textarea = textareaRef.current;
+      const cursorPosition = textarea.selectionStart;
       
-      setMentionTrigger({
-        type: 'strategy',
-        position: mentionStart,
-        query
-      });
-    } else {
-      setMentionTrigger(null);
+      // @strateji pattern'ini ara
+      const beforeCursor = text.slice(0, cursorPosition);
+      const mentionMatch = beforeCursor.match(/@strateji(\s+\w*)?$/);
+
+      if (mentionMatch) {
+        const mentionStart = beforeCursor.length - mentionMatch[0].length;
+        const query = mentionMatch[1]?.trim() || '';
+        
+        setMentionTrigger({
+          type: 'strategy',
+          position: mentionStart,
+          query
+        });
+      } else {
+        setMentionTrigger(null);
+      }
+    };
+
+    // İlk kontrolü yap
+    checkMention();
+
+    // Textarea'ya event listener ekle
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.addEventListener('input', checkMention);
+      textarea.addEventListener('keyup', checkMention);
+      textarea.addEventListener('click', checkMention);
+      
+      return () => {
+        textarea.removeEventListener('input', checkMention);
+        textarea.removeEventListener('keyup', checkMention);  
+        textarea.removeEventListener('click', checkMention);
+      };
     }
   }, [text, textareaRef]);
 

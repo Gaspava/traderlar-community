@@ -149,17 +149,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // Extract mentioned strategies from content (temporarily disabled until DB is ready)
-    // const mentionRegex = /@strateji:([^:]+):([^@\s]+)/g;
-    // const mentionedStrategies: string[] = [];
-    // let match;
+    // Extract mentioned strategies from content
+    const mentionRegex = /@strateji:([^:]+):([^@\s]+)/g;
+    const mentionedStrategies: string[] = [];
+    let match;
     
-    // while ((match = mentionRegex.exec(content)) !== null) {
-    //   const strategyId = match[1];
-    //   if (!mentionedStrategies.includes(strategyId)) {
-    //     mentionedStrategies.push(strategyId);
-    //   }
-    // }
+    while ((match = mentionRegex.exec(content)) !== null) {
+      const strategyId = match[1];
+      if (!mentionedStrategies.includes(strategyId)) {
+        mentionedStrategies.push(strategyId);
+      }
+    }
 
     // Create a unique slug by checking for duplicates
     let uniqueSlug = slug;
@@ -188,20 +188,27 @@ export async function POST(request: NextRequest) {
     }
 
     // Create topic - simple insert like articles
+    const insertData: any = {
+      title,
+      slug: uniqueSlug,
+      content,
+      author_id: user.id,
+      category_id,
+      view_count: 0,
+      reply_count: 0,
+      vote_score: 0,
+      is_pinned: false,
+      is_locked: false
+    };
+
+    // Add mentioned_strategies if there are any (graceful handling if column doesn't exist)
+    if (mentionedStrategies.length > 0) {
+      insertData.mentioned_strategies = mentionedStrategies;
+    }
+
     const { data: topic, error } = await supabase
       .from('forum_topics')
-      .insert({
-        title,
-        slug: uniqueSlug,
-        content,
-        author_id: user.id,
-        category_id,
-        view_count: 0,
-        reply_count: 0,
-        vote_score: 0,
-        is_pinned: false,
-        is_locked: false
-      })
+      .insert(insertData)
       .select(`
         *,
         author:users!forum_topics_author_id_fkey (

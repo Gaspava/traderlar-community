@@ -43,21 +43,18 @@ export default function ForumContentRenderer({ content, className = '' }: ForumC
       lastIndex = match.index + match[0].length;
     }
 
-    // Kalan text'i ekle
+    // Kalan text'i ekle (eğer hiç mention yoksa tüm content buraya girer)
     if (lastIndex < content.length) {
       parts.push({ type: 'text', content: content.slice(lastIndex) });
     }
 
+    // Eğer hiç mention yoksa ve parts boşsa, tüm content'i text olarak ekle
+    if (parts.length === 0) {
+      parts.push({ type: 'text', content });
+    }
+
     return parts;
   }, [content]);
-
-  if (parsedContent.length === 0) {
-    return (
-      <div className={className}>
-        <p className="text-foreground whitespace-pre-wrap">{content}</p>
-      </div>
-    );
-  }
 
   return (
     <div className={className}>
