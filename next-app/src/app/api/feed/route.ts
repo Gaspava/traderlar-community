@@ -5,6 +5,7 @@ import { FeedContent, FeedResponse, SortOption, ContentType, FeedFilters } from 
 const ITEMS_PER_PAGE = 10;
 
 export async function GET(request: NextRequest) {
+  console.log('=== FEED API CALLED ===');
   try {
     const searchParams = request.nextUrl.searchParams;
     const page = parseInt(searchParams.get('page') || '1');
@@ -30,7 +31,9 @@ export async function GET(request: NextRequest) {
 
     // Fetch articles
     if (type === 'all' || type === 'article') {
+      console.log('About to fetch articles, type:', type);
       const articleContent = await fetchArticleContent(supabase, user?.id, limit, sort, category, timeRange);
+      console.log('Article content fetched:', articleContent.length, 'items');
       allContent.push(...articleContent);
     }
 
@@ -193,61 +196,52 @@ async function fetchArticleContent(
   timeRange?: string | null
 ) {
   try {
+    console.log('Fetching articles from Supabase...');
+    
+    // Simpler query similar to articles page
     let query = supabase
       .from('articles')
       .select(`
-        id,
-        title,
-        excerpt,
-        content,
-        slug,
-        featured_image,
-        created_at,
-        updated_at,
-        view_count,
-        read_time,
-        tags,
-        author:users!articles_author_id_fkey (
+        *,
+        users!articles_author_id_fkey (
           id,
           username,
           name,
           avatar_url
         ),
-        category:categories!articles_category_id_fkey (
-          id,
-          name,
-          slug,
-          color
+        article_categories (
+          categories (
+            id,
+            name,
+            slug,
+            color
+          )
         )
-      `);
+      `)
+      .eq('is_published', true);
 
-    // Apply filters similar to forum content
-    if (category) {
-      query = query.eq('category.slug', category);
-    }
-
-    if (timeRange && timeRange !== 'all') {
-      const timeFilter = getTimeFilter(timeRange);
-      query = query.gte('created_at', timeFilter);
-    }
-
+    // Apply sorting
     switch (sort) {
-      case 'hot':
-        query = query.order('view_count', { ascending: false })
-                    .order('created_at', { ascending: false });
-        break;
       case 'new':
-        query = query.order('created_at', { ascending: false });
+        query = query.order('published_at', { ascending: false });
         break;
       case 'top':
         query = query.order('view_count', { ascending: false });
+        break;
+      case 'hot':
+      default:
+        query = query.order('published_at', { ascending: false });
         break;
     }
 
     query = query.limit(limit);
 
     const { data, error } = await query;
-    if (error) throw error;
+    console.log('Articles query result:', { data, error, count: data?.length });
+    if (error) {
+      console.error('Articles fetch error:', error);
+      throw error;
+    }
 
     // Get comment counts
     const articleIds = (data || []).map(article => article.id);
@@ -266,30 +260,38 @@ async function fetchArticleContent(
       commentCounts = new Map(Object.entries(counts));
     }
 
-    return (data || []).map(article => ({
-      id: article.id,
-      type: 'article' as const,
-      title: article.title,
-      content: article.excerpt,
-      author: {
-        id: article.author.id,
-        username: article.author.username,
-        name: article.author.name,
-        avatar_url: article.author.avatar_url
-      },
-      category: article.category,
-      created_at: article.created_at,
-      updated_at: article.updated_at,
-      vote_score: 0, // Articles don't have votes in our system
-      user_vote: null,
-      view_count: article.view_count || 0,
-      excerpt: article.excerpt,
-      featured_image: article.featured_image,
-      read_time: article.read_time || 5,
-      slug: article.slug,
-      tags: article.tags,
-      comment_count: commentCounts.get(article.id) || 0
-    }));
+    return (data || []).map(article => {
+      // Get first category if exists
+      const firstCategory = article.article_categories?.[0]?.categories;
+      
+      return {
+        id: article.id,
+        type: 'article' as const,
+        title: article.title || 'Başlıksız Makale',
+        content: article.excerpt || article.content || '',
+        author: {
+          id: article.users?.id || article.author_id || '1',
+          username: article.users?.username || 'anonymous',
+          name: article.users?.name || 'Anonymous User',
+          avatar_url: article.users?.avatar_url || null
+        },
+        category: {
+          id: firstCategory?.id || '1',
+          name: firstCategory?.name || 'Genel',
+          slug: firstCategory?.slug || 'genel',
+          color: firstCategory?.color || '#3B82F6'
+        },
+        created_at: article.created_at || article.published_at,
+        updated_at: article.updated_at,
+        vote_score: 0,
+        user_vote: null,
+        view_count: article.view_count || 0,
+        read_time: article.read_time || 5,
+        featured_image: article.cover_image || article.featured_image,
+        slug: article.slug,
+        comment_count: commentCounts.get(article.id) || 0
+      };
+    });
 
   } catch (error) {
     console.error('Error fetching article content:', error);
@@ -306,58 +308,25 @@ async function fetchStrategyContent(
   timeRange?: string | null
 ) {
   try {
+    console.log('Fetching strategies from Supabase...');
+    // Simpler query without joins that might fail
     let query = supabase
       .from('trading_strategies')
-      .select(`
-        id,
-        name,
-        description,
-        slug,
-        created_at,
-        updated_at,
-        view_count,
-        timeframe,
-        tags,
-        download_count,
-        like_count,
-        is_premium,
-        performance,
-        author:users!trading_strategies_author_id_fkey (
-          id,
-          username,
-          name,
-          avatar_url
-        ),
-        category:categories!trading_strategies_category_id_fkey (
-          id,
-          name,
-          slug,
-          color
-        )
-      `);
+      .select('*');
 
-    // Apply filters
-    if (category) {
-      query = query.eq('category.slug', category);
-    }
-
-    if (timeRange && timeRange !== 'all') {
-      const timeFilter = getTimeFilter(timeRange);
-      query = query.gte('created_at', timeFilter);
-    }
-
+    // Apply sorting
     switch (sort) {
       case 'hot':
-        query = query.order('download_count', { ascending: false })
-                    .order('like_count', { ascending: false })
-                    .order('view_count', { ascending: false });
+        query = query.order('downloads', { ascending: false });
         break;
       case 'new':
         query = query.order('created_at', { ascending: false });
         break;
       case 'top':
-        query = query.order('like_count', { ascending: false })
-                    .order('download_count', { ascending: false });
+        query = query.order('likes', { ascending: false });
+        break;
+      default:
+        query = query.order('created_at', { ascending: false });
         break;
     }
 
@@ -366,35 +335,42 @@ async function fetchStrategyContent(
     const { data, error } = await query;
     if (error) throw error;
 
+    console.log('Strategies query result:', { data, error, count: data?.length });
+    
     return (data || []).map(strategy => ({
       id: strategy.id,
       type: 'strategy' as const,
-      title: strategy.name,
-      content: strategy.description,
-      description: strategy.description,
+      title: strategy.name || 'İsimsiz Strateji',
+      content: strategy.description || '',
+      description: strategy.description || '',
       author: {
-        id: strategy.author.id,
-        username: strategy.author.username,
-        name: strategy.author.name,
-        avatar_url: strategy.author.avatar_url
+        id: strategy.author_id || '1',
+        username: 'trader',
+        name: 'Trader',
+        avatar_url: null
       },
-      category: strategy.category,
+      category: {
+        id: strategy.category || '1',
+        name: strategy.category || 'Strateji',
+        slug: strategy.category?.toLowerCase() || 'strateji',
+        color: '#10B981'
+      },
       created_at: strategy.created_at,
       updated_at: strategy.updated_at,
-      vote_score: strategy.like_count || 0,
+      vote_score: strategy.likes || 0,
       user_vote: null,
-      view_count: strategy.view_count || 0,
+      view_count: strategy.views || 0,
       performance: {
-        total_return: strategy.performance?.total_return || 0,
-        win_rate: strategy.performance?.win_rate || 0,
-        total_trades: strategy.performance?.total_trades || 0
+        total_return: strategy.total_return_percentage || strategy.total_net_profit || 0,
+        win_rate: strategy.win_rate || 0,
+        total_trades: strategy.total_trades || 0
       },
       timeframe: strategy.timeframe,
       tags: strategy.tags || [],
-      download_count: strategy.download_count || 0,
-      like_count: strategy.like_count || 0,
+      download_count: strategy.downloads || 0,
+      like_count: strategy.likes || 0,
       is_premium: strategy.is_premium || false,
-      slug: strategy.slug
+      slug: strategy.id // Use ID as slug if no slug field
     }));
 
   } catch (error) {

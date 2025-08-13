@@ -104,6 +104,7 @@ export default function HomePage() {
   // Initial load
   useEffect(() => {
     if (state.mounted) {
+      setState(prev => ({ ...prev, loading: true }));
       fetchContent(1, true);
     }
   }, [state.mounted]);
@@ -111,23 +112,22 @@ export default function HomePage() {
   // Refetch when sort or filter changes
   useEffect(() => {
     if (state.mounted) {
-      setState(prev => ({ ...prev, page: 1, content: [] }));
+      setState(prev => ({ ...prev, page: 1, content: [], loading: true }));
       fetchContent(1, true);
     }
   }, [state.sortBy, state.contentFilter]);
 
   const fetchContent = async (pageNum: number = state.page, reset: boolean = false) => {
-    if (reset) {
-      setState(prev => ({ ...prev, loading: true }));
-    }
-
     try {
+      console.log('Fetching content from API:', { pageNum, sortBy: state.sortBy, contentFilter: state.contentFilter });
       const response = await fetch(
-        `/api/feed?page=${pageNum}&limit=10&sort=${state.sortBy}&type=${state.contentFilter}`
+        `/api/feed?page=${pageNum}&limit=20&sort=${state.sortBy}&type=${state.contentFilter}`
       );
       const data: FeedResponse = await response.json();
+      console.log('API Response:', data);
       
-      if (data.content) {
+      if (response.ok && data && data.content && data.content.length > 0) {
+        console.log('API data received, using:', data.content.length, 'items');
         const contentWithAds = insertAds(data.content, pageNum > 1);
         
         if (reset) {
@@ -136,7 +136,8 @@ export default function HomePage() {
             content: contentWithAds,
             hasMore: data.hasMore,
             totalCount: data.totalCount,
-            page: pageNum
+            page: pageNum,
+            loading: false
           }));
         } else {
           setState(prev => ({
@@ -147,28 +148,61 @@ export default function HomePage() {
             page: pageNum
           }));
         }
+        return;
       }
     } catch (error) {
-      console.error('Error fetching content:', error);
+      console.log('API error, falling back to mock data:', error);
+    }
+    
+    // Fallback to mock data
+    console.log('Using mock data as fallback');
+    let mockContent = getMockContent();
       
-      // Fallback to mock data
-      if (reset && state.content.length === 0) {
-        const mockContent = getMockContent();
-        const contentWithAds = insertAds(mockContent);
+      // Apply content type filter
+      if (state.contentFilter !== 'all') {
+        mockContent = mockContent.filter(item => item.type === state.contentFilter);
+      }
+      
+      // Apply sorting
+      mockContent = mockContent.sort((a, b) => {
+        switch (state.sortBy) {
+          case 'new':
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+          case 'top':
+            return b.vote_score - a.vote_score;
+          case 'hot':
+          default:
+            // Hot algorithm - combine vote score, views, and recency
+            const scoreA = a.vote_score * 2 + a.view_count * 0.1;
+            const scoreB = b.vote_score * 2 + b.view_count * 0.1;
+            return scoreB - scoreA;
+        }
+      });
+      
+      // Paginate mock data
+      const startIndex = (pageNum - 1) * 20;
+      const endIndex = startIndex + 20;
+      const paginatedMockContent = mockContent.slice(startIndex, endIndex);
+      
+      const contentWithAds = insertAds(paginatedMockContent, pageNum > 1);
+      
+      if (reset) {
         setState(prev => ({
           ...prev,
           content: contentWithAds,
-          hasMore: false,
-          totalCount: mockContent.length
+          hasMore: endIndex < mockContent.length,
+          totalCount: mockContent.length,
+          loading: false
+        }));
+      } else {
+        setState(prev => ({
+          ...prev,
+          content: [...prev.content, ...contentWithAds],
+          hasMore: endIndex < mockContent.length,
+          totalCount: mockContent.length,
+          loading: false
         }));
       }
-      
-      setState(prev => ({ ...prev, hasMore: false }));
-    } finally {
-      if (reset) {
-        setState(prev => ({ ...prev, loading: false }));
-      }
-    }
   };
 
   const insertAds = (content: FeedContent[], skipFirst: boolean = false): (FeedContent | { type: 'ad'; id: string })[] => {
@@ -206,14 +240,20 @@ export default function HomePage() {
   };
 
   const loadMore = useCallback(async () => {
-    if (!state.hasMore) return;
-    await fetchContent(state.page + 1, false);
-  }, [state.page, state.hasMore, state.sortBy, state.contentFilter]);
+    if (!state.hasMore || state.loading) return;
+    
+    setState(prev => ({ ...prev, loading: true }));
+    try {
+      await fetchContent(state.page + 1, false);
+    } finally {
+      setState(prev => ({ ...prev, loading: false }));
+    }
+  }, [state.page, state.hasMore, state.sortBy, state.contentFilter, state.loading]);
 
   const { setTargetRef, isLoading } = useInfiniteScroll({
     onLoadMore: loadMore,
     hasMore: state.hasMore,
-    enabled: !state.loading && state.hasMore
+    enabled: !state.loading && state.hasMore && state.mounted
   });
 
   if (!state.mounted) {
@@ -252,12 +292,6 @@ export default function HomePage() {
       {/* Main Content with Left Margin for Fixed Sidebar */}
       <div className="md:ml-60 transition-all duration-300">
         <div className="max-w-7xl mx-auto px-6 py-8 pt-24 md:pt-8">
-        {/* Top Banner Ad */}
-        <div className="w-full border-b border-gray-200 dark:border-border bg-white dark:bg-card relative z-40 mb-6">
-          <div className="max-w-7xl mx-auto py-4">
-            <LeaderboardAd adSlot={DEFAULT_AD_CONFIG.adSlots.homepageTop} />
-          </div>
-        </div>
 
         {/* Main Content Layout */}
         <div className="flex gap-8">
@@ -348,21 +382,38 @@ export default function HomePage() {
                   })}
 
                   {/* Loading more indicator */}
-                  {isLoading && !state.loading && (
+                  {(isLoading && !state.loading) && (
                     <div className="space-y-2">
                       {[...Array(3)].map((_, i) => (
-                        <FeedItemSkeleton key={`loading-${i}`} isDarkMode={isDarkMode} />
+                        <div 
+                          key={`loading-${i}`} 
+                          className="animate-fadeIn"
+                          style={{ animationDelay: `${i * 100}ms` }}
+                        >
+                          <FeedItemSkeleton isDarkMode={isDarkMode} />
+                        </div>
                       ))}
                     </div>
                   )}
 
                   {/* Infinite Scroll Trigger */}
-                  {state.hasMore && (
+                  {state.hasMore && !state.loading && (
                     <div 
                       ref={setTargetRef}
-                      className="py-4"
+                      className="py-8 flex justify-center"
                     >
-                      {!isLoading && <div className="h-10" />}
+                      {isLoading ? (
+                        <div className="relative">
+                          <div className="flex items-center justify-center gap-1">
+                            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-2 text-center">Yeni içerikler yükleniyor...</p>
+                        </div>
+                      ) : (
+                        <div className="h-4" />
+                      )}
                     </div>
                   )}
 
@@ -449,9 +500,9 @@ function FeedItem({
     <div className={`rounded-lg border transition-colors duration-200 hover:shadow-sm ${
       isDarkMode ? 'bg-card border-border hover:bg-background' : 'bg-white border-gray-200 hover:bg-gray-50'
     }`}>
-      <div className="flex p-4">
-        {/* Vote section */}
-        <div className="flex flex-col items-center w-12 mr-4">
+      <div className="flex p-3">
+        {/* Vote section - Forum tarzı */}
+        <div className="flex flex-col items-center w-10 mr-3">
           {content.type === 'forum' ? (
             <VoteButtons
               targetType="topic"
@@ -479,23 +530,22 @@ function FeedItem({
         
         {/* Content */}
         <div className="flex-1 min-w-0">
-          {/* Content Type Tag and Meta */}
+          {/* Meta - Forum tarzı */}
           <div className="flex items-center gap-2 mb-2">
-            <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-bold ${config.bgColor} ${config.textColor}`}>
-              {config.icon} {config.label}
+            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold ${config.bgColor} ${config.textColor}`}>
+              {config.label}
             </span>
-            <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-              <span 
-                className="px-1.5 py-0.5 rounded text-xs font-medium text-white"
-                style={{ backgroundColor: content.category.color }}
-              >
-                {content.category.name}
-              </span>
-              <span>•</span>
-              <span>u/{content.author.username}</span>
-              <span>•</span>
-              <span>{formatDate(content.created_at)} önce</span>
-            </div>
+            <span 
+              className="px-1.5 py-0.5 rounded text-xs font-medium text-white"
+              style={{ backgroundColor: content.category.color }}
+            >
+              {content.category.name}
+            </span>
+            <span className={`text-xs ${
+              isDarkMode ? 'text-muted-foreground' : 'text-gray-500'
+            }`}>
+              • {content.author.username} • {formatDate(content.created_at)} önce
+            </span>
           </div>
           
           {/* Title and Content */}
@@ -528,7 +578,7 @@ function FeedItem({
             )}
           </Link>
           
-          {/* Actions and Stats */}
+          {/* Actions and Stats - Forum tarzı */}
           <div className="flex items-center gap-4 text-xs">
             <button className={`flex items-center gap-1 px-2 py-1 rounded transition-colors ${
               isDarkMode ? 'text-muted-foreground hover:bg-muted hover:text-foreground' : 'text-gray-500 hover:bg-gray-100'
@@ -588,12 +638,12 @@ function FeedItem({
 // Feed Item Skeleton
 function FeedItemSkeleton({ isDarkMode }: { isDarkMode: boolean }) {
   return (
-    <div className={`rounded-lg border p-4 ${
+    <div className={`rounded-lg border p-3 ${
       isDarkMode ? 'bg-card border-border' : 'bg-white border-gray-200'
     }`}>
       <div className="flex">
-        <div className="w-12 mr-4">
-          <div className={`w-8 h-8 rounded ${isDarkMode ? 'bg-muted' : 'bg-gray-200'} animate-pulse`}></div>
+        <div className="w-10 mr-3">
+          <div className={`w-8 h-16 rounded ${isDarkMode ? 'bg-muted' : 'bg-gray-200'} animate-pulse`}></div>
         </div>
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-2">
@@ -616,6 +666,308 @@ function FeedItemSkeleton({ isDarkMode }: { isDarkMode: boolean }) {
 // Mock data for fallback
 function getMockContent(): FeedContent[] {
   return [
+    // MAKALELER - En üstte gösterilecek
+    {
+      id: 'article-forex-risk',
+      type: 'article',
+      title: 'Forex Piyasasında Risk Yönetimi: Kapsamlı Rehber',
+      content: 'Forex piyasasında başarılı olmanın anahtarı doğru risk yönetimi stratejileridir. Bu rehberde pozisyon boyutlandırma, stop loss kullanımı ve risk/ödül oranı gibi kritik konuları detaylıca inceliyoruz.',
+      author: {
+        id: '1',
+        username: 'ForexMaster',
+        name: 'Forex Master',
+        avatar_url: null
+      },
+      category: {
+        id: '1',
+        name: 'Forex',
+        slug: 'forex',
+        color: '#10B981'
+      },
+      created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+      vote_score: 0,
+      view_count: 3456,
+      read_time: 12,
+      comment_count: 45,
+      featured_image: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800',
+      slug: 'forex-risk-yonetimi-rehber'
+    } as FeedContent,
+    
+    {
+      id: 'article-bitcoin-halving',
+      type: 'article',
+      title: 'Bitcoin Halving 2024: Piyasa Üzerindeki Etkileri',
+      content: 'Bitcoin halving olayları kripto piyasasını nasıl etkiliyor? 2024 halving sonrası beklentiler ve geçmiş veriler ışığında detaylı analiz.',
+      author: {
+        id: '2',
+        username: 'CryptoAnalyst',
+        name: 'Crypto Analyst',
+        avatar_url: null
+      },
+      category: {
+        id: '2',
+        name: 'Kripto',
+        slug: 'kripto',
+        color: '#F59E0B'
+      },
+      created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+      vote_score: 0,
+      view_count: 5678,
+      read_time: 10,
+      comment_count: 67,
+      featured_image: 'https://images.unsplash.com/photo-1516245834210-c4c142787335?w=800',
+      slug: 'bitcoin-halving-2024'
+    } as FeedContent,
+
+    {
+      id: 'article-fibonacci',
+      type: 'article',
+      title: 'Fibonacci Retracement: Teknik Analizde Altın Oran',
+      content: 'Fibonacci seviyeleri nasıl hesaplanır ve trading stratejilerinizde nasıl kullanabilirsiniz? %61.8 altın oran seviyesinin önemi.',
+      author: {
+        id: '3',
+        username: 'TechAnalyst',
+        name: 'Technical Analyst',
+        avatar_url: null
+      },
+      category: {
+        id: '3',
+        name: 'Analiz',
+        slug: 'analiz',
+        color: '#3B82F6'
+      },
+      created_at: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
+      vote_score: 0,
+      view_count: 2134,
+      read_time: 8,
+      comment_count: 23,
+      featured_image: 'https://images.unsplash.com/photo-1642790106117-e829e14a795f?w=800',
+      slug: 'fibonacci-retracement-analiz'
+    } as FeedContent,
+
+    {
+      id: 'article-python-bot',
+      type: 'article',
+      title: 'Python ile Algoritmik Trading Bot Geliştirme',
+      content: 'Python kullanarak kendi trading botunuzu nasıl geliştirebilirsiniz? CCXT, Pandas ve TA-Lib kütüphaneleri ile adım adım rehber.',
+      author: {
+        id: '4',
+        username: 'AlgoTrader',
+        name: 'Algo Trader',
+        avatar_url: null
+      },
+      category: {
+        id: '4',
+        name: 'Eğitim',
+        slug: 'egitim',
+        color: '#8B5CF6'
+      },
+      created_at: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
+      vote_score: 0,
+      view_count: 4567,
+      read_time: 15,
+      comment_count: 89,
+      featured_image: 'https://images.unsplash.com/photo-1517077304055-6e89abbf09b0?w=800',
+      slug: 'python-trading-bot'
+    } as FeedContent,
+
+    {
+      id: 'article-psychology',
+      type: 'article',
+      title: 'Trading Psikolojisi: FOMO ve Açgözlülükle Başa Çıkma',
+      content: 'Başarılı trading için psikolojik faktörleri nasıl yönetmelisiniz? Duygusal kontrol teknikleri ve trader mindset geliştirme.',
+      author: {
+        id: '5',
+        username: 'TradingCoach',
+        name: 'Trading Coach',
+        avatar_url: null
+      },
+      category: {
+        id: '5',
+        name: 'Psikoloji',
+        slug: 'psikoloji',
+        color: '#EC4899'
+      },
+      created_at: new Date(Date.now() - 18 * 60 * 60 * 1000).toISOString(),
+      vote_score: 0,
+      view_count: 3210,
+      read_time: 7,
+      comment_count: 56,
+      slug: 'trading-psikolojisi-fomo'
+    } as FeedContent,
+
+    // STRATEJİLER
+    {
+      id: 'strategy-rsi-divergence',
+      type: 'strategy',
+      title: 'RSI Divergence Master Strategy v2.0',
+      content: 'RSI divergence sinyalleri ile güçlü dönüş noktalarını %72 başarı oranıyla yakalayan momentum stratejisi.',
+      description: 'RSI divergence sinyalleri ile güçlü dönüş noktalarını yakalayan gelişmiş momentum stratejisi.',
+      author: {
+        id: '6',
+        username: 'StrategyMaster',
+        name: 'Strategy Master',
+        avatar_url: null
+      },
+      category: {
+        id: '6',
+        name: 'Strateji',
+        slug: 'strateji',
+        color: '#10B981'
+      },
+      created_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+      vote_score: 186,
+      view_count: 5432,
+      performance: {
+        total_return: 186.5,
+        win_rate: 72.3,
+        total_trades: 342
+      },
+      timeframe: 'H4',
+      tags: ['RSI', 'Divergence', 'Momentum'],
+      download_count: 567,
+      like_count: 234,
+      is_premium: false,
+      slug: 'rsi-divergence-master-v2'
+    } as FeedContent,
+
+    {
+      id: 'strategy-bollinger-scalp',
+      type: 'strategy',
+      title: 'Bollinger Bands Scalping System Pro',
+      content: 'M5 timeframe için optimize edilmiş, Bollinger Bands ve RSI kombinasyonu ile yüksek frekanslı scalping stratejisi.',
+      description: 'Bollinger Bands ve RSI kombinasyonu ile 5 dakikalık grafikte scalping.',
+      author: {
+        id: '7',
+        username: 'ScalpKing',
+        name: 'Scalp King',
+        avatar_url: null
+      },
+      category: {
+        id: '7',
+        name: 'Scalping',
+        slug: 'scalping',
+        color: '#EF4444'
+      },
+      created_at: new Date(Date.now() - 7 * 60 * 60 * 1000).toISOString(),
+      vote_score: 95,
+      view_count: 3876,
+      performance: {
+        total_return: 95.2,
+        win_rate: 68.9,
+        total_trades: 1876
+      },
+      timeframe: 'M5',
+      tags: ['Bollinger', 'Scalping', 'High-Frequency'],
+      download_count: 892,
+      like_count: 412,
+      is_premium: true,
+      slug: 'bollinger-scalping-pro'
+    } as FeedContent,
+
+    {
+      id: 'strategy-ma-cross',
+      type: 'strategy',
+      title: 'Golden Cross Trading System',
+      content: 'MA 50/200 golden cross stratejisi trend filtresi ve volume konfirmasyonu ile güçlendirilmiş versiyon.',
+      description: 'Klasik MA crossover stratejisinin gelişmiş versiyonu.',
+      author: {
+        id: '8',
+        username: 'TrendMaster',
+        name: 'Trend Master',
+        avatar_url: null
+      },
+      category: {
+        id: '8',
+        name: 'Trend',
+        slug: 'trend',
+        color: '#06B6D4'
+      },
+      created_at: new Date(Date.now() - 10 * 60 * 60 * 1000).toISOString(),
+      vote_score: 234,
+      view_count: 7890,
+      performance: {
+        total_return: 234.5,
+        win_rate: 58.7,
+        total_trades: 156
+      },
+      timeframe: 'H1',
+      tags: ['Moving Average', 'Trend', 'Golden Cross'],
+      download_count: 1234,
+      like_count: 567,
+      is_premium: false,
+      slug: 'golden-cross-system'
+    } as FeedContent,
+
+    {
+      id: 'strategy-ichimoku',
+      type: 'strategy',
+      title: 'Ichimoku Cloud Complete System',
+      content: 'Ichimoku göstergesinin tüm bileşenlerini kullanan kapsamlı trend takip stratejisi. Japon teknik analizi.',
+      description: 'Ichimoku Cloud ile profesyonel trend takibi.',
+      author: {
+        id: '9',
+        username: 'IchimokuPro',
+        name: 'Ichimoku Pro',
+        avatar_url: null
+      },
+      category: {
+        id: '9',
+        name: 'Japonca',
+        slug: 'japonca',
+        color: '#A855F7'
+      },
+      created_at: new Date(Date.now() - 14 * 60 * 60 * 1000).toISOString(),
+      vote_score: 312,
+      view_count: 4321,
+      performance: {
+        total_return: 312.8,
+        win_rate: 65.4,
+        total_trades: 89
+      },
+      timeframe: 'D1',
+      tags: ['Ichimoku', 'Trend', 'Japanese'],
+      download_count: 456,
+      like_count: 189,
+      is_premium: true,
+      slug: 'ichimoku-cloud-complete'
+    } as FeedContent,
+
+    {
+      id: 'strategy-grid-bot',
+      type: 'strategy',
+      title: 'Crypto Grid Trading Bot v3.0',
+      content: 'Kripto piyasaları için özel tasarlanmış, yatay piyasalarda kar eden otomatik grid trading sistemi.',
+      description: 'Otomatik grid trading botu - kripto için optimize.',
+      author: {
+        id: '10',
+        username: 'GridMaster',
+        name: 'Grid Master',
+        avatar_url: null
+      },
+      category: {
+        id: '10',
+        name: 'Bot',
+        slug: 'bot',
+        color: '#F97316'
+      },
+      created_at: new Date(Date.now() - 20 * 60 * 60 * 1000).toISOString(),
+      vote_score: 89,
+      view_count: 9876,
+      performance: {
+        total_return: 89.4,
+        win_rate: 78.9,
+        total_trades: 2341
+      },
+      timeframe: 'M15',
+      tags: ['Grid', 'Bot', 'Crypto', 'Automated'],
+      download_count: 1567,
+      like_count: 789,
+      is_premium: true,
+      slug: 'crypto-grid-bot-v3'
+    } as FeedContent,
+
+    // Forum Posts - Daha az sayıda
     {
       id: 'forum-1',
       type: 'forum',
@@ -633,7 +985,7 @@ function getMockContent(): FeedContent[] {
         slug: 'kripto',
         color: '#F59E0B'
       },
-      created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+      created_at: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
       vote_score: 45,
       view_count: 1234,
       reply_count: 23,
@@ -642,61 +994,29 @@ function getMockContent(): FeedContent[] {
       slug: 'bitcoin-100000-seviyesi'
     } as FeedContent,
     {
-      id: 'article-1',
-      type: 'article',
-      title: 'Forex Piyasasında Risk Yönetimi: Başlangıç Rehberi',
-      content: 'Forex piyasasında başarılı olmak için risk yönetimi kritik öneme sahiptir. Bu rehberde temel stratejileri öğreneceksiniz.',
+      id: 'forum-2',
+      type: 'forum',
+      title: 'EUR/USD Paritesinde Kritik Seviyeler',
+      content: 'EUR/USD paritesi 1.0800 desteğini test ediyor. Bu seviyenin kırılması durumunda hangi hedefler söz konusu?',
       author: {
-        id: '2',
-        username: 'ForexPro',
-        name: 'Forex Pro',
+        id: '11',
+        username: 'FxAnalyst',
+        name: 'FX Analyst',
         avatar_url: null
       },
       category: {
-        id: '2',
-        name: 'Eğitim',
-        slug: 'egitim',
-        color: '#3B82F6'
-      },
-      created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-      vote_score: 0,
-      view_count: 856,
-      read_time: 8,
-      comment_count: 12,
-      slug: 'forex-risk-yonetimi-rehberi'
-    } as FeedContent,
-    {
-      id: 'strategy-1',
-      type: 'strategy',
-      title: 'RSI Divergence Master Strategy',
-      content: 'RSI divergence sinyalleri ile güçlü giriş noktalarını tespit eden gelişmiş momentum stratejisi.',
-      description: 'RSI divergence sinyalleri ile güçlü giriş noktalarını tespit eden gelişmiş momentum stratejisi.',
-      author: {
-        id: '3',
-        username: 'AlgoTrader',
-        name: 'Algo Trader',
-        avatar_url: null
-      },
-      category: {
-        id: '3',
+        id: '11',
         name: 'Forex',
         slug: 'forex',
         color: '#10B981'
       },
-      created_at: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
-      vote_score: 156,
-      view_count: 2341,
-      performance: {
-        total_return: 156.8,
-        win_rate: 68.5,
-        total_trades: 245
-      },
-      timeframe: 'H4',
-      tags: ['RSI', 'Momentum', 'Divergence'],
-      download_count: 456,
-      like_count: 89,
-      is_premium: false,
-      slug: 'rsi-divergence-master'
+      created_at: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+      vote_score: 67,
+      view_count: 2345,
+      reply_count: 34,
+      is_pinned: false,
+      is_locked: false,
+      slug: 'eurusd-kritik-seviyeler'
     } as FeedContent
   ];
 }
