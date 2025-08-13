@@ -459,6 +459,26 @@ export default function ForumPage() {
           <div className="flex gap-8">
             {/* Main Content */}
             <div className="flex-1 max-w-[800px] space-y-6">
+              {/* New Topic Button */}
+              <div className="flex justify-between items-center">
+                <h2 className={`text-xl font-bold ${
+                  isDarkMode ? 'text-foreground' : 'text-gray-900'
+                }`}>
+                  Forum Konuları
+                </h2>
+                <Link
+                  href="/forum/yeni-konu"
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105 ${
+                    isDarkMode 
+                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white' 
+                      : 'bg-emerald-500 hover:bg-emerald-600 text-white'
+                  }`}
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Yeni Konu Aç
+                </Link>
+              </div>
+
               {/* Sort Tabs */}
               <div className={`flex items-center gap-4 mb-4 ${
                 isDarkMode ? 'text-muted-foreground' : 'text-gray-600'
