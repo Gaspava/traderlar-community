@@ -488,7 +488,7 @@ function FeedItem({
       case 'forum':
         return `/forum/${content.category.slug}/${content.slug}`;
       case 'article':
-        return `/articles/${content.slug}`;
+        return `/makaleler/${content.slug}`;
       case 'strategy':
         return `/trading-stratejileri/${content.slug}`;
       default:

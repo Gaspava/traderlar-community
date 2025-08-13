@@ -255,7 +255,7 @@ export default function ArticleDetailPage() {
   const handleDelete = async () => {
     if (confirm('Bu makaleyi silmek istediğinizden emin misiniz?')) {
       // TODO: Implement delete functionality
-      router.push('/articles');
+      router.push('/makaleler');
     }
   };
 
@@ -295,7 +295,7 @@ export default function ArticleDetailPage() {
               Aradığınız makale mevcut değil veya kaldırılmış olabilir.
             </p>
             <Link 
-              href="/articles" 
+              href="/makaleler" 
               className="inline-flex items-center gap-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 hover:scale-105 shadow-lg shadow-green-500/25"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -338,7 +338,7 @@ export default function ArticleDetailPage() {
               className="mb-4"
             >
               <Link
-                href="/articles"
+                href="/makaleler"
                 className="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400 transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
@@ -381,7 +381,7 @@ export default function ArticleDetailPage() {
             {canEdit && (
               <div className="flex items-center gap-2">
                 <Link
-                  href={`/articles/${article.slug}/edit`}
+                  href={`/makaleler/${article.slug}/edit`}
                   className="p-2 text-gray-400 hover:text-green-600 transition-colors"
                 >
                   <Edit className="w-4 h-4" />
@@ -561,7 +561,7 @@ export default function ArticleDetailPage() {
                 {article.categories.map((category) => (
                   <Link
                     key={category.id}
-                    href={`/articles?category=${category.slug}`}
+                    href={`/makaleler?category=${category.slug}`}
                     className="text-xs px-3 py-1 rounded-full font-medium transition-all duration-300 hover:scale-105 shadow-sm backdrop-blur-sm"
                     style={{
                       backgroundColor: `${category.color}15`,

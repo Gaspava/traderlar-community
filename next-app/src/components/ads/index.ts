@@ -59,7 +59,7 @@ export interface AdConfig {
 
 // Default ad slot configuration (replace with your actual AdSense ad slots)
 export const DEFAULT_AD_CONFIG: AdConfig = {
-  publisherId: 'ca-pub-XXXXXXXXXXXXXXXX', // Replace with your AdSense publisher ID
+  publisherId: process.env.NEXT_PUBLIC_ADSENSE_PUBLISHER_ID || 'ca-pub-XXXXXXXXXXXXXXXX', // Replace with your AdSense publisher ID
   adSlots: {
     // Header ads
     headerDesktop: '1234567890', // 728x90 leaderboard

@@ -123,7 +123,7 @@ export default function HomeSidebar({ activeSection, className = '', isMobileOpe
     {
       id: 'articles',
       label: 'Makaleler',
-      href: '/articles',
+      href: '/makaleler',
       icon: <BookOpen className="w-5 h-5" />,
       count: stats.totalArticles
     },

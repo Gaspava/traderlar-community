@@ -130,7 +130,7 @@ export default function Navbar() {
   const navItems = [
     { href: '/', label: 'Ana Sayfa', icon: Home, external: false },
     { href: '/forum', label: 'Forum', icon: MessageCircle, external: false },
-    { href: '/articles', label: 'Makaleler', icon: BookOpen, external: false },
+    { href: '/makaleler', label: 'Makaleler', icon: BookOpen, external: false },
     { href: '/trading-stratejileri', label: 'Stratejiler', icon: TrendingUp, external: false },
     { href: '/egitim', label: 'Eğitim', icon: BookOpen, external: false },
     { href: '/araclar', label: 'Araçlar', icon: Code, external: false },

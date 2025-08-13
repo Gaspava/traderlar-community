@@ -118,7 +118,7 @@ export default function RelatedArticles({ currentArticleId, categories }: Relate
       {relatedArticles.map((article) => (
         <Link
           key={article.id}
-          href={`/articles/${article.slug}`}
+          href={`/makaleler/${article.slug}`}
           className="block group hover:bg-gray-50 dark:hover:bg-gray-800/30 rounded-lg p-4 transition-all duration-200 border border-transparent hover:border-gray-200 dark:hover:border-gray-700"
         >
           <div className="flex gap-3">

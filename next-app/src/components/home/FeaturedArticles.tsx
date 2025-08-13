@@ -121,7 +121,7 @@ const FeaturedArticles = () => {
         </div>
         
         <Link 
-          href="/articles" 
+          href="/makaleler" 
           className="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 text-sm font-medium flex items-center touch-manipulation"
         >
           <span>Tumu</span>
@@ -134,7 +134,7 @@ const FeaturedArticles = () => {
       {/* Featured Article - Large Card */}
       {featuredArticle && (
         <div className="mb-6 sm:mb-8">
-          <Link href={`/articles/${featuredArticle.id}`}>
+          <Link href={`/makaleler/${featuredArticle.id}`}>
             <div className="group relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl dark:shadow-gray-900/50 transition-all duration-300 border border-gray-100 dark:border-gray-700">
               
               {/* Mobile Layout */}
@@ -294,7 +294,7 @@ const FeaturedArticles = () => {
       {/* Other Articles Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {articles.slice(1).map((article) => (
-          <Link key={article.id} href={`/articles/${article.id}`}>
+          <Link key={article.id} href={`/makaleler/${article.id}`}>
             <div className="group bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-sm hover:shadow-lg dark:shadow-gray-900/50 transition-all duration-300 border border-gray-100 dark:border-gray-700">
               <div className="relative h-40 sm:h-48 overflow-hidden">
                 <img 

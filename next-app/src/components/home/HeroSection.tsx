@@ -56,7 +56,7 @@ export default function HeroSection() {
               </Link>
             </Button>
             <Button size="lg" variant="outline" asChild className="btn-text text-base">
-              <Link href="/articles">
+              <Link href="/makaleler">
                 Makaleleri Keşfet
               </Link>
             </Button>

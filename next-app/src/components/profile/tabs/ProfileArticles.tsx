@@ -88,7 +88,7 @@ export default function ProfileArticles({ userId }: ProfileArticlesProps) {
     <div className="grid gap-6 md:grid-cols-2">
       {articles.map((article) => (
         <Card key={article.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-          <Link href={`/articles/${article.slug}`}>
+          <Link href={`/makaleler/${article.slug}`}>
             {article.cover_image && (
               <div className="relative h-48 w-full">
                 <Image

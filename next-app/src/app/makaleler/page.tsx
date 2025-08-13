@@ -121,7 +121,7 @@ function ArticlesPageContent() {
       
       if (data.success && data.article) {
         // Navigate to random article
-        window.location.href = `/articles/${data.article.slug}`;
+        window.location.href = `/makaleler/${data.article.slug}`;
       }
     } catch (error) {
       console.error('Error fetching random article:', error);
@@ -312,7 +312,7 @@ function ArticlesPageContent() {
                         transition={{ duration: 0.5, delay: index * 0.1 }}
                         className="group bg-white dark:bg-card rounded-2xl overflow-hidden border border-gray-200/50 dark:border-border/50 hover:border-green-300 dark:hover:border-green-500 hover:shadow-2xl hover:shadow-green-500/20 dark:hover:shadow-green-500/10 transition-all duration-500 hover:-translate-y-2 hover:scale-[1.02]"
                       >
-                        <Link href={`/articles/${article.slug}`} className="block h-full">
+                        <Link href={`/makaleler/${article.slug}`} className="block h-full">
                           {/* Article Image */}
                           <div className="relative aspect-video overflow-hidden bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/20 dark:to-emerald-900/10">
                             <div className="absolute inset-0 bg-gradient-to-br from-green-500/30 via-emerald-400/20 to-teal-500/30"></div>
