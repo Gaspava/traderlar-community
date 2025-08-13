@@ -55,6 +55,20 @@ export default function RootLayout({
       className={`${plusJakartaSans.variable} ${montserrat.variable} ${jetbrainsMono.variable}`} 
       suppressHydrationWarning
     >
+      <head>
+        {/* Google tag (gtag.js) */}
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-KZH1G2ZSW8"></script>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'G-KZH1G2ZSW8');
+            `,
+          }}
+        />
+      </head>
       <body className="antialiased font-jakarta">
         <AdSenseScript publisherId={DEFAULT_AD_CONFIG.publisherId} />
         <ThemeProvider>
