@@ -3,6 +3,7 @@ import { Plus_Jakarta_Sans, Montserrat, JetBrains_Mono } from "next/font/google"
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { AdSenseScript, DEFAULT_AD_CONFIG } from "@/components/ads";
+import { GoogleAnalytics } from '@next/third-parties/google';
 
 // Ana font - UI ve Dashboard için optimize edilmiş
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -55,20 +56,6 @@ export default function RootLayout({
       className={`${plusJakartaSans.variable} ${montserrat.variable} ${jetbrainsMono.variable}`} 
       suppressHydrationWarning
     >
-      <head>
-        {/* Google tag (gtag.js) */}
-        <script async src="https://www.googletagmanager.com/gtag/js?id=G-KZH1G2ZSW8"></script>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-              gtag('config', 'G-KZH1G2ZSW8');
-            `,
-          }}
-        />
-      </head>
       <body className="antialiased font-jakarta">
         <AdSenseScript publisherId={DEFAULT_AD_CONFIG.publisherId} />
         <ThemeProvider>
@@ -77,6 +64,7 @@ export default function RootLayout({
             {children}
           </main>
         </ThemeProvider>
+        <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID!} />
       </body>
     </html>
   );
