@@ -1,18 +1,18 @@
 import { type NextRequest, NextResponse } from 'next/server'
+import { updateSession } from '@/lib/supabase/middleware'
 
 export async function middleware(request: NextRequest) {
-  // Temporary bypass for Vercel deployment
-  // Environment variables may not be available during build
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    return NextResponse.next()
-  }
-  
   try {
-    const { updateSession } = await import('@/lib/supabase/middleware')
     return await updateSession(request)
   } catch (error) {
-    console.error('Middleware error:', error)
-    return NextResponse.next()
+    // Allow request to continue on middleware error
+    // In production, consider logging to proper monitoring service
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Middleware error:', error)
+    }
+    return NextResponse.next({
+      request,
+    })
   }
 }
 

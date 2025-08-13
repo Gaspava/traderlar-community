@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     });
     
     if (error) {
-      console.error('Search error:', error);
+      
       return NextResponse.json({ error: 'Search failed' }, { status: 500 });
     }
     
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
       hasMore: totalCount === limit
     });
   } catch (error) {
-    console.error('Search API error:', error);
+    
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -53,7 +53,6 @@ export async function POST(
           .eq('user_id', user.id);
 
         if (error) {
-          console.error('Error removing vote:', error);
           return NextResponse.json({ error: 'Failed to remove vote' }, { status: 500 });
         }
       }
@@ -67,7 +66,6 @@ export async function POST(
           .eq('user_id', user.id);
 
         if (error) {
-          console.error('Error updating vote:', error);
           return NextResponse.json({ error: 'Failed to update vote' }, { status: 500 });
         }
       } else {
@@ -81,7 +79,6 @@ export async function POST(
           });
 
         if (error) {
-          console.error('Error creating vote:', error);
           return NextResponse.json({ error: 'Failed to create vote' }, { status: 500 });
         }
       }
@@ -94,7 +91,6 @@ export async function POST(
       .eq('topic_id', id);
 
     if (voteError) {
-      console.error('Error fetching votes for calculation:', voteError);
       return NextResponse.json({ error: 'Failed to calculate vote score' }, { status: 500 });
     }
 
@@ -108,7 +104,6 @@ export async function POST(
       .eq('id', id);
 
     if (updateError) {
-      console.error('Error updating vote score:', updateError);
       return NextResponse.json({ error: 'Failed to update topic vote score' }, { status: 500 });
     }
 
@@ -119,7 +114,6 @@ export async function POST(
       total_votes: allVotes?.length || 0
     });
   } catch (error) {
-    console.error('Error in vote route:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

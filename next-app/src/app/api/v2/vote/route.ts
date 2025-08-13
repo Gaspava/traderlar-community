@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
           .eq('id', existingVote.id);
 
         if (deleteError) {
-          console.error('Delete vote error:', deleteError);
+          
           return NextResponse.json({
             success: false,
             error: 'Failed to remove vote',
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
             .eq('id', existingVote.id);
 
           if (updateError) {
-            console.error('Update vote error:', updateError);
+            
             return NextResponse.json({
               success: false,
               error: 'Failed to update vote',
@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
           .insert(insertData);
 
         if (insertError) {
-          console.error('Insert vote error:', insertError);
+          
           return NextResponse.json({
             success: false,
             error: 'Failed to create vote',
@@ -161,7 +161,7 @@ export async function POST(request: NextRequest) {
         .eq('id', targetId);
 
       if (updateTargetError) {
-        console.error('Update target score error:', updateTargetError);
+        
         return NextResponse.json({
           success: false,
           error: 'Failed to update topic score',
@@ -185,7 +185,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Vote API error:', error);
+    
     return NextResponse.json({
       success: false,
       error: 'Internal server error',

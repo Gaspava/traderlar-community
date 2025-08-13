@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
     const { data: strategies, error, count } = await query;
     
     if (error) {
-      console.error('Error fetching strategies:', error);
+      
       return NextResponse.json({ error: 'Failed to fetch strategies' }, { status: 500 });
     }
     
@@ -114,7 +114,7 @@ export async function GET(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('Error in GET /api/trading-strategies:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -237,7 +237,7 @@ export async function POST(request: NextRequest) {
       .single();
     
     if (insertError) {
-      console.error('Error inserting strategy:', insertError);
+      
       return NextResponse.json({ error: 'Failed to create strategy' }, { status: 500 });
     }
     
@@ -248,7 +248,7 @@ export async function POST(request: NextRequest) {
     }, { status: 201 });
     
   } catch (error) {
-    console.error('Error in POST /api/trading-strategies:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

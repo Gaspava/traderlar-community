@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -26,16 +26,12 @@
     "@radix-ui/react-switch": "^1.2.5",
     "@radix-ui/react-tabs": "^1.1.12",
     "@radix-ui/react-tooltip": "^1.2.7",
-    "@react-three/drei": "^10.6.1",
-    "@react-three/fiber": "^9.3.0",
     "@supabase/ssr": "^0.7.0-rc.2",
     "@supabase/supabase-js": "^2.47.0",
     "autoprefixer": "^10.4.21",
     "chart.js": "^4.5.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "cmdk": "^1.1.1",
-    "d3": "^7.9.0",
     "date-fns": "^4.1.0",
     "dotenv": "^17.2.1",
     "framer-motion": "^12.23.12",
@@ -48,10 +44,8 @@
     "react-dom": "19.1.0",
     "react-hook-form": "^7.61.1",
     "react-use-measure": "^2.1.7",
-    "recharts": "^3.1.0",
     "tailwind-merge": "^3.3.1",
     "tailwindcss-animate": "^1.0.7",
-    "three": "^0.178.0",
     "zod": "^4.0.14"
   },
   "devDependencies": {

@@ -662,13 +662,94 @@ export default function StrategyDetailPage() {
           data: equityCurve.map(point => point.equity),
           borderColor: 'rgb(34, 197, 94)',
           backgroundColor: 'rgba(34, 197, 94, 0.1)',
-          borderWidth: 2,
+          borderWidth: 3,
           fill: true,
           tension: 0.4,
           pointRadius: 0,
-          pointHoverRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: 'rgb(34, 197, 94)',
+          pointBorderColor: theme === 'dark' ? '#000' : '#fff',
+          pointBorderWidth: 2,
         }
       ]
+    };
+
+    const equityChartOptions = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          backgroundColor: 'rgba(0, 0, 0, 0.9)',
+          titleColor: '#fff',
+          bodyColor: '#fff',
+          borderColor: 'rgba(34, 197, 94, 0.5)',
+          borderWidth: 1,
+          cornerRadius: 12,
+          titleFont: {
+            family: 'Inter, sans-serif',
+            size: 13,
+            weight: 'bold'
+          },
+          bodyFont: {
+            family: 'Inter, sans-serif',
+            size: 12
+          },
+          callbacks: {
+            label: function(context: any) {
+              const value = context.parsed.y;
+              const initialDeposit = strategy?.performance?.initialDeposit || 10000;
+              const profit = value - initialDeposit;
+              return `Equity: ${value.toLocaleString('tr-TR')} (${profit >= 0 ? '+' : ''}${profit.toLocaleString('tr-TR')})`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          display: true,
+          grid: {
+            color: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+            drawBorder: false
+          },
+          ticks: {
+            color: theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)',
+            maxTicksLimit: 8,
+            font: {
+              family: 'Inter, sans-serif',
+              size: 11
+            }
+          }
+        },
+        y: {
+          display: true,
+          grid: {
+            color: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+            drawBorder: false
+          },
+          ticks: {
+            color: theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)',
+            font: {
+              family: 'Inter, sans-serif',
+              size: 11
+            },
+            callback: function(value: any) {
+              return value.toLocaleString('tr-TR');
+            }
+          }
+        }
+      },
+      interaction: {
+        intersect: false,
+        mode: 'index' as const
+      },
+      elements: {
+        point: {
+          hoverBorderWidth: 3
+        }
+      }
     };
 
     const chartOptions = {
@@ -736,7 +817,7 @@ export default function StrategyDetailPage() {
           </div>
         </div>
         <div className="h-64 relative">
-          <Line data={chartData} options={chartOptions} />
+          <Line data={chartData} options={equityChartOptions} />
         </div>
         <div className="mt-6 grid grid-cols-3 gap-4 text-sm">
           <div className="text-center p-3 bg-gray-200/30 dark:bg-card/30 rounded-lg">
@@ -863,13 +944,92 @@ export default function StrategyDetailPage() {
           data: displayData.map(point => point.drawdown),
           borderColor: 'rgb(239, 68, 68)',
           backgroundColor: 'rgba(239, 68, 68, 0.1)',
-          borderWidth: 2,
+          borderWidth: 3,
           fill: true,
           tension: 0.4,
           pointRadius: 0,
-          pointHoverRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: 'rgb(239, 68, 68)',
+          pointBorderColor: theme === 'dark' ? '#000' : '#fff',
+          pointBorderWidth: 2,
         }
       ]
+    };
+
+    const drawdownChartOptions = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          backgroundColor: 'rgba(0, 0, 0, 0.9)',
+          titleColor: '#fff',
+          bodyColor: '#fff',
+          borderColor: 'rgba(239, 68, 68, 0.5)',
+          borderWidth: 1,
+          cornerRadius: 12,
+          titleFont: {
+            family: 'Inter, sans-serif',
+            size: 13,
+            weight: 'bold'
+          },
+          bodyFont: {
+            family: 'Inter, sans-serif',
+            size: 12
+          },
+          callbacks: {
+            label: function(context: any) {
+              const value = context.parsed.y;
+              return `Drawdown: ${value.toFixed(2)}%`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          display: true,
+          grid: {
+            color: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+            drawBorder: false
+          },
+          ticks: {
+            color: theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)',
+            maxTicksLimit: 8,
+            font: {
+              family: 'Inter, sans-serif',
+              size: 11
+            }
+          }
+        },
+        y: {
+          display: true,
+          grid: {
+            color: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+            drawBorder: false
+          },
+          ticks: {
+            color: theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)',
+            font: {
+              family: 'Inter, sans-serif',
+              size: 11
+            },
+            callback: function(value: any) {
+              return value.toFixed(2) + '%';
+            }
+          }
+        }
+      },
+      interaction: {
+        intersect: false,
+        mode: 'index' as const
+      },
+      elements: {
+        point: {
+          hoverBorderWidth: 3
+        }
+      }
     };
 
     const chartOptions = {
@@ -967,7 +1127,7 @@ export default function StrategyDetailPage() {
           </div>
         </div>
         <div className="h-64 relative">
-          <Line data={chartData} options={chartOptions} />
+          <Line data={chartData} options={drawdownChartOptions} />
         </div>
         <div className="mt-6 grid grid-cols-3 gap-4 text-sm">
           <div className="text-center p-3 bg-gray-200/30 dark:bg-card/30 rounded-lg">
@@ -1635,7 +1795,7 @@ export default function StrategyDetailPage() {
 
                   return (
                     <>
-                      {/* Only Modern Professional Analysis */}
+                      {/* Modern Professional Analysis */}
                       <ModernProfessionalAnalysis metrics={professionalMetrics} />
 
                       {/* Keep existing modal functionality - Old analysis sections removed */}

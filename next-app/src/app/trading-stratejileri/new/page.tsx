@@ -57,6 +57,8 @@ export default function NewStrategyPage() {
   const [parsedMetrics, setParsedMetrics] = useState<ParsedMetrics | null>(null);
   const [parseError, setParseError] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [progressMessage, setProgressMessage] = useState('');
   const [step, setStep] = useState<'form' | 'upload' | 'preview' | 'success'>('form');
   
   const setStepWithLog = (newStep: typeof step) => {
@@ -87,11 +89,17 @@ export default function NewStrategyPage() {
   const handleFileUpload = async (file: File) => {
     setIsUploading(true);
     setParseError('');
+    setUploadProgress(0);
+    setProgressMessage('Dosya yükleniyor...');
     
     try {
       if (!file.name.toLowerCase().endsWith('.html')) {
         throw new Error('Lütfen .html uzantılı bir dosya yükleyin');
       }
+
+      // Progress update: File reading
+      setUploadProgress(20);
+      setProgressMessage('Dosya içeriği okunuyor...');
 
       // Try different encodings to handle different file formats
       let fileContent = '';
@@ -106,7 +114,15 @@ export default function NewStrategyPage() {
         throw new Error('Dosya okunamadı. Lütfen dosyanın bozuk olmadığından emin olun.');
       }
       
+      // Progress update: Parsing metrics
+      setUploadProgress(50);
+      setProgressMessage('Trading metrikleri analiz ediliyor...');
+      
       const metrics = TradingStrategyParser.parseMetaTraderHTML(fileContent);
+      
+      // Progress update: Validating
+      setUploadProgress(80);
+      setProgressMessage('Veriler doğrulanıyor...');
       
       if (!TradingStrategyParser.validateMetrics(metrics)) {
         throw new Error('Bu dosyada geçerli trading metrikleri bulunamadı. Lütfen MetaTrader backtest raporu yüklediğinizden emin olun.');
@@ -114,18 +130,30 @@ export default function NewStrategyPage() {
 
       const summary = TradingStrategyParser.generateSummary(metrics);
       
+      // Progress complete
+      setUploadProgress(100);
+      setProgressMessage('Analiz tamamlandı!');
+      
       setParsedMetrics({
         ...metrics,
         summary
       });
       
       setUploadedFile(file);
-      setStepWithLog('preview');
+      
+      // Small delay to show completion
+      setTimeout(() => {
+        setStepWithLog('preview');
+      }, 500);
       
     } catch (error) {
       setParseError(error instanceof Error ? error.message : 'Dosya işlenirken bir hata oluştu');
     } finally {
-      setIsUploading(false);
+      setTimeout(() => {
+        setIsUploading(false);
+        setUploadProgress(0);
+        setProgressMessage('');
+      }, 1000);
     }
   };
 
@@ -142,7 +170,9 @@ export default function NewStrategyPage() {
       return;
     }
     setIsUploading(true);
-    setParseError(''); // Clear any previous errors
+    setParseError('');
+    setUploadProgress(0);
+    setProgressMessage('Strateji kaydediliyor...');
     
     try {
       const submitFormData = new FormData();
@@ -155,12 +185,18 @@ export default function NewStrategyPage() {
       submitFormData.append('file', uploadedFile);
       submitFormData.append('parsedMetrics', JSON.stringify(parsedMetrics));
       
+      // Progress update: Uploading
+      setUploadProgress(30);
+      setProgressMessage('Sunucuya gönderiliyor...');
       
       const response = await fetch('/api/strategies', {
         method: 'POST',
         body: submitFormData
       });
       
+      // Progress update: Processing
+      setUploadProgress(70);
+      setProgressMessage('Veriler işleniyor...');
       
       if (!response.ok) {
         const errorData = await response.json();
@@ -170,23 +206,34 @@ export default function NewStrategyPage() {
       
       const result = await response.json();
       
-      setStepWithLog('success');
+      // Progress complete
+      setUploadProgress(100);
+      setProgressMessage('Strateji başarıyla kaydedildi!');
       
-      // Redirect to the specific strategy page after success  
+      // Small delay to show completion
       setTimeout(() => {
-        const strategyId = result.strategy?.id;
-        if (strategyId) {
-          router.push(`/trading-stratejileri/${strategyId}`);
-        } else {
-          router.push('/trading-stratejileri');
-        }
-      }, 3000);
+        setStepWithLog('success');
+        
+        // Redirect to the specific strategy page after success  
+        setTimeout(() => {
+          const strategyId = result.strategy?.id;
+          if (strategyId) {
+            router.push(`/trading-stratejileri/${strategyId}`);
+          } else {
+            router.push('/trading-stratejileri');
+          }
+        }, 3000);
+      }, 500);
       
     } catch (error) {
       console.error('Error in handleSubmit:', error);
       setParseError(error instanceof Error ? error.message : 'Strateji kaydedilirken bir hata oluştu');
     } finally {
-      setIsUploading(false);
+      setTimeout(() => {
+        setIsUploading(false);
+        setUploadProgress(0);
+        setProgressMessage('');
+      }, 1000);
     }
   };
 
@@ -434,9 +481,17 @@ export default function NewStrategyPage() {
                 />
                 
                 {isUploading ? (
-                  <div className="space-y-4">
-                    <div className="animate-spin mx-auto w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full"></div>
-                    <p className="text-muted-foreground">Dosya analiz ediliyor...</p>
+                  <div className="space-y-6">
+                    <div className="space-y-3">
+                      <div className="w-full bg-muted rounded-full h-2">
+                        <div 
+                          className="bg-primary h-2 rounded-full transition-all duration-300 ease-out"
+                          style={{ width: `${uploadProgress}%` }}
+                        ></div>
+                      </div>
+                      <p className="text-center text-sm text-muted-foreground">{progressMessage}</p>
+                    </div>
+                    <div className="animate-spin mx-auto w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full"></div>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -610,18 +665,31 @@ export default function NewStrategyPage() {
                 <button
                   onClick={handleSubmit}
                   disabled={isUploading}
-                  className="px-6 py-3 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground transition-colors font-medium flex items-center gap-2"
+                  className="px-6 py-3 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground transition-colors font-medium flex flex-col items-center gap-2 min-h-[3rem]"
                 >
                   {isUploading ? (
-                    <>
-                      <div className="animate-spin w-4 h-4 border-2 border-primary-foreground/20 border-t-primary-foreground rounded-full"></div>
-                      Kaydediliyor...
-                    </>
+                    <div className="flex flex-col items-center gap-2 w-full">
+                      <div className="flex items-center gap-2">
+                        <div className="animate-spin w-4 h-4 border-2 border-primary-foreground/20 border-t-primary-foreground rounded-full"></div>
+                        <span>Kaydediliyor...</span>
+                      </div>
+                      {uploadProgress > 0 && (
+                        <div className="w-full bg-primary-foreground/20 rounded-full h-1">
+                          <div 
+                            className="bg-primary-foreground h-1 rounded-full transition-all duration-300"
+                            style={{ width: `${uploadProgress}%` }}
+                          ></div>
+                        </div>
+                      )}
+                      {progressMessage && (
+                        <span className="text-xs opacity-80">{progressMessage}</span>
+                      )}
+                    </div>
                   ) : (
-                    <>
+                    <div className="flex items-center gap-2">
                       <Save className="w-4 h-4" />
                       Stratejiyi Yayınla
-                    </>
+                    </div>
                   )}
                 </button>
               </div>

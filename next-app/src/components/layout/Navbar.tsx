@@ -20,8 +20,7 @@ import {
   Sun,
   Settings,
   ChevronDown,
-  GraduationCap,
-  Wrench
+  Code
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { User as AuthUser } from '@supabase/supabase-js';
@@ -31,6 +30,7 @@ import { useMobileNavigation } from '@/hooks/useMobileInteractions';
 import NotificationCenter from '@/components/notifications/NotificationCenter';
 import { useThemeDetection } from '@/hooks/useThemeDetection';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
+
 
 export default function Navbar() {
   const router = useRouter();
@@ -110,6 +110,7 @@ export default function Navbar() {
     }
   };
 
+
   const handleLogout = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
@@ -131,8 +132,8 @@ export default function Navbar() {
     { href: '/forum', label: 'Forum', icon: MessageCircle, external: false },
     { href: '/articles', label: 'Makaleler', icon: BookOpen, external: false },
     { href: '/trading-stratejileri', label: 'Stratejiler', icon: TrendingUp, external: false },
-    { href: '/egitim', label: 'Eğitim', icon: GraduationCap, external: false },
-    { href: '/araclar', label: 'Araçlar', icon: Wrench, external: false },
+    { href: '/egitim', label: 'Eğitim', icon: BookOpen, external: false },
+    { href: '/araclar', label: 'Araçlar', icon: Code, external: false },
   ];
 
   const isActiveRoute = (href: string) => {
@@ -205,6 +206,7 @@ export default function Navbar() {
 
             {/* Right side actions - positioned to right edge */}
             <div className="flex items-center space-x-2 lg:space-x-3 flex-shrink-0 ml-auto">
+
               {/* Search - Desktop only */}
               <button
                 data-button="search"

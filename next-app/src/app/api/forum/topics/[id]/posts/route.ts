@@ -55,7 +55,7 @@ export async function GET(
     const { data: posts, error, count } = await query;
 
     if (error) {
-      console.error('Error fetching posts:', error);
+      
       return NextResponse.json({ error: 'Failed to fetch posts' }, { status: 500 });
     }
 
@@ -145,7 +145,7 @@ export async function GET(
       }
     });
   } catch (error) {
-    console.error('Error in posts route:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -216,7 +216,7 @@ export async function POST(
       .single();
 
     if (error) {
-      console.error('Error creating post:', error);
+      
       return NextResponse.json({ error: 'Failed to create post' }, { status: 500 });
     }
 
@@ -224,9 +224,34 @@ export async function POST(
     post.vote_score = 0;
     post.user_vote = null;
 
+    // Update topic reply count (only for top-level posts, not replies)
+    if (!parent_id) {
+      try {
+        // Get current reply count
+        const { count: currentReplyCount } = await supabase
+          .from('forum_posts')
+          .select('*', { count: 'exact', head: true })
+          .eq('topic_id', id)
+          .is('parent_id', null);
+
+        // Update topic with new reply count
+        await supabase
+          .from('forum_topics')
+          .update({ 
+            reply_count: currentReplyCount || 0,
+            last_reply_at: new Date().toISOString(),
+            last_reply_user_id: user.id
+          })
+          .eq('id', id);
+      } catch (updateError) {
+        console.error('Error updating topic reply count:', updateError);
+        // Don't fail the post creation if topic update fails
+      }
+    }
+
     return NextResponse.json({ post }, { status: 201 });
   } catch (error) {
-    console.error('Error in create post:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

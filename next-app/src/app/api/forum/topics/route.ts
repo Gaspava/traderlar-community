@@ -7,9 +7,9 @@ export async function GET(request: NextRequest) {
     
     const { searchParams } = new URL(request.url);
     const categorySlug = searchParams.get('category');
-    const sortBy = searchParams.get('sort') || 'recent';
+    const sortBy = searchParams.get('sort') || 'hot';
     const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '20');
+    const limit = parseInt(searchParams.get('limit') || '10');
     const offset = (page - 1) * limit;
 
     // Get category ID first if filtering by category
@@ -51,33 +51,45 @@ export async function GET(request: NextRequest) {
 
     // Apply sorting
     switch (sortBy) {
-      case 'popular':
+      case 'new':
+        query = query.order('created_at', { ascending: false });
+        break;
+      case 'top':
         query = query.order('vote_score', { ascending: false });
         break;
-      case 'replies':
-        query = query.order('reply_count', { ascending: false });
-        break;
-      case 'recent':
+      case 'hot':
       default:
-        query = query.order('created_at', { ascending: false });
+        // Hot algorithm: prioritize pinned, then by score/activity
+        query = query
+          .order('is_pinned', { ascending: false })
+          .order('vote_score', { ascending: false })
+          .order('reply_count', { ascending: false })
+          .order('created_at', { ascending: false });
         break;
     }
 
     const { data: topics, error, count } = await query;
 
     if (error) {
-      console.error('Error fetching topics:', error);
+      
       return NextResponse.json({ error: 'Failed to fetch topics' }, { status: 500 });
     }
 
-    // Fix vote scores for fetched topics (batch operation)
+    // Fix vote scores and reply counts for fetched topics (batch operation)
     if (topics && topics.length > 0) {
       try {
-        // Get all votes for these topics in one query
         const topicIds = topics.map(t => t.id);
+        
+        // Get all votes for these topics in one query
         const { data: allVotes } = await supabase
           .from('forum_topic_votes')
           .select('topic_id, vote_type')
+          .in('topic_id', topicIds);
+        
+        // Get actual reply counts for these topics
+        const { data: allPosts } = await supabase
+          .from('forum_posts')
+          .select('topic_id')
           .in('topic_id', topicIds);
         
         // Group votes by topic_id
@@ -87,46 +99,83 @@ export async function GET(request: NextRequest) {
           return acc;
         }, {} as Record<string, any[]>);
         
-        // Calculate scores and batch update if needed
+        // Group posts by topic_id
+        const postsByTopic = (allPosts || []).reduce((acc, post) => {
+          if (!acc[post.topic_id]) acc[post.topic_id] = 0;
+          acc[post.topic_id]++;
+          return acc;
+        }, {} as Record<string, number>);
+        
+        // Calculate scores and reply counts, batch update if needed
         const topicsToUpdate = [];
         
         for (const topic of topics) {
           const votes = votesByTopic[topic.id] || [];
           const actualVoteScore = votes.reduce((sum, vote) => sum + vote.vote_type, 0);
+          const actualReplyCount = postsByTopic[topic.id] || 0;
+          
+          let needsUpdate = false;
+          const updates: any = {};
           
           if (topic.vote_score !== actualVoteScore) {
-            topicsToUpdate.push({ id: topic.id, vote_score: actualVoteScore });
-            // Update in memory for response
+            updates.vote_score = actualVoteScore;
             topic.vote_score = actualVoteScore;
+            needsUpdate = true;
+          }
+          
+          if (topic.reply_count !== actualReplyCount) {
+            updates.reply_count = actualReplyCount;
+            topic.reply_count = actualReplyCount;
+            needsUpdate = true;
+          }
+          
+          if (needsUpdate) {
+            topicsToUpdate.push({ id: topic.id, ...updates });
           }
         }
         
         // Batch update topics if needed
         if (topicsToUpdate.length > 0) {
           for (const update of topicsToUpdate) {
+            const { id, ...updateData } = update;
             await supabase
               .from('forum_topics')
-              .update({ vote_score: update.vote_score })
-              .eq('id', update.id);
+              .update(updateData)
+              .eq('id', id);
           }
-          console.log(`Synced vote scores for ${topicsToUpdate.length} topics`);
         }
-      } catch (voteError) {
-        console.error('Error syncing vote scores:', voteError);
+      } catch (error) {
+        console.error('Error updating topic metrics:', error);
       }
+    }
+
+    // Get current user's votes for these topics
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (user && topics && topics.length > 0) {
+      const topicIds = topics.map(topic => topic.id);
+      const { data: userVotes } = await supabase
+        .from('forum_topic_votes')
+        .select('topic_id, vote_type')
+        .eq('user_id', user.id)
+        .in('topic_id', topicIds);
+
+      // Map user votes to topics
+      const voteMap = new Map(userVotes?.map(v => [v.topic_id, v.vote_type]) || []);
+      topics.forEach(topic => {
+        topic.user_vote = voteMap.get(topic.id) || null;
+      });
     }
 
     return NextResponse.json({
       topics: topics || [],
-      pagination: {
-        page,
-        limit,
-        total: count || 0,
-        totalPages: Math.ceil((count || 0) / limit)
-      }
+      totalCount: count || 0,
+      page,
+      limit,
+      hasMore: count ? (offset + limit) < count : false
     });
   } catch (error) {
-    console.error('Error in topics route:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -228,7 +277,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error('Error creating topic:', error);
+      
       return NextResponse.json({ 
         error: 'Failed to create topic',
         details: error.message
@@ -237,7 +286,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ topic }, { status: 201 });
   } catch (error) {
-    console.error('Error in create topic:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

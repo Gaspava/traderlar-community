@@ -25,13 +25,13 @@ export async function GET(
       if (error.code === 'PGRST116') {
         return NextResponse.json({ error: 'Backtest not found' }, { status: 404 });
       }
-      console.error('Error fetching backtest:', error);
+      
       return NextResponse.json({ error: 'Failed to fetch backtest' }, { status: 500 });
     }
 
     return NextResponse.json({ backtest });
   } catch (error) {
-    console.error('Error in GET /api/manual-backtests/[id]:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -85,13 +85,13 @@ export async function PUT(
       .single();
 
     if (error) {
-      console.error('Error updating backtest:', error);
+      
       return NextResponse.json({ error: 'Failed to update backtest' }, { status: 500 });
     }
 
     return NextResponse.json({ backtest });
   } catch (error) {
-    console.error('Error in PUT /api/manual-backtests/[id]:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -128,7 +128,7 @@ export async function DELETE(
       .eq('backtest_id', id);
 
     if (tradesDeleteError) {
-      console.error('Error deleting trades:', tradesDeleteError);
+      
       return NextResponse.json({ error: 'Failed to delete trades' }, { status: 500 });
     }
 
@@ -140,7 +140,7 @@ export async function DELETE(
       .eq('user_id', user.id);
 
     if (backtestDeleteError) {
-      console.error('Error deleting backtest:', backtestDeleteError);
+      
       return NextResponse.json({ error: 'Failed to delete backtest' }, { status: 500 });
     }
 
@@ -149,7 +149,7 @@ export async function DELETE(
       message: `Backtest "${backtest.name}" and all its trades have been deleted successfully` 
     });
   } catch (error) {
-    console.error('Error in DELETE /api/manual-backtests/[id]:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -97,18 +97,12 @@ export class TradingStrategyParser {
   public static parseMetaTraderHTML(htmlContent: string): ParsedMetrics {
     const metrics: ParsedMetrics = {};
 
-    console.log('=== HTML PARSING DEBUG ===');
-    console.log('HTML content length:', htmlContent.length);
-    console.log('HTML preview (first 500 chars):', htmlContent.substring(0, 500));
-    console.log('HTML search patterns...');
+    // Optimized parsing - reduced debug output
 
     try {
       // Create a DOM parser-like function for server-side
       const extractTableValue = (pattern: RegExp, index: number = 1): string | undefined => {
         const match = htmlContent.match(pattern);
-        if (match) {
-          console.log(`Pattern ${pattern} matched:`, match[index]);
-        }
         return match ? match[index] : undefined;
       };
 
@@ -128,7 +122,6 @@ export class TradingStrategyParser {
       }
       if (totalNetProfitMatch) {
         metrics.totalNetProfit = this.cleanNumber(totalNetProfitMatch);
-        console.log('Found Total Net Profit:', totalNetProfitMatch, '->', metrics.totalNetProfit);
       }
 
       const grossProfitMatch = extractTableValue(/Gross Profit:<\/td>\s*<td[^>]*><b>([^<]+)<\/b>/);
@@ -153,7 +146,6 @@ export class TradingStrategyParser {
       }
       if (profitFactorMatch) {
         metrics.profitFactor = this.cleanNumber(profitFactorMatch);
-        console.log('Found Profit Factor:', profitFactorMatch, '->', metrics.profitFactor);
       }
 
       let expectedPayoffMatch = extractTableValue(/Expected Payoff:<\/td>\s*<td[^>]*><b>([^<]+)<\/b>/);
@@ -162,7 +154,6 @@ export class TradingStrategyParser {
       }
       if (expectedPayoffMatch) {
         metrics.expectedPayoff = this.cleanNumber(expectedPayoffMatch);
-        console.log('Found Expected Payoff:', expectedPayoffMatch, '->', metrics.expectedPayoff);
       }
 
       // Extract drawdown metrics
@@ -201,7 +192,6 @@ export class TradingStrategyParser {
       }
       if (totalTradesMatch) {
         metrics.totalTrades = this.cleanNumber(totalTradesMatch);
-        console.log('Found Total Trades:', totalTradesMatch, '->', metrics.totalTrades);
       }
 
       // Extract winning/losing trades from Short/Long trades patterns
@@ -209,17 +199,11 @@ export class TradingStrategyParser {
       const longTradesMatch = extractTableValue(/Long Trades \(won %\):<\/td>\s*<td[^>]*><b>([^<]+)<\/b>/);
       
       if (shortTradesMatch && longTradesMatch) {
-        // Parse patterns like "376 (68.35%)" or "753 (70.12%)"
-        console.log('Found Short Trades:', shortTradesMatch);
-        console.log('Found Long Trades:', longTradesMatch);
-        
         const shortCount = this.cleanNumber(shortTradesMatch.split('(')[0]);
         const longCount = this.cleanNumber(longTradesMatch.split('(')[0]);
         
         const shortWinPercent = this.extractValueFromParentheses(shortTradesMatch, 'percentage') || 0;
         const longWinPercent = this.extractValueFromParentheses(longTradesMatch, 'percentage') || 0;
-        
-        console.log('Parsed trade counts:', { shortCount, longCount, shortWinPercent, longWinPercent });
         
         if (shortCount !== undefined && longCount !== undefined) {
           const totalTrades = shortCount + longCount;
@@ -229,13 +213,6 @@ export class TradingStrategyParser {
           metrics.winningTrades = totalWinning;
           metrics.losingTrades = totalTrades - totalWinning;
           metrics.winRate = totalWinning / totalTrades * 100;
-          
-          console.log('Calculated win rate:', {
-            totalTrades: metrics.totalTrades,
-            winningTrades: metrics.winningTrades,
-            losingTrades: metrics.losingTrades,
-            winRate: metrics.winRate
-          });
         }
       }
 
@@ -272,13 +249,11 @@ export class TradingStrategyParser {
         // Remove spaces from numbers like "100 000.00"
         const cleanedDeposit = initialDepositMatch.replace(/\s/g, '');
         metrics.initialDeposit = this.cleanNumber(cleanedDeposit);
-        console.log('Found Initial Deposit:', initialDepositMatch, '->', metrics.initialDeposit);
       }
 
       // Calculate total return percentage if we have both values
       if (metrics.initialDeposit && metrics.totalNetProfit !== undefined) {
         metrics.totalReturnPercentage = (metrics.totalNetProfit / metrics.initialDeposit) * 100;
-        console.log('Calculated Total Return Percentage:', metrics.totalReturnPercentage + '%');
       }
 
       // Extract ratios
@@ -288,7 +263,6 @@ export class TradingStrategyParser {
       }
       if (sharpeRatioMatch) {
         metrics.sharpeRatio = this.cleanNumber(sharpeRatioMatch);
-        console.log('Found Sharpe Ratio:', sharpeRatioMatch, '->', metrics.sharpeRatio);
       }
 
       const recoveryFactorMatch = extractTableValue(/Recovery Factor:<\/td>\s*<td[^>]*><b>([^<]+)<\/b>/);
@@ -325,15 +299,10 @@ export class TradingStrategyParser {
         metrics.avgConsecutiveLosses = this.cleanNumber(avgConsLossesMatch);
       }
 
-      // Extract trade history from the detailed trades table
-      console.log('=== PARSING TRADE HISTORY ===');
-      const trades = this.parseTradeHistory(htmlContent);
+      // Extract trade history from the detailed trades table (optimized)
+      const trades = this.parseTradeHistoryFast(htmlContent);
       if (trades.length > 0) {
         metrics.trades = trades;
-        console.log(`Found ${trades.length} trades in history`);
-        console.log('Sample trade:', trades[0]);
-      } else {
-        console.log('No trades found in HTML');
       }
 
     } catch (error) {
@@ -341,6 +310,56 @@ export class TradingStrategyParser {
     }
 
     return metrics;
+  }
+
+  private static parseTradeHistoryFast(htmlContent: string) {
+    const trades: any[] = [];
+    
+    // Fast path: Try to find deals table first with optimized regex
+    const dealsTableRegex = /<th[^>]*colspan\s*=\s*["']13["'][^>]*>.*?<b[^>]*>\s*D\s*e\s*a\s*l\s*s\s*<\/b>.*?<\/th>(.*?)(?=<th[^>]*colspan|$)/gis;
+    const dealsMatch = htmlContent.match(dealsTableRegex);
+    
+    if (dealsMatch && dealsMatch.length > 0) {
+      // Process deals table efficiently
+      const dealsContent = dealsMatch[0];
+      const dataRowRegex = /<tr[^>]*bgcolor[^>]*align\s*=\s*right[^>]*>(.*?)<\/tr>/gi;
+      const dataRows = dealsContent.match(dataRowRegex);
+      
+      if (dataRows && dataRows.length > 0) {
+        // Process only first 1000 trades for performance
+        const maxTrades = Math.min(dataRows.length, 1000);
+        for (let i = 0; i < maxTrades; i++) {
+          const row = dataRows[i];
+          const cells = this.extractTableCells(row);
+          
+          if (cells.length >= 8 && !row.toLowerCase().includes('total') && !row.toLowerCase().includes('balance')) {
+            try {
+              const trade = {
+                ticket: parseInt(cells[1]) || i + 1,
+                openTime: cells[0] || '',
+                closeTime: cells[0] || '',
+                type: (cells[4] || '').toLowerCase().includes('out') ? 'sell' as const : 'buy' as const,
+                size: this.cleanNumber(cells[5]) || 0,
+                symbol: cells[2] || '',
+                openPrice: this.cleanNumber(cells[6]) || 0,
+                closePrice: this.cleanNumber(cells[6]) || 0,
+                commission: this.cleanNumber(cells[8]) || 0,
+                swap: this.cleanNumber(cells[9]) || 0,
+                profit: this.cleanNumber(cells[10]) || 0,
+              };
+              
+              if (trade.symbol && trade.symbol.length >= 3) {
+                trades.push(trade);
+              }
+            } catch (error) {
+              // Skip invalid rows
+            }
+          }
+        }
+      }
+    }
+    
+    return trades;
   }
 
   private static parseTradeHistory(htmlContent: string) {
@@ -740,7 +759,6 @@ export class TradingStrategyParser {
       console.error('Error parsing trade history:', error);
     }
 
-    console.log(`Parsed ${trades.length} trades from HTML`);
     return trades;
   }
 

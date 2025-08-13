@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     });
     
     if (error) {
-      console.error('Suggestions error:', error);
+      
       return NextResponse.json({ suggestions: [] });
     }
     
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
       suggestions: suggestions || [] 
     });
   } catch (error) {
-    console.error('Suggestions API error:', error);
+    
     return NextResponse.json({ suggestions: [] });
   }
 }

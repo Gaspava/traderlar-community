@@ -13,7 +13,7 @@ export async function GET() {
       .limit(10);
       
     if (error) {
-      console.error('Popular searches error:', error);
+      
       return NextResponse.json({ searches: [] });
     }
     
@@ -21,7 +21,7 @@ export async function GET() {
       searches: popularSearches || [] 
     });
   } catch (error) {
-    console.error('Popular searches API error:', error);
+    
     return NextResponse.json({ searches: [] });
   }
 }

@@ -25,7 +25,7 @@ export async function GET() {
       .limit(100); // Get recent 100 articles to randomize from
 
     if (error) {
-      console.error('Database error:', error);
+      
       return NextResponse.json(
         { success: false, error: 'Failed to fetch articles' },
         { status: 500 }
@@ -49,7 +49,7 @@ export async function GET() {
     });
 
   } catch (error) {
-    console.error('Server error:', error);
+    
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

@@ -54,13 +54,13 @@ export async function GET(
     const { data: trades, error } = await query;
 
     if (error) {
-      console.error('Error fetching trades:', error);
+      
       return NextResponse.json({ error: 'Failed to fetch trades' }, { status: 500 });
     }
 
     return NextResponse.json({ trades });
   } catch (error) {
-    console.error('Error in GET /api/manual-backtests/[id]/trades:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -149,13 +149,13 @@ export async function POST(
       .single();
 
     if (error) {
-      console.error('Error creating trade:', error);
+      
       return NextResponse.json({ error: 'Failed to create trade' }, { status: 500 });
     }
 
     return NextResponse.json({ trade }, { status: 201 });
   } catch (error) {
-    console.error('Error in POST /api/manual-backtests/[id]/trades:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

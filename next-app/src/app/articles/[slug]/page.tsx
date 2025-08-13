@@ -20,6 +20,7 @@ import {
 import { createClient } from '@/lib/supabase/client';
 import type { ArticleWithAuthor, CommentWithUser } from '@/lib/supabase/types';
 import CommentSection from '@/components/articles/CommentSection';
+import RelatedArticles from '@/components/articles/RelatedArticles';
 import { 
   LeaderboardAd, 
   RectangleAd, 
@@ -68,9 +69,10 @@ export default function ArticleDetailPage() {
       setLoading(true);
       const supabase = createClient();
       
+      console.log('Fetching article with slug:', slug);
       
-      // First, get basic article info
-      const { data: articleData, error: articleError } = await supabase
+      // First, get basic article info - use limit(1) and first() instead of single()
+      const { data: articleDataArray, error: articleError } = await supabase
         .from('articles')
         .select(`
           id,
@@ -88,16 +90,20 @@ export default function ArticleDetailPage() {
         `)
         .eq('slug', slug)
         .eq('is_published', true)
-        .single();
+        .limit(1);
 
       if (articleError) {
         console.error('Article fetch error:', articleError);
         throw new Error(`Article not found: ${articleError.message}`);
       }
 
-      if (!articleData) {
+      if (!articleDataArray || articleDataArray.length === 0) {
+        console.error('No article found with slug:', slug);
         throw new Error('Article not found');
       }
+      
+      const articleData = articleDataArray[0];
+      console.log('Article found:', articleData.title);
 
 
       // Get author info separately
@@ -313,15 +319,12 @@ export default function ArticleDetailPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-background dark:via-card/30 dark:to-background">
       {/* Above-the-fold Ad */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
-        <ResponsiveHeaderAd adSlot={DEFAULT_AD_CONFIG.adSlots.articleTop} />
-      </div>
       
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Main Content Grid with Sidebar */}
-        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+        <div className="flex flex-col lg:flex-row gap-2.5">
           {/* Article Content */}
-          <article className="xl:col-span-3 bg-white dark:bg-card rounded-xl border border-gray-200/50 dark:border-border/50 shadow-lg overflow-hidden">
+          <article className="flex-1 bg-white dark:bg-card rounded-xl border border-gray-200/50 dark:border-border/50 shadow-lg overflow-hidden" style={{maxWidth: '800px'}}>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -343,23 +346,6 @@ export default function ArticleDetailPage() {
               </Link>
             </motion.div>
 
-            {/* Categories */}
-            <div className="flex items-center gap-3 mb-6">
-              {article.categories.map((category) => (
-                <Link
-                  key={category.id}
-                  href={`/articles?category=${category.slug}`}
-                  className="text-sm px-4 py-2 rounded-full font-medium transition-all duration-300 hover:scale-105 shadow-sm backdrop-blur-sm"
-                  style={{
-                    backgroundColor: `${category.color}15`,
-                    color: category.color,
-                    border: `1px solid ${category.color}30`
-                  }}
-                >
-                  {category.name}
-                </Link>
-              ))}
-            </div>
 
           {/* Title */}
           <h1 className="h1 text-gray-900 dark:text-white mb-6 break-long-words leading-tight">
@@ -435,11 +421,45 @@ export default function ArticleDetailPage() {
               .dark .prose {
                 color: rgb(229 231 235);
               }
-              .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+              .prose h1 {
                 color: rgb(17 24 39);
                 font-family: var(--font-montserrat);
                 margin-top: 2rem;
                 margin-bottom: 1rem;
+                font-size: 1.75rem;
+                font-weight: 700;
+              }
+              .prose h2 {
+                color: rgb(17 24 39);
+                font-family: var(--font-montserrat);
+                margin-top: 1.75rem;
+                margin-bottom: 0.875rem;
+                font-size: 1.5rem;
+                font-weight: 600;
+              }
+              .prose h3 {
+                color: rgb(17 24 39);
+                font-family: var(--font-montserrat);
+                margin-top: 1.5rem;
+                margin-bottom: 0.75rem;
+                font-size: 1.25rem;
+                font-weight: 600;
+              }
+              .prose h4 {
+                color: rgb(17 24 39);
+                font-family: var(--font-montserrat);
+                margin-top: 1.25rem;
+                margin-bottom: 0.625rem;
+                font-size: 1.125rem;
+                font-weight: 600;
+              }
+              .prose h5, .prose h6 {
+                color: rgb(17 24 39);
+                font-family: var(--font-montserrat);
+                margin-top: 1rem;
+                margin-bottom: 0.5rem;
+                font-size: 1rem;
+                font-weight: 600;
               }
               .dark .prose h1, .dark .prose h2, .dark .prose h3, .dark .prose h4, .dark .prose h5, .dark .prose h6 {
                 color: rgb(255 255 255);
@@ -493,45 +513,66 @@ export default function ArticleDetailPage() {
 
           {/* Stats and Actions - Minimized */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 py-4 border-t border-gray-200/50 dark:border-border/50 mb-8">
-            <div className="flex items-center gap-4 text-sm">
-              <span className="flex items-center gap-1 text-gray-600 dark:text-gray-300">
-                <Eye className="w-4 h-4" />
-                <span className="metric-value">{article.view_count}</span>
-              </span>
-              
-              <motion.button
-                onClick={handleLike}
-                disabled={liking}
-                className={`flex items-center gap-1 transition-colors ${
-                  isLiked 
-                    ? 'text-red-500' 
-                    : 'text-gray-600 dark:text-gray-300 hover:text-red-500'
-                }`}
-                whileTap={{ scale: 0.95 }}
-              >
-                <motion.div
-                  animate={isLiked ? { scale: [1, 1.2, 1] } : { scale: 1 }}
-                  transition={{ duration: 0.3 }}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              {/* Stats */}
+              <div className="flex items-center gap-4 text-sm">
+                <span className="flex items-center gap-1 text-gray-600 dark:text-gray-300">
+                  <Eye className="w-4 h-4" />
+                  <span className="metric-value">{article.view_count}</span>
+                </span>
+                
+                <motion.button
+                  onClick={handleLike}
+                  disabled={liking}
+                  className={`flex items-center gap-1 transition-colors ${
+                    isLiked 
+                      ? 'text-red-500' 
+                      : 'text-gray-600 dark:text-gray-300 hover:text-red-500'
+                  }`}
+                  whileTap={{ scale: 0.95 }}
                 >
-                  <Heart className={`w-4 h-4 transition-all duration-300 ${
-                    isLiked ? 'fill-current' : ''
-                  }`} />
-                </motion.div>
-                <motion.span
-                  key={likeCount}
-                  className="metric-value"
-                  initial={{ scale: 1 }}
-                  animate={{ scale: [1, 1.1, 1] }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {likeCount}
-                </motion.span>
-              </motion.button>
-              
-              <span className="flex items-center gap-1 text-gray-600 dark:text-gray-300">
-                <MessageCircle className="w-4 h-4" />
-                <span className="metric-value">{commentCount}</span>
-              </span>
+                  <motion.div
+                    animate={isLiked ? { scale: [1, 1.2, 1] } : { scale: 1 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <Heart className={`w-4 h-4 transition-all duration-300 ${
+                      isLiked ? 'fill-current' : ''
+                    }`} />
+                  </motion.div>
+                  <motion.span
+                    key={likeCount}
+                    className="metric-value"
+                    initial={{ scale: 1 }}
+                    animate={{ scale: [1, 1.1, 1] }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    {likeCount}
+                  </motion.span>
+                </motion.button>
+                
+                <span className="flex items-center gap-1 text-gray-600 dark:text-gray-300">
+                  <MessageCircle className="w-4 h-4" />
+                  <span className="metric-value">{commentCount}</span>
+                </span>
+              </div>
+
+              {/* Categories */}
+              <div className="flex items-center gap-2">
+                {article.categories.map((category) => (
+                  <Link
+                    key={category.id}
+                    href={`/articles?category=${category.slug}`}
+                    className="text-xs px-3 py-1 rounded-full font-medium transition-all duration-300 hover:scale-105 shadow-sm backdrop-blur-sm"
+                    style={{
+                      backgroundColor: `${category.color}15`,
+                      color: category.color,
+                      border: `1px solid ${category.color}30`
+                    }}
+                  >
+                    {category.name}
+                  </Link>
+                ))}
+              </div>
             </div>
 
             <div className="flex items-center gap-2">
@@ -576,28 +617,24 @@ export default function ArticleDetailPage() {
         </motion.div>
         </article>
 
-          {/* Sidebar Ads */}
-          <div className="hidden xl:block xl:col-span-1 space-y-6">
-            {/* Top Sidebar Ad - Half Page for High CPM */}
-            <div className="sticky top-4">
-              <div className="bg-white dark:bg-card rounded-xl border border-gray-200/50 dark:border-border/50 shadow-lg p-4">
-                <div className="text-xs text-gray-500 dark:text-gray-400 text-center mb-3 uppercase tracking-wide font-medium">
-                  Sponsor
-                </div>
-                <div className="flex justify-center">
-                  <HalfPageAd adSlot={DEFAULT_AD_CONFIG.adSlots.articleSidebar} />
-                </div>
+          {/* Sidebar - Related Articles */}
+          <div className="hidden lg:block w-80 flex-shrink-0 space-y-4">
+            <div className="sticky top-4 space-y-4">
+              {/* Related Articles */}
+              <div className="bg-white dark:bg-card rounded-xl border border-gray-200/50 dark:border-border/50 shadow-lg p-5">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-100 dark:border-gray-700">İlgili Makaleler</h3>
+                <RelatedArticles currentArticleId={article.id} categories={article.categories} />
               </div>
-            </div>
-
-            {/* Bottom Sidebar Ad */}
-            <div className="mt-6">
+              
+              {/* Vertical Sidebar Ad */}
               <div className="bg-white dark:bg-card rounded-xl border border-gray-200/50 dark:border-border/50 shadow-lg p-4">
                 <div className="text-xs text-gray-500 dark:text-gray-400 text-center mb-3 uppercase tracking-wide font-medium">
                   Reklam
                 </div>
                 <div className="flex justify-center">
-                  <RectangleAd adSlot={DEFAULT_AD_CONFIG.adSlots.sidebarBottom} />
+                  <div className="w-full min-h-[600px] bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 rounded-lg flex items-center justify-center">
+                    <span className="text-gray-500 dark:text-gray-400 text-sm">300x600+ Banner</span>
+                  </div>
                 </div>
               </div>
             </div>

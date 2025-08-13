@@ -35,13 +35,13 @@ export async function POST(
       });
     
     if (error) {
-      console.error('Error liking comment:', error);
+      
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
     
     return NextResponse.json({ message: 'Comment liked successfully' }, { status: 201 });
   } catch (error) {
-    console.error('Error in POST /api/comments/[id]/like:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -67,13 +67,13 @@ export async function DELETE(
       .eq('user_id', user.id);
     
     if (error) {
-      console.error('Error unliking comment:', error);
+      
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
     
     return NextResponse.json({ message: 'Comment unliked successfully' });
   } catch (error) {
-    console.error('Error in DELETE /api/comments/[id]/like:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

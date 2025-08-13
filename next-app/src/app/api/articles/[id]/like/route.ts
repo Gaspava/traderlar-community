@@ -35,7 +35,7 @@ export async function POST(
       });
     
     if (error) {
-      console.error('Error liking article:', error);
+      
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
     
@@ -50,7 +50,7 @@ export async function POST(
       likeCount: count || 0 
     }, { status: 201 });
   } catch (error) {
-    console.error('Error in POST /api/articles/[id]/like:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -76,7 +76,7 @@ export async function DELETE(
       .eq('user_id', user.id);
     
     if (error) {
-      console.error('Error unliking article:', error);
+      
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
     
@@ -91,7 +91,7 @@ export async function DELETE(
       likeCount: count || 0
     });
   } catch (error) {
-    console.error('Error in DELETE /api/articles/[id]/like:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

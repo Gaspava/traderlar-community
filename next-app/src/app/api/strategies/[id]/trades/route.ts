@@ -43,14 +43,14 @@ export async function GET(
     // Apply pagination only if limit is reasonable (Supabase range() has limits)
     if (limit < 10000000) { // Normal pagination
       query = query.range(offset, offset + limit - 1);
-      console.log(`Using range pagination: ${offset} to ${offset + limit - 1}`);
+      
       
       const result = await query;
       trades = result.data || [];
       error = result.error;
       count = result.count;
     } else {
-      console.log('Fetching ALL trades without range limit using multiple queries...');
+      
       
       // For very large datasets, we need to fetch in chunks to avoid Supabase limits
       let allTrades: any[] = [];
@@ -59,7 +59,7 @@ export async function GET(
       let hasMoreData = true;
       
       while (hasMoreData) {
-        console.log(`Fetching chunk: offset ${currentOffset}, limit ${chunkSize}`);
+        
         
         let chunkQuery = supabase
           .from('strategy_trades')
@@ -96,18 +96,18 @@ export async function GET(
         }
       }
       
-      console.log(`Fetched total of ${allTrades.length} trades`);
+      
       trades = allTrades;
       count = allTrades.length;
     }
     
     if (error) {
-      console.error('Error fetching trades:', error);
-      console.error('Error details:', error.message, error.details);
+      
+      
       
       // If table doesn't exist, return empty result instead of error
       if (error.message?.includes('does not exist') || error.code === 'PGRST116') {
-        console.log('strategy_trades table does not exist, returning empty trades');
+        
         return NextResponse.json({
           trades: [],
           pagination: {
@@ -122,7 +122,7 @@ export async function GET(
       return NextResponse.json({ error: 'Failed to fetch trades' }, { status: 500 });
     }
     
-    console.log(`Found ${trades?.length || 0} trades for strategy ${id}`);
+    
     
     // Sort trades by open_time to ensure chronological order (oldest first for numbering)
     const sortedTradesForNumbering = [...(trades || [])].sort((a, b) => 
@@ -168,7 +168,7 @@ export async function GET(
     });
     
   } catch (error) {
-    console.error('Error in GET /api/strategies/[id]/trades:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

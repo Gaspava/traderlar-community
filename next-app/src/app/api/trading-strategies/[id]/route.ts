@@ -34,7 +34,7 @@ export async function GET(
       if (error.code === 'PGRST116') {
         return NextResponse.json({ error: 'Strategy not found' }, { status: 404 });
       }
-      console.error('Error fetching strategy:', error);
+      
       return NextResponse.json({ error: 'Failed to fetch strategy' }, { status: 500 });
     }
     
@@ -110,7 +110,7 @@ export async function GET(
     return NextResponse.json(transformedStrategy);
     
   } catch (error) {
-    console.error('Error in GET /api/trading-strategies/[id]:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -129,7 +129,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    // Check if user owns the strategy
+    // Check if user owns the strategy or is admin
     const { data: strategy, error: fetchError } = await supabase
       .from('trading_strategies')
       .select('author_id')
@@ -143,25 +143,63 @@ export async function DELETE(
       return NextResponse.json({ error: 'Failed to fetch strategy' }, { status: 500 });
     }
     
-    if (strategy.author_id !== user.id) {
+    // Check permissions
+    const { data: userData } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+    
+    const isOwner = strategy.author_id === user.id;
+    const isAdmin = userData?.role === 'admin';
+    
+    if (!isOwner && !isAdmin) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     
-    // Delete strategy
+    // İlişkili verileri temizle
+    const cleanupPromises = [
+      // Strategy likes/favorites sil
+      supabase.from('strategy_favorites').delete().eq('strategy_id', id),
+      
+      // Strategy ratings sil
+      supabase.from('strategy_ratings').delete().eq('strategy_id', id),
+      
+      // Strategy comments sil
+      supabase.from('strategy_comments').delete().eq('strategy_id', id),
+      
+      // Manual backtests sil
+      supabase.from('manual_backtests').delete().eq('strategy_id', id),
+      
+      // Strategy downloads sil
+      supabase.from('strategy_downloads').delete().eq('strategy_id', id)
+    ];
+    
+    // Tüm ilişkili verileri sil
+    const cleanupResults = await Promise.allSettled(cleanupPromises);
+    
+    // Başarısız temizlik işlemlerini logla
+    cleanupResults.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        console.error(`Strategy cleanup operation ${index} failed:`, result.reason);
+      }
+    });
+    
+    // Ana stratejiyi sil
     const { error: deleteError } = await supabase
       .from('trading_strategies')
       .delete()
       .eq('id', id);
     
     if (deleteError) {
-      console.error('Error deleting strategy:', deleteError);
+      console.error('Strategy deletion failed:', deleteError);
       return NextResponse.json({ error: 'Failed to delete strategy' }, { status: 500 });
     }
     
-    return NextResponse.json({ message: 'Strategy deleted successfully' });
+    return NextResponse.json({ message: 'Strategy and all related data deleted successfully' });
     
   } catch (error) {
-    console.error('Error in DELETE /api/trading-strategies/[id]:', error);
+    console.error('DELETE /api/trading-strategies/[id] error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

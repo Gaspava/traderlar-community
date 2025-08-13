@@ -44,13 +44,13 @@ export async function PUT(
       .single();
     
     if (error) {
-      console.error('Error updating comment:', error);
+      
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
     
     return NextResponse.json({ comment });
   } catch (error) {
-    console.error('Error in PUT /api/comments/[id]:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -90,19 +90,39 @@ export async function DELETE(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     
+    // İlişkili verileri temizle
+    const cleanupPromises = [
+      // Comment likes sil
+      supabase.from('comment_likes').delete().eq('comment_id', id),
+      
+      // Child comments sil (eğer reply sistemi varsa)
+      supabase.from('comments').delete().eq('parent_id', id)
+    ];
+    
+    // Tüm ilişkili verileri sil
+    const cleanupResults = await Promise.allSettled(cleanupPromises);
+    
+    // Başarısız temizlik işlemlerini logla
+    cleanupResults.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        console.error(`Comment cleanup operation ${index} failed:`, result.reason);
+      }
+    });
+    
+    // Ana yorumu sil
     const { error } = await supabase
       .from('comments')
       .delete()
       .eq('id', id);
     
     if (error) {
-      console.error('Error deleting comment:', error);
+      console.error('Comment deletion failed:', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
     
-    return NextResponse.json({ message: 'Comment deleted successfully' });
+    return NextResponse.json({ message: 'Comment and all related data deleted successfully' });
   } catch (error) {
-    console.error('Error in DELETE /api/comments/[id]:', error);
+    console.error('DELETE /api/comments/[id] error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -11,7 +11,8 @@ import {
   Tooltip,
   Legend,
   ChartOptions,
-  ChartData
+  ChartData,
+  Filler
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import type { ManualBacktestTrade } from '@/lib/supabase/types';
@@ -23,7 +24,8 @@ ChartJS.register(
   LineElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  Filler
 );
 
 interface PerformanceChartProps {
@@ -56,12 +58,12 @@ export default function PerformanceChart({
             data: [initialCapital],
             borderColor: 'rgb(59, 130, 246)',
             backgroundColor: 'rgba(59, 130, 246, 0.1)',
-            borderWidth: 2,
+            borderWidth: 3,
             fill: true,
             tension: 0.4,
-            pointRadius: 4,
+            pointRadius: 6,
             pointBackgroundColor: 'rgb(59, 130, 246)',
-            pointBorderColor: '#fff',
+            pointBorderColor: '#000',
             pointBorderWidth: 2,
           }
         ]
@@ -102,16 +104,17 @@ export default function PerformanceChart({
           data: portfolioValues,
           borderColor: lineColor,
           backgroundColor: fillColor,
-          borderWidth: 2,
+          borderWidth: 3,
           fill: true,
           tension: 0.4,
-          pointRadius: 4,
+          pointRadius: 6,
+          pointHoverRadius: 8,
           pointBackgroundColor: portfolioValues.map((value, index) => {
             if (index === 0) return 'rgb(59, 130, 246)';
             const pnl = pnlValues[index];
             return pnl >= 0 ? 'rgb(34, 197, 94)' : 'rgb(239, 68, 68)';
           }),
-          pointBorderColor: '#fff',
+          pointBorderColor: '#000',
           pointBorderWidth: 2,
         }
       ]
@@ -128,8 +131,12 @@ export default function PerformanceChart({
           color: 'rgb(156, 163, 175)',
           font: {
             family: 'Inter, sans-serif',
-            size: 12,
-          }
+            size: 13,
+            weight: 'bold'
+          },
+          padding: 20,
+          usePointStyle: true,
+          pointStyle: 'circle'
         }
       },
       title: {
@@ -140,17 +147,18 @@ export default function PerformanceChart({
           family: 'Inter, sans-serif',
           size: 16,
           weight: 'bold',
-        }
+        },
+        padding: 20
       },
       tooltip: {
         mode: 'index' as const,
         intersect: false,
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        backgroundColor: 'rgba(0, 0, 0, 0.9)',
         titleColor: '#fff',
         bodyColor: '#fff',
         borderColor: 'rgba(59, 130, 246, 0.5)',
         borderWidth: 1,
-        cornerRadius: 8,
+        cornerRadius: 12,
         titleFont: {
           family: 'Inter, sans-serif',
           size: 13,
@@ -215,7 +223,7 @@ export default function PerformanceChart({
           maxTicksLimit: 10,
         },
         grid: {
-          color: 'rgba(75, 85, 99, 0.2)',
+          color: 'rgba(75, 85, 99, 0.3)',
           drawBorder: false,
         }
       },
@@ -247,14 +255,14 @@ export default function PerformanceChart({
           }
         },
         grid: {
-          color: 'rgba(75, 85, 99, 0.2)',
+          color: 'rgba(75, 85, 99, 0.3)',
           drawBorder: false,
         }
       }
     },
     elements: {
       point: {
-        hoverRadius: 8,
+        hoverRadius: 10,
         hoverBorderWidth: 3,
       }
     },

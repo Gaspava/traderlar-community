@@ -17,12 +17,12 @@ export async function GET(
       .single();
     
     if (error || !strategy) {
-      console.log('Strategy fetch error:', error);
-      console.log('Error details:', error?.message, error?.details);
+      
+      
       
       // If database table doesn't exist, return mock data
       if (error?.message?.includes('does not exist') || error?.code === 'PGRST116') {
-        console.log('Database table not found, returning mock strategy data');
+        
         return NextResponse.json({
           id: id,
           name: 'Demo Strategy',
@@ -90,20 +90,9 @@ export async function GET(
       return NextResponse.json({ error: 'Strategy not found' }, { status: 404 });
     }
     
-    console.log('Raw strategy data from database:', {
-      id: strategy.id,
-      total_trades: strategy.total_trades,
-      win_rate: strategy.win_rate,
-      max_drawdown_percent: strategy.max_drawdown_percent,
-      total_net_profit: strategy.total_net_profit,
-      initial_deposit: strategy.initial_deposit,
-      total_return_percentage: strategy.total_return_percentage,
-      profit_factor: strategy.profit_factor,
-      sharpe_ratio: strategy.sharpe_ratio
-    });
     
     const totalTrades = strategy.total_trades || 0;
-    console.log('Total trades value:', totalTrades, 'Type:', typeof totalTrades);
+    
     
     // Transform data for frontend
     const transformedStrategy = {
@@ -176,12 +165,12 @@ export async function GET(
       .update({ views: (strategy.views || 0) + 1 })
       .eq('id', id);
     
-    console.log('Sending response with totalTrades:', transformedStrategy.performance.totalTrades);
+    
     
     return NextResponse.json(transformedStrategy);
     
   } catch (error) {
-    console.error('Error fetching strategy:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

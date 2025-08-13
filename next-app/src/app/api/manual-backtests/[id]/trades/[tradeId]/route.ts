@@ -105,13 +105,13 @@ export async function PUT(
       .single();
 
     if (error) {
-      console.error('Error updating trade:', error);
+      
       return NextResponse.json({ error: 'Failed to update trade' }, { status: 500 });
     }
 
     return NextResponse.json({ trade: updatedTrade });
   } catch (error) {
-    console.error('Error in PUT /api/manual-backtests/[id]/trades/[tradeId]:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -150,13 +150,13 @@ export async function DELETE(
       .eq('id', tradeId);
 
     if (error) {
-      console.error('Error deleting trade:', error);
+      
       return NextResponse.json({ error: 'Failed to delete trade' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error in DELETE /api/manual-backtests/[id]/trades/[tradeId]:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

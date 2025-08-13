@@ -28,13 +28,13 @@ export async function GET(request: NextRequest) {
     const { data: backtests, error } = await query;
 
     if (error) {
-      console.error('Error fetching backtests:', error);
+      
       return NextResponse.json({ error: 'Failed to fetch backtests' }, { status: 500 });
     }
 
     return NextResponse.json({ backtests });
   } catch (error) {
-    console.error('Error in GET /api/manual-backtests:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -81,13 +81,13 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error('Error creating backtest:', error);
+      
       return NextResponse.json({ error: 'Failed to create backtest' }, { status: 500 });
     }
 
     return NextResponse.json({ backtest }, { status: 201 });
   } catch (error) {
-    console.error('Error in POST /api/manual-backtests:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -98,7 +98,12 @@ export default function AdminDashboard() {
         borderColor: 'rgb(16, 185, 129)',
         backgroundColor: 'rgba(16, 185, 129, 0.1)',
         tension: 0.4,
-        fill: true
+        fill: true,
+        pointRadius: 6,
+        pointHoverRadius: 8,
+        pointBackgroundColor: 'rgb(16, 185, 129)',
+        pointBorderColor: '#000',
+        pointBorderWidth: 2,
       },
       {
         label: 'Yeni Üye',
@@ -106,7 +111,12 @@ export default function AdminDashboard() {
         borderColor: 'rgb(59, 130, 246)',
         backgroundColor: 'rgba(59, 130, 246, 0.1)',
         tension: 0.4,
-        fill: true
+        fill: true,
+        pointRadius: 6,
+        pointHoverRadius: 8,
+        pointBackgroundColor: 'rgb(59, 130, 246)',
+        pointBorderColor: '#000',
+        pointBorderWidth: 2,
       }
     ]
   };
@@ -118,15 +128,40 @@ export default function AdminDashboard() {
       legend: {
         position: 'top' as const,
         labels: {
-          color: '#9ca3af'
+          color: '#9ca3af',
+          font: {
+            family: 'Inter, sans-serif',
+            size: 12,
+            weight: 'bold'
+          },
+          padding: 20,
+          usePointStyle: true,
+          pointStyle: 'circle'
         }
       },
       tooltip: {
-        backgroundColor: '#1f2937',
+        backgroundColor: 'rgba(0, 0, 0, 0.9)',
         titleColor: '#fff',
         bodyColor: '#9ca3af',
         borderColor: '#374151',
-        borderWidth: 1
+        borderWidth: 1,
+        cornerRadius: 12,
+        titleFont: {
+          family: 'Inter, sans-serif',
+          size: 14,
+          weight: 'bold'
+        },
+        bodyFont: {
+          family: 'Inter, sans-serif',
+          size: 12
+        },
+        callbacks: {
+          label: function(context: any) {
+            const label = context.dataset.label || '';
+            const value = context.parsed.y;
+            return `${label}: ${value.toLocaleString('tr-TR')}`;
+          }
+        }
       }
     },
     scales: {
@@ -136,7 +171,11 @@ export default function AdminDashboard() {
           drawBorder: false
         },
         ticks: {
-          color: '#9ca3af'
+          color: '#9ca3af',
+          font: {
+            family: 'Inter, sans-serif',
+            size: 11
+          }
         }
       },
       y: {
@@ -145,8 +184,20 @@ export default function AdminDashboard() {
           drawBorder: false
         },
         ticks: {
-          color: '#9ca3af'
+          color: '#9ca3af',
+          font: {
+            family: 'Inter, sans-serif',
+            size: 11
+          },
+          callback: function(value: any) {
+            return value.toLocaleString('tr-TR');
+          }
         }
+      }
+    },
+    elements: {
+      point: {
+        hoverBorderWidth: 3
       }
     }
   };

@@ -109,13 +109,48 @@ export default function AdminArticlesPage() {
     }
   };
 
-  const handleBulkDelete = () => {
+  const handleBulkDelete = async () => {
     if (selectedArticles.size === 0) return;
     
     if (confirm(`${selectedArticles.size} makaleyi silmek istediğinizden emin misiniz?`)) {
-      // TODO: Implement bulk delete
-      setArticles(prev => prev.filter(a => !selectedArticles.has(a.id)));
-      setSelectedArticles(new Set());
+      try {
+        const deletePromises = Array.from(selectedArticles).map(async (articleId) => {
+          const response = await fetch(`/api/articles/${articleId}`, {
+            method: 'DELETE',
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Failed to delete article ${articleId}`);
+          }
+          
+          return articleId;
+        });
+
+        // Wait for all deletions to complete
+        const deletedIds = await Promise.allSettled(deletePromises);
+        
+        // Filter out successfully deleted articles
+        const successfullyDeleted = deletedIds
+          .filter(result => result.status === 'fulfilled')
+          .map(result => result.status === 'fulfilled' ? result.value : null)
+          .filter(Boolean);
+
+        // Update UI by removing successfully deleted articles
+        setArticles(prev => prev.filter(a => !successfullyDeleted.includes(a.id)));
+        setSelectedArticles(new Set());
+        
+        // Show feedback to user
+        const failedDeletions = deletedIds.filter(result => result.status === 'rejected').length;
+        if (failedDeletions > 0) {
+          alert(`${successfullyDeleted.length} makale silindi. ${failedDeletions} makale silinemedi.`);
+        } else {
+          alert(`${successfullyDeleted.length} makale başarıyla silindi.`);
+        }
+        
+      } catch (error) {
+        console.error('Bulk delete error:', error);
+        alert('Makaleler silinirken hata oluştu');
+      }
     }
   };
 

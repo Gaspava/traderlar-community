@@ -7,7 +7,15 @@ export async function GET(
 ) {
   try {
     const { id } = await context.params;
-    const supabase = await createClient();
+    
+    // Create Supabase client with error handling
+    let supabase;
+    try {
+      supabase = await createClient();
+    } catch (clientError) {
+      console.error('Failed to create Supabase client:', clientError);
+      return NextResponse.json({ error: 'Database connection failed' }, { status: 500 });
+    }
     
     // Get current user to check likes
     const { data: { user } } = await supabase.auth.getUser();
@@ -33,7 +41,7 @@ export async function GET(
       .order('created_at', { ascending: true });
     
     if (error) {
-      console.error('Error fetching comments:', error);
+      
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
     
@@ -95,7 +103,7 @@ export async function GET(
     
     return NextResponse.json({ comments: rootComments });
   } catch (error) {
-    console.error('Error in GET /api/articles/[id]/comments:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -106,7 +114,15 @@ export async function POST(
 ) {
   try {
     const { id: articleId } = await context.params;
-    const supabase = await createClient();
+    
+    // Create Supabase client with error handling
+    let supabase;
+    try {
+      supabase = await createClient();
+    } catch (clientError) {
+      console.error('Failed to create Supabase client:', clientError);
+      return NextResponse.json({ error: 'Database connection failed' }, { status: 500 });
+    }
     
     const { data: { user } } = await supabase.auth.getUser();
     
@@ -143,7 +159,7 @@ export async function POST(
       .single();
     
     if (error) {
-      console.error('Error creating comment:', error);
+      
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
     
@@ -161,7 +177,7 @@ export async function POST(
     
     return NextResponse.json({ comment: formattedComment }, { status: 201 });
   } catch (error) {
-    console.error('Error in POST /api/articles/[id]/comments:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -66,7 +66,6 @@ export async function GET(request: NextRequest) {
       const { data: strategies, error, count } = await query;
       
       if (error) {
-        console.error('Database error:', error);
         throw error;
       }
       
@@ -154,7 +153,6 @@ export async function GET(request: NextRequest) {
     }
     
   } catch (error) {
-    console.error('Error in GET /api/strategies:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -251,55 +249,56 @@ export async function POST(request: NextRequest) {
         .single();
       
       if (insertError) {
-        console.error('Database insert error:', insertError);
         throw insertError;
       }
       
       
-      // Save trade history if available
-      
+      // Save trade history if available - optimized batch processing
       if (parsedMetrics.trades && parsedMetrics.trades.length > 0) {
+        // Process trades in smaller batches to avoid timeout
+        const BATCH_SIZE = 100;
+        const trades = parsedMetrics.trades.slice(0, 1000); // Limit to first 1000 trades for performance
         
-        const tradeInserts = parsedMetrics.trades.map((trade, index) => {
-          const insertData = {
-            strategy_id: strategy.id,
-            ticket: trade.ticket || index + 1, // Use index as fallback
-            open_time: trade.openTime || null,
-            close_time: trade.closeTime || null,
-            trade_type: trade.type || 'buy',
-            size: trade.size || 0,
-            symbol: trade.symbol || 'UNKNOWN',
-            open_price: trade.openPrice || 0,
-            close_price: trade.closePrice || 0,
-            stop_loss: trade.stopLoss || null,
-            take_profit: trade.takeProfit || null,
-            commission: trade.commission || 0,
-            swap: trade.swap || 0,
-            profit: trade.profit || 0
-          };
-          
-          
-          return insertData;
-        });
+        try {
+          // First check if the table exists
+          const { error: tableCheckError } = await supabase
+            .from('strategy_trades')
+            .select('id')
+            .limit(1);
 
-        // First check if the table exists
-        const { error: tableCheckError } = await supabase
-          .from('strategy_trades')
-          .select('id')
-          .limit(1);
+          if (tableCheckError && tableCheckError.message.includes('does not exist')) {
+            // Skip trade history if table doesn't exist
+          } else {
+            // Process trades in batches
+            for (let i = 0; i < trades.length; i += BATCH_SIZE) {
+              const batch = trades.slice(i, i + BATCH_SIZE);
+              const tradeInserts = batch.map((trade, index) => ({
+                strategy_id: strategy.id,
+                ticket: trade.ticket || (i + index + 1),
+                open_time: trade.openTime || null,
+                close_time: trade.closeTime || null,
+                trade_type: trade.type || 'buy',
+                size: trade.size || 0,
+                symbol: trade.symbol || 'UNKNOWN',
+                open_price: trade.openPrice || 0,
+                close_price: trade.closePrice || 0,
+                stop_loss: trade.stopLoss || null,
+                take_profit: trade.takeProfit || null,
+                commission: trade.commission || 0,
+                swap: trade.swap || 0,
+                profit: trade.profit || 0
+              }));
 
-        if (tableCheckError && tableCheckError.message.includes('does not exist')) {
-          console.error('strategy_trades table does not exist. Please run the migration.');
-          console.error('Run: supabase migration up or execute 011_trade_history_system.sql');
-        }
-
-        const { data: insertedTrades, error: tradesError } = await supabase
-          .from('strategy_trades')
-          .insert(tradeInserts)
-          .select();
-
-        if (tradesError) {
-          console.error('Error saving trades:', tradesError);
+              // Insert batch without waiting for completion (fire and forget for performance)
+              supabase
+                .from('strategy_trades')
+                .insert(tradeInserts)
+                .then(({ error }) => {
+                  // Silently handle trade batch errors
+                });
+            }
+          }
+        } catch (error) {
           // Don't fail the entire request for trade history errors
         }
       }
@@ -344,7 +343,6 @@ export async function POST(request: NextRequest) {
     
     
   } catch (error) {
-    console.error('Error in POST /api/strategies:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

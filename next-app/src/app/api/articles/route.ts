@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
     const { data: articles, error, count } = await query;
     
     if (error) {
-      console.error('Error fetching articles:', error);
+      
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
     
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
       pages: Math.ceil((count || 0) / limit),
     });
   } catch (error) {
-    console.error('Error in GET /api/articles:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
       .single();
     
     if (articleError) {
-      console.error('Error creating article:', articleError);
+      
       return NextResponse.json({ error: articleError.message }, { status: 500 });
     }
     
@@ -144,13 +144,13 @@ export async function POST(request: NextRequest) {
         .insert(categoryRelations);
       
       if (categoryError) {
-        console.error('Error associating categories:', categoryError);
+        
       }
     }
     
     return NextResponse.json({ article }, { status: 201 });
   } catch (error) {
-    console.error('Error in POST /api/articles:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

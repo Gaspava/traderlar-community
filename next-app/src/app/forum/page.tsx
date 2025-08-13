@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useTheme } from 'next-themes';
@@ -13,9 +13,23 @@ import {
   Sparkles,
   MoreHorizontal,
   Share,
-  Star
+  Star,
+  Loader2,
+  Home,
+  TrendingUp,
+  BookOpen,
+  Building2,
+  Code,
+  BarChart3,
+  PieChart,
+  GraduationCap,
+  Brain,
+  Scale
 } from 'lucide-react';
 import VoteButtons from '@/components/ui/VoteButtons';
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
+import RecentItems from '@/components/RecentItems';
+import { InContentAd, DEFAULT_AD_CONFIG } from '@/components/ads';
 
 interface ForumTopic {
   id: string;
@@ -48,6 +62,7 @@ interface ForumTopic {
   created_at: string;
 }
 
+
 interface Category {
   id: string;
   name: string;
@@ -68,6 +83,9 @@ export default function ForumPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [currentTheme, setCurrentTheme] = useState<string>('dark');
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const { theme } = useTheme();
   const router = useRouter();
@@ -116,11 +134,13 @@ export default function ForumPage() {
 
   useEffect(() => {
     fetchCategories();
-    fetchRecentTopics();
+    fetchRecentTopics(1, true);
   }, []);
 
   useEffect(() => {
-    fetchRecentTopics();
+    setPage(1);
+    setRecentTopics([]);
+    fetchRecentTopics(1, true);
   }, [sortBy]);
 
   const fetchCategories = async () => {
@@ -244,9 +264,19 @@ export default function ForumPage() {
     }
   };
 
-  const fetchRecentTopics = async () => {
+  const fetchRecentTopics = async (pageNum: number = 1, reset: boolean = false) => {
+    if (loadingMore && !reset) return;
+    
     try {
+      if (reset) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
+      
       const supabase = createClient();
+      const limit = 20;
+      const offset = (pageNum - 1) * limit;
       
       let query = supabase
         .from('forum_topics')
@@ -269,7 +299,7 @@ export default function ForumPage() {
             username
           )
         `)
-        .limit(50);
+        .range(offset, offset + limit - 1);
 
       // Apply sorting based on sortBy parameter
       switch (sortBy) {
@@ -311,7 +341,14 @@ export default function ForumPage() {
 
       }
       
-      setRecentTopics(data || []);
+      if (reset) {
+        setRecentTopics(data || []);
+        setHasMore((data || []).length === limit);
+      } else {
+        setRecentTopics(prev => [...prev, ...(data || [])]);
+        setHasMore((data || []).length === limit);
+      }
+      setPage(pageNum);
     } catch (error) {
       console.error('Error fetching recent topics:', error);
       // Mock topics fallback
@@ -342,8 +379,24 @@ export default function ForumPage() {
         }
       ];
       setRecentTopics(mockTopics);
+      setHasMore(false);
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
     }
   };
+
+  const loadMore = useCallback(async () => {
+    if (!hasMore || loadingMore || loading) return;
+    await fetchRecentTopics(page + 1, false);
+  }, [page, hasMore, loadingMore, loading, sortBy]);
+
+  const { setTargetRef, isLoading } = useInfiniteScroll({
+    onLoadMore: loadMore,
+    hasMore: hasMore,
+    enabled: !loading && hasMore && mounted
+  });
+
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -538,77 +591,34 @@ export default function ForumPage() {
                               <div className="flex-1 min-w-0">
                                 {/* Meta */}
                                 <div className="flex items-center gap-2 mb-2">
-                                  <div 
-                                    className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs"
-                                    style={{ backgroundColor: topic.category.color }}
-                                  >
+                                  <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${
+                                    isDarkMode ? 'text-muted-foreground' : 'text-gray-600'
+                                  }`}>
                                     {(() => {
                                       const categoryIcons: { [key: string]: JSX.Element } = {
-                                        'Genel Tartışma': (
-                                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd"/>
-                                          </svg>
-                                        ),
-                                        'Algoritmik Ticaret': (
-                                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
-                                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                                          </svg>
-                                        ),
-                                        'Strateji Paylaşımı': (
-                                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                            <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z"/>
-                                            <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z"/>
-                                          </svg>
-                                        ),
-                                        'Prop Firm ve Fon Yönetimi': (
-                                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm0 2h12v8H4V6z" clipRule="evenodd"/>
-                                            <path d="M2 8h16v2H2zM6 12h8v2H6z"/>
-                                          </svg>
-                                        ),
-                                        'Yazılım ve Otomasyon': (
-                                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd"/>
-                                          </svg>
-                                        ),
-                                        'Portföy ve Performans': (
-                                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
-                                          </svg>
-                                        ),
-                                        'Piyasa Analizleri': (
-                                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z" clipRule="evenodd"/>
-                                          </svg>
-                                        ),
-                                        'Eğitim Kaynakları': (
-                                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                            <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z"/>
-                                          </svg>
-                                        ),
-                                        'Trade Psikolojisi': (
-                                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v2H2v-4l4.257-4.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z" clipRule="evenodd"/>
-                                          </svg>
-                                        ),
-                                        'Hukuk ve Vergilendirme': (
-                                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z" clipRule="evenodd"/>
-                                          </svg>
-                                        )
+                                        'Genel Tartışma': <Home className="w-3 h-3" />,
+                                        'Algoritmik Ticaret': <TrendingUp className="w-3 h-3" />,
+                                        'Strateji Paylaşımı': <PieChart className="w-3 h-3" />,
+                                        'Prop Firm ve Fon Yönetimi': <Building2 className="w-3 h-3" />,
+                                        'Yazılım ve Otomasyon': <Code className="w-3 h-3" />,
+                                        'Portföy ve Performans': <BarChart3 className="w-3 h-3" />,
+                                        'Piyasa Analizleri': <PieChart className="w-3 h-3" />,
+                                        'Eğitim Kaynakları': <BookOpen className="w-3 h-3" />,
+                                        'Trade Psikolojisi': <Brain className="w-3 h-3" />,
+                                        'Hukuk ve Vergilendirme': <Scale className="w-3 h-3" />
                                       };
-                                      return categoryIcons[topic.category.name] || <span>{topic.category.name.charAt(0)}</span>;
+                                      return categoryIcons[topic.category.name] || <MessageCircle className="w-3 h-3" />;
                                     })()}
                                   </div>
                                   <Link href={`/forum/${topic.category.slug}`} className={`text-xs font-medium hover:underline ${
                                     isDarkMode ? 'text-foreground' : 'text-gray-900'
                                   }`}>
-                                    r/{topic.category.name}
+                                    {topic.category.name}
                                   </Link>
                                   <span className={`text-xs ${
                                     isDarkMode ? 'text-muted-foreground' : 'text-gray-500'
                                   }`}>
-                                    • u/{topic.author.username} • {formatDate(topic.created_at)} önce
+                                    • {topic.author.username} • {formatDate(topic.created_at)} önce
                                   </span>
                                   {topic.is_pinned && (
                                     <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-emerald-100 text-emerald-800 rounded-full">
@@ -661,7 +671,70 @@ export default function ForumPage() {
                       }
                     })}
 
-                    {recentTopics.length === 0 && (
+                    {/* Loading more indicator */}
+                    {(isLoading || loadingMore) && !loading && (
+                      <div className="space-y-2">
+                        {[...Array(3)].map((_, i) => (
+                          <div 
+                            key={`loading-${i}`}
+                            className="animate-fadeIn"
+                            style={{ animationDelay: `${i * 100}ms` }}
+                          >
+                            <div className={`rounded-lg border transition-colors duration-200 animate-pulse ${
+                              isDarkMode ? 'bg-card border-border' : 'bg-white border-gray-200'
+                            }`}>
+                              <div className="flex p-3">
+                                <div className={`w-10 h-16 rounded mr-3 ${
+                                  isDarkMode ? 'bg-background' : 'bg-gray-200'
+                                }`}></div>
+                                <div className="flex-1">
+                                  <div className={`h-4 rounded w-3/4 mb-2 ${
+                                    isDarkMode ? 'bg-background' : 'bg-gray-200'
+                                  }`}></div>
+                                  <div className={`h-3 rounded w-1/2 mb-2 ${
+                                    isDarkMode ? 'bg-background' : 'bg-gray-200'
+                                  }`}></div>
+                                  <div className={`h-3 rounded w-1/4 ${
+                                    isDarkMode ? 'bg-background' : 'bg-gray-200'
+                                  }`}></div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Infinite Scroll Trigger */}
+                    {hasMore && !loading && (
+                      <div 
+                        ref={setTargetRef}
+                        className="py-8 flex justify-center"
+                      >
+                        {isLoading || loadingMore ? (
+                          <div className="relative">
+                            <div className="flex items-center justify-center gap-1">
+                              <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                              <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                              <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-2 text-center">Yeni konular yükleniyor...</p>
+                          </div>
+                        ) : (
+                          <div className="h-4" />
+                        )}
+                      </div>
+                    )}
+
+                    {!hasMore && recentTopics.length > 0 && (
+                      <div className="text-center py-8">
+                        <p className={`text-sm ${isDarkMode ? 'text-muted-foreground' : 'text-gray-500'}`}>
+                          Tüm konular yüklendi ({recentTopics.length} konu)
+                        </p>
+                      </div>
+                    )}
+
+                    {recentTopics.length === 0 && !loading && (
                       <div className="text-center py-12">
                         <MessageCircle className={`w-12 h-12 mx-auto mb-4 ${
                           isDarkMode ? 'text-muted-foreground' : 'text-gray-400'
@@ -679,167 +752,22 @@ export default function ForumPage() {
               </div>
             </div>
 
-            {/* Right Sidebar - Clean & Minimal */}
+            {/* Right Sidebar */}
             <div className="w-80 flex-shrink-0 hidden lg:block">
-              <div className="sticky top-24 space-y-4">
-                {/* Forum Stats */}
-                <div className={`rounded-xl border backdrop-blur-sm transition-all duration-300 hover:shadow-lg ${
+              <div className="sticky top-8 space-y-6">
+                {/* Recent Items */}
+                <RecentItems />
+                
+                {/* Sidebar Ad */}
+                <div className={`rounded-xl border p-6 ${
                   isDarkMode 
-                    ? 'bg-card/50 border-border/50 hover:bg-card/80' 
-                    : 'bg-white/70 border-gray-200/50 hover:bg-white/90'
+                    ? 'bg-card/50 border-border/50' 
+                    : 'bg-white/70 border-gray-200/50'
                 }`}>
-                  <div className="p-6">
-                    <h3 className={`text-lg font-semibold mb-6 ${
-                      isDarkMode ? 'text-foreground' : 'text-gray-900'
-                    }`}>Forum İstatistikleri</h3>
-                    
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                            isDarkMode ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-50 text-blue-600'
-                          }`}>
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                          </div>
-                          <span className={`text-sm font-medium ${
-                            isDarkMode ? 'text-muted-foreground' : 'text-gray-600'
-                          }`}>Toplam Üye</span>
-                        </div>
-                        <span className={`text-lg font-bold ${
-                          isDarkMode ? 'text-foreground' : 'text-gray-900'
-                        }`}>1.2K</span>
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                            isDarkMode ? 'bg-emerald-500/10 text-emerald-400' : 'bg-emerald-50 text-emerald-600'
-                          }`}>
-                            <div className="w-2 h-2 bg-current rounded-full animate-pulse"></div>
-                          </div>
-                          <span className={`text-sm font-medium ${
-                            isDarkMode ? 'text-muted-foreground' : 'text-gray-600'
-                          }`}>Çevrimiçi</span>
-                        </div>
-                        <span className="text-lg font-bold text-emerald-500">89</span>
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                            isDarkMode ? 'bg-purple-500/10 text-purple-400' : 'bg-purple-50 text-purple-600'
-                          }`}>
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"/>
-                            </svg>
-                          </div>
-                          <span className={`text-sm font-medium ${
-                            isDarkMode ? 'text-muted-foreground' : 'text-gray-600'
-                          }`}>Bugün</span>
-                        </div>
-                        <div className="text-right">
-                          <div className={`text-sm font-semibold ${
-                            isDarkMode ? 'text-foreground' : 'text-gray-900'
-                          }`}>12 konu</div>
-                          <div className={`text-xs ${
-                            isDarkMode ? 'text-muted-foreground' : 'text-gray-500'
-                          }`}>156 mesaj</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Quick Actions */}
-                <div className={`rounded-xl border backdrop-blur-sm transition-all duration-300 hover:shadow-lg ${
-                  isDarkMode 
-                    ? 'bg-card/50 border-border/50 hover:bg-card/80' 
-                    : 'bg-white/70 border-gray-200/50 hover:bg-white/90'
-                }`}>
-                  <div className="p-6">
-                    <h3 className={`text-lg font-semibold mb-4 ${
-                      isDarkMode ? 'text-foreground' : 'text-gray-900'
-                    }`}>Hızlı Erişim</h3>
-                    
-                    <div className="space-y-2">
-                      <button className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-all duration-200 ${
-                        isDarkMode 
-                          ? 'hover:bg-primary/10 text-muted-foreground hover:text-foreground' 
-                          : 'hover:bg-gray-50 text-gray-600 hover:text-gray-900'
-                      }`}>
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                          isDarkMode ? 'bg-orange-500/10 text-orange-400' : 'bg-orange-50 text-orange-600'
-                        }`}>
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd"/>
-                          </svg>
-                        </div>
-                        <div>
-                          <div className="font-medium text-sm">Yeni Konu</div>
-                          <div className="text-xs opacity-70">Tartışma başlat</div>
-                        </div>
-                      </button>
-                      
-                      <button className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-all duration-200 ${
-                        isDarkMode 
-                          ? 'hover:bg-primary/10 text-muted-foreground hover:text-foreground' 
-                          : 'hover:bg-gray-50 text-gray-600 hover:text-gray-900'
-                      }`}>
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                          isDarkMode ? 'bg-cyan-500/10 text-cyan-400' : 'bg-cyan-50 text-cyan-600'
-                        }`}>
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                          </svg>
-                        </div>
-                        <div>
-                          <div className="font-medium text-sm">Premium</div>
-                          <div className="text-xs opacity-70">Özel içerikler</div>
-                        </div>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Trending Topics */}
-                <div className={`rounded-xl border backdrop-blur-sm transition-all duration-300 hover:shadow-lg ${
-                  isDarkMode 
-                    ? 'bg-card/50 border-border/50 hover:bg-card/80' 
-                    : 'bg-white/70 border-gray-200/50 hover:bg-white/90'
-                }`}>
-                  <div className="p-6">
-                    <h3 className={`text-lg font-semibold mb-4 ${
-                      isDarkMode ? 'text-foreground' : 'text-gray-900'
-                    }`}>Trend Konular</h3>
-                    
-                    <div className="space-y-3">
-                      {[
-                        { title: "Algoritmik Trading Başlangıç", replies: 23, trend: "+12%" },
-                        { title: "Prop Firm Deneyimleri", replies: 18, trend: "+8%" },
-                        { title: "Python ile Bot Geliştirme", replies: 31, trend: "+15%" }
-                      ].map((topic, index) => (
-                        <div key={index} className={`p-3 rounded-lg transition-colors cursor-pointer ${
-                          isDarkMode ? 'hover:bg-muted/50' : 'hover:bg-gray-50'
-                        }`}>
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <h4 className={`font-medium text-sm leading-tight line-clamp-2 ${
-                                isDarkMode ? 'text-foreground' : 'text-gray-900'
-                              }`}>{topic.title}</h4>
-                              <div className="flex items-center gap-2 mt-1">
-                                <span className={`text-xs ${
-                                  isDarkMode ? 'text-muted-foreground' : 'text-gray-500'
-                                }`}>{topic.replies} yanıt</span>
-                                <span className="text-xs text-emerald-500 font-medium">{topic.trend}</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  <InContentAd 
+                    adSlot={DEFAULT_AD_CONFIG.adSlots.homepageSidebar}
+                    preferLarge={false}
+                  />
                 </div>
               </div>
             </div>

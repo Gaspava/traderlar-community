@@ -76,7 +76,7 @@ export async function GET(
       .limit(10); // Get more to filter by similarity
 
     if (error) {
-      console.error('Error fetching related topics:', error);
+      
       return await getFallbackRelatedTopics(supabase, currentTopic, id);
     }
 
@@ -118,7 +118,7 @@ export async function GET(
     });
 
   } catch (error) {
-    console.error('Error in related topics route:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

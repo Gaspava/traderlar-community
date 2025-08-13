@@ -180,17 +180,19 @@ export default function AdminForumTopicsPage() {
     if (!confirm('Bu konuyu silmek istediğinizden emin misiniz?')) return;
 
     try {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from('forum_topics')
-        .delete()
-        .eq('id', topicId);
+      const response = await fetch(`/api/forum/topics/${topicId}`, {
+        method: 'DELETE',
+      });
 
-      if (error) throw error;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete topic');
+      }
 
-      // Remove from local state
-      setTopics(topics.filter(topic => topic.id !== topicId));
-      setTotalCount(prev => prev - 1);
+      // Refresh the topics list from database
+      await fetchTopics();
+      
+      // Also update selected topics
       setSelectedTopics(prev => {
         const newSelected = new Set(prev);
         newSelected.delete(topicId);
@@ -198,6 +200,7 @@ export default function AdminForumTopicsPage() {
       });
     } catch (error) {
       console.error('Error deleting topic:', error);
+      alert('Konu silinirken hata oluştu: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   };
 
@@ -227,22 +230,44 @@ export default function AdminForumTopicsPage() {
     setIsDeleteModalOpen(false);
     
     try {
-      const supabase = createClient();
-      const topicIds = Array.from(selectedTopics);
+      const deletePromises = Array.from(selectedTopics).map(async (topicId) => {
+        const response = await fetch(`/api/forum/topics/${topicId}`, {
+          method: 'DELETE',
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(`Failed to delete topic ${topicId}: ${errorData.error}`);
+        }
+        
+        return topicId;
+      });
+
+      // Wait for all deletions to complete
+      const deletedIds = await Promise.allSettled(deletePromises);
       
-      const { error } = await supabase
-        .from('forum_topics')
-        .delete()
-        .in('id', topicIds);
+      // Filter out successfully deleted topics
+      const successfullyDeleted = deletedIds
+        .filter(result => result.status === 'fulfilled')
+        .map(result => result.status === 'fulfilled' ? result.value : null)
+        .filter(Boolean);
 
-      if (error) throw error;
-
-      // Remove from local state
-      setTopics(topics.filter(topic => !selectedTopics.has(topic.id)));
-      setTotalCount(prev => prev - selectedTopics.size);
+      // Refresh the topics list from database
+      await fetchTopics();
       setSelectedTopics(new Set());
+      
+      // Show feedback to user
+      const failedDeletions = deletedIds.filter(result => result.status === 'rejected').length;
+      if (failedDeletions > 0) {
+        alert(`${successfullyDeleted.length} konu silindi. ${failedDeletions} konu silinemedi.`);
+        console.error('Some deletions failed:', deletedIds.filter(result => result.status === 'rejected'));
+      } else {
+        alert(`${successfullyDeleted.length} konu başarıyla silindi.`);
+      }
+      
     } catch (error) {
       console.error('Error deleting topics:', error);
+      alert('Konular silinirken hata oluştu: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   };
 
