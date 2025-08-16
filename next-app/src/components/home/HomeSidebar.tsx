@@ -31,7 +31,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Menu,
-  X
+  X,
+  Moon,
+  Sun
 } from 'lucide-react';
 
 interface HomeSidebarProps {
@@ -561,6 +563,63 @@ export default function HomeSidebar({ activeSection, className = '' }: HomeSideb
               </div>
             )
           )}
+
+          {/* Mobile Theme Toggle - Bottom */}
+          <div className="md:hidden">
+            <div className={`border-t mt-4 pt-4 ${
+              isDarkMode ? 'border-gray-700' : 'border-gray-200'
+            }`}>
+              <div className="px-3">
+                <div className="flex items-center justify-between py-2">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                      isDarkMode 
+                        ? 'bg-orange-500/20 text-orange-400'
+                        : 'bg-blue-500/20 text-blue-600'
+                    }`}>
+                      {isDarkMode ? (
+                        <Sun className="w-3 h-3" />
+                      ) : (
+                        <Moon className="w-3 h-3" />
+                      )}
+                    </div>
+                    <span className={`text-sm font-medium ${
+                      isDarkMode ? 'text-white' : 'text-gray-900'
+                    }`}>
+                      Tema
+                    </span>
+                  </div>
+                  
+                  <button
+                    onClick={() => {
+                      const html = document.documentElement;
+                      const currentTheme = html.classList.contains('dark') ? 'dark' : 'light';
+                      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                      html.classList.toggle('dark');
+                      localStorage.setItem('theme', newTheme);
+                    }}
+                    className={`relative w-10 h-6 rounded-full transition-all duration-200 ${
+                      isDarkMode 
+                        ? 'bg-blue-600' 
+                        : 'bg-gray-300'
+                    }`}
+                  >
+                    <div className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full transition-all duration-200 transform flex items-center justify-center bg-white ${
+                      isDarkMode 
+                        ? 'translate-x-4'
+                        : 'translate-x-0'
+                    }`}>
+                      {isDarkMode ? (
+                        <Moon className="w-2.5 h-2.5 text-blue-600" />
+                      ) : (
+                        <Sun className="w-2.5 h-2.5 text-amber-500" />
+                      )}
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* Spacer for bottom */}
           <div className="h-20"></div>
