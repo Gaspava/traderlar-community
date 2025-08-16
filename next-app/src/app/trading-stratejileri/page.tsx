@@ -356,25 +356,26 @@ export default function TradingStratejileriPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-background">
-        {/* Header - Mobil optimize edilmiş */}
-        <div className="sticky top-0 z-40 bg-gray-50/80 dark:bg-background/80 backdrop-blur-xl border-b border-gray-200/30 dark:border-border/30">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="flex flex-col items-center text-center lg:text-left lg:items-start"
-            >
-              {/* Page Title */}
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-foreground mb-2">Trading Stratejileri</h1>
-                <p className="text-gray-600 dark:text-muted-foreground text-sm">
-                  Profesyonel trading stratejilerini keşfedin ve kar grafiklerini inceleyin
-                </p>
-              </div>
-            </motion.div>
-          </div>
+      {/* Compact Header - Mobile Optimized */}
+      <div className="border-b border-gray-200 dark:border-border bg-white dark:bg-card">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
+          >
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-foreground">
+                Trading Stratejileri
+              </h1>
+              <p className="text-sm text-gray-600 dark:text-muted-foreground mt-1">
+                Profesyonel trading stratejilerini keşfedin ve kar grafiklerini inceleyin
+              </p>
+            </div>
+          </motion.div>
         </div>
+      </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Mobile Filter Toggle */}
