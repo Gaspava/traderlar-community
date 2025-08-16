@@ -75,114 +75,209 @@ export function StrategyCard({
   onLike, 
   onBookmark 
 }: StrategyCardProps) {
-  // Strategy kategori renkleri
-  const categoryColors = {
-    'Forex': '#10b981',
-    'Crypto': '#f59e0b', 
-    'Hisse': '#3b82f6',
-    'Emtia': '#ef4444',
-    'Endeks': '#8b5cf6'
+  // Parite türüne göre renkler - Ana tema uyumlu
+  const getParityColor = (category: string) => {
+    if (category.includes('USD') || category.includes('EUR') || category.includes('GBP') || category.includes('JPY')) {
+      return 'hsl(142, 76%, 36%)'; // Forex - ana tema yeşili
+    } else if (category.includes('BTC') || category.includes('ETH') || category.includes('USDT')) {
+      return 'hsl(142, 76%, 45%)'; // Crypto - açık yeşil
+    } else if (category === 'GOLD' || category === 'SILVER') {
+      return 'hsl(43, 74%, 50%)'; // Emtia - altın sarısı
+    } else {
+      return 'hsl(142, 60%, 30%)'; // Hisse - koyu yeşil
+    }
   };
 
-  const categoryColor = categoryColors[strategy.category as keyof typeof categoryColors] || '#6b7280';
+  const categoryColor = getParityColor(strategy.category);
+  const isPositive = strategy.performance.totalReturn > 0;
+
+  // Gerçek performans verilerine dayalı grafik data generator
+  const generateRealChartData = () => {
+    const months = 12;
+    const data = [];
+    const totalReturn = strategy.performance.totalReturn;
+    const winRate = strategy.performance.winRate;
+    
+    // Başlangıç değeri
+    let currentValue = 10000;
+    data.push(currentValue);
+    
+    // Her ay için gerçekçi getiri hesapla
+    for (let i = 1; i < months; i++) {
+      const monthlyReturn = (totalReturn / 100) / months;
+      const volatility = (100 - winRate) / 100 * 0.1; // Düşük win rate = yüksek volatilite
+      const randomFactor = (Math.random() - 0.5) * volatility;
+      
+      currentValue *= (1 + monthlyReturn + randomFactor);
+      data.push(currentValue);
+    }
+    
+    return data;
+  };
+
+  const chartData = generateRealChartData();
+
+  // Create SVG path for performance chart
+  const createPath = (data: number[]) => {
+    const max = Math.max(...data);
+    const min = Math.min(...data);
+    const range = max - min || 1;
+    const width = 320;
+    const height = 120;
+    
+    const points = data.map((value, index) => {
+      const x = (index / (data.length - 1)) * width;
+      const y = height - ((value - min) / range) * height;
+      return `${x},${y}`;
+    });
+    
+    return `M ${points.join(' L ')}`;
+  };
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: index * 0.1 }}
-      className="relative group"
+      className="relative group w-full"
     >
       <Link href={`/trading-stratejileri/${strategy.id}`} className="block">
-        <div className="relative rounded-2xl overflow-hidden bg-white dark:bg-gray-800 shadow-sm hover:shadow-xl dark:shadow-gray-900/50 transition-all duration-300 transform hover:-translate-y-1 h-full">
-          {/* Hero Image Area - Forum CourseCard tarzında */}
-          <div className="relative h-48 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800">
-            {/* Gradient overlay with category color */}
-            <div 
-              className="absolute inset-0 opacity-20"
-              style={{ backgroundColor: categoryColor }}
-            ></div>
-            
-            {/* Strategy Performance Indicator */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div 
-                className="p-6 rounded-full shadow-lg backdrop-blur-sm flex flex-col items-center"
-                style={{ 
-                  backgroundColor: `${categoryColor}20`,
-                  border: `2px solid ${categoryColor}40`
-                }}
-              >
-                <div className={`trading-price ${
-                  strategy.performance.totalReturn > 0 ? 'text-green-600' : 'text-red-600'
-                }`}>
-                  {strategy.performance.totalReturn > 0 ? '+' : ''}{formatLargeNumber(strategy.performance.totalReturn)}%
-                </div>
-                <div className="text-caption mt-1">Toplam Getiri</div>
-              </div>
-            </div>
-            
-            {/* Premium/Category Badge */}
-            <div className="absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-semibold text-white backdrop-blur-sm" style={{ backgroundColor: `${categoryColor}CC` }}>
-              {strategy.isPremium ? 'PREMIUM' : strategy.category}
-            </div>
-            
-            {/* Bookmark Button */}
-            <button 
-              onClick={(e) => onBookmark(strategy.id, e)}
-              className="absolute top-4 right-4 w-8 h-8 bg-white/90 dark:bg-gray-800/90 backdrop-blur rounded-full flex items-center justify-center hover:bg-white dark:hover:bg-gray-700 transition-colors"
-            >
-              <Bookmark className={`w-4 h-4 ${isBookmarked ? 'text-green-600 fill-current' : 'text-gray-600 dark:text-gray-400'}`} />
-            </button>
-          </div>
+        <div className="relative rounded-2xl overflow-hidden bg-card dark:bg-card shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 h-full w-full border border-border">
           
-          {/* Content */}
-          <div className="p-5">
-            <h3 className="card-title text-gray-900 dark:text-gray-100 mb-3 text-lg group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors line-clamp-1">
+          {/* Performance Chart - En üste taşındı */}
+          <div className="p-4 pb-2">
+            <div className="relative">
+              {/* Parite bilgisi sağ üst köşede */}
+              <div className="absolute top-2 right-2 z-10 flex items-center gap-2">
+                <div 
+                  className="px-2 py-1 rounded-full text-xs font-semibold text-white backdrop-blur-sm"
+                  style={{ backgroundColor: `${categoryColor}CC` }}
+                >
+                  {strategy.category}
+                </div>
+                {strategy.isPremium && (
+                  <div className="px-2 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-amber-500 to-orange-500 text-white">
+                    PRO
+                  </div>
+                )}
+              </div>
+              
+              {/* Bookmark button sol üst köşede */}
+              <button 
+                onClick={(e) => onBookmark(strategy.id, e)}
+                className="absolute top-2 left-2 z-10 w-8 h-8 bg-background/90 rounded-full flex items-center justify-center hover:bg-background transition-colors backdrop-blur-sm border border-border"
+              >
+                <Bookmark className={`w-4 h-4 ${isBookmarked ? 'text-primary fill-current' : 'text-muted-foreground'}`} />
+              </button>
+              
+              {/* Getiri oranı ortada */}
+              <div className="absolute inset-0 flex items-center justify-center z-10">
+                <div className={`text-2xl font-bold drop-shadow-lg ${
+                  isPositive ? 'text-primary' : 'text-destructive'
+                }`}>
+                  {isPositive ? '+' : ''}{strategy.performance.totalReturn.toFixed(1)}%
+                </div>
+              </div>
+              
+              {/* Ana Grafik - tam genişlik */}
+              <svg width="100%" height="120" viewBox="0 0 320 120" className="overflow-visible">
+                <defs>
+                  <linearGradient id={`gradient-${strategy.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stopColor={isPositive ? 'hsl(142, 76%, 36%)' : 'hsl(0, 75%, 55%)'} stopOpacity="0.4" />
+                    <stop offset="100%" stopColor={isPositive ? 'hsl(142, 76%, 36%)' : 'hsl(0, 75%, 55%)'} stopOpacity="0.1" />
+                  </linearGradient>
+                </defs>
+                
+                {/* Chart area fill */}
+                <path
+                  d={`${createPath(chartData).replace(/280/g, '320').replace(/80/g, '120')} L 320,120 L 0,120 Z`}
+                  fill={`url(#gradient-${strategy.id})`}
+                />
+                
+                {/* Chart line */}
+                <path
+                  d={createPath(chartData).replace(/280/g, '320').replace(/80/g, '120')}
+                  fill="none"
+                  stroke={isPositive ? 'hsl(142, 76%, 36%)' : 'hsl(0, 75%, 55%)'}
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+          </div>
+
+          {/* Başlık ve Açıklama - daha küçük */}
+          <div className="px-4 pb-3">
+            <h3 className="text-lg font-bold text-foreground mb-2 line-clamp-1 group-hover:text-primary transition-colors">
               {strategy.name}
             </h3>
             
-            <p className="body-text text-gray-600 dark:text-gray-300 text-sm mb-4 line-clamp-2">
+            <p className="text-sm text-muted-foreground mb-3 line-clamp-2 leading-relaxed">
               {strategy.description}
             </p>
-            
-            {/* Progress-style Performance Bar */}
-            <div className="mb-4">
-              <div className="flex justify-between text-caption mb-1">
-                <span className="metric-value">{strategy.performance.winRate}% Başarı</span>
-                <span>Aktif</span>
+          </div>
+
+          {/* Metrikler */}
+          <div className="px-4 mb-4">
+            <div className="grid grid-cols-3 gap-2">
+              <div className="text-center p-2 bg-muted/50 rounded-lg">
+                <div className="text-sm font-bold text-primary">
+                  {strategy.performance.winRate.toFixed(1)}%
+                </div>
+                <div className="text-xs text-muted-foreground">Başarı</div>
               </div>
-              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                <div 
-                  className="h-2 rounded-full transition-all duration-300"
-                  style={{ 
-                    backgroundColor: categoryColor,
-                    width: `${Math.min(100, strategy.performance.winRate)}%`
-                  }}
-                />
+              <div className="text-center p-2 bg-muted/50 rounded-lg">
+                <div className="text-sm font-bold text-accent">
+                  {Math.abs(strategy.performance.maxDrawdown).toFixed(1)}%
+                </div>
+                <div className="text-xs text-muted-foreground">Düşüş</div>
+              </div>
+              <div className="text-center p-2 bg-muted/50 rounded-lg">
+                <div className="text-sm font-bold text-foreground">
+                  {formatLargeNumber(strategy.performance.totalTrades)}
+                </div>
+                <div className="text-xs text-muted-foreground">İşlem</div>
               </div>
             </div>
-            
-            {/* Author/Creator Info - Forum CourseCard tarzında */}
-            <div className="flex items-center">
-              <div className="w-8 h-8 rounded-full mr-2 flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: categoryColor }}>
-                {strategy.author.charAt(0).toUpperCase()}
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100 line-clamp-1">{strategy.author}</p>
-                <p className="text-caption">{strategy.timeframe} • <span className="metric-value">{strategy.performance.totalTrades}</span> işlem</p>
+          </div>
+          
+          {/* Footer - sadeleştirilmiş */}
+          <div className="px-4 pb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div 
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                  style={{ backgroundColor: categoryColor }}
+                >
+                  {strategy.author.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">
+                    {strategy.author}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {strategy.timeframe}
+                  </p>
+                </div>
               </div>
               
-              {/* Like Button */}
-              <button
-                onClick={(e) => onLike(strategy.id, e)}
-                className={`ml-2 p-1.5 rounded-lg transition-all ${
-                  isLiked 
-                    ? 'bg-red-500/20 text-red-500' 
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-red-500 hover:bg-red-500/10'
-                }`}
-              >
-                <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
-              </button>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Eye className="w-3 h-3" />
+                  <span>{formatLargeNumber(strategy.views)}</span>
+                </div>
+                <button
+                  onClick={(e) => onLike(strategy.id, e)}
+                  className={`p-1.5 rounded-lg transition-all ${
+                    isLiked 
+                      ? 'bg-destructive/20 text-destructive' 
+                      : 'bg-muted text-muted-foreground hover:text-destructive hover:bg-destructive/10'
+                  }`}
+                >
+                  <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
+                </button>
+              </div>
             </div>
           </div>
         </div>
