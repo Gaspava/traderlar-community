@@ -331,33 +331,6 @@ export default function RegisterPage() {
           </p>
         </div>
 
-        <div className="mt-8">
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-neutral-300 dark:border-neutral-700"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-black/50 text-neutral-400 dark:text-neutral-500">Demo Hesapları</span>
-            </div>
-          </div>
-
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-300 dark:border-neutral-700 rounded-lg text-neutral-700 dark:text-neutral-300 hover:bg-neutral-900 transition-colors text-sm"
-            >
-              <User className="w-4 h-4" />
-              Admin
-            </button>
-            <button
-              type="button"
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-300 dark:border-neutral-700 rounded-lg text-neutral-700 dark:text-neutral-300 hover:bg-neutral-900 transition-colors text-sm"
-            >
-              <User className="w-4 h-4" />
-              Kullanıcı
-            </button>
-          </div>
-        </div>
       </div>
 
       <div className="mt-6 text-center">
