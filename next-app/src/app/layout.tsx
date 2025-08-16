@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Montserrat, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
-import { AdSenseScript, DEFAULT_AD_CONFIG } from "@/components/ads";
+import { DEFAULT_AD_CONFIG } from "@/components/ads";
 import { GoogleAnalytics } from '@next/third-parties/google';
 
 // Ana font - UI ve Dashboard için optimize edilmiş
@@ -44,6 +44,8 @@ export const metadata: Metadata = {
 };
 
 import Navbar from "@/components/layout/Navbar";
+import HomeSidebar from "@/components/home/HomeSidebar";
+import { SidebarProvider } from "@/contexts/SidebarContext";
 
 export default function RootLayout({
   children,
@@ -57,12 +59,19 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="antialiased font-jakarta">
-        <AdSenseScript publisherId={DEFAULT_AD_CONFIG.publisherId} />
+        <script
+          async
+          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${DEFAULT_AD_CONFIG.publisherId}`}
+          crossOrigin="anonymous"
+        />
         <ThemeProvider>
-          <Navbar />
-          <main className="min-h-screen">
-            {children}
-          </main>
+          <SidebarProvider>
+            <Navbar />
+            <HomeSidebar />
+            <main className="min-h-screen transition-all duration-300 md:ml-[var(--sidebar-width)]">
+              {children}
+            </main>
+          </SidebarProvider>
         </ThemeProvider>
         <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID!} />
       </body>

@@ -100,7 +100,7 @@ export default function StrategyCard({ strategyId, className = '' }: StrategyCar
     >
       <Link
         href={`/trading-stratejileri/${strategy.id}`}
-        className="block bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 rounded-lg p-3 hover:from-primary/10 hover:to-primary/15 hover:border-primary/30 transition-all duration-200 group"
+        className="block bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 rounded-lg p-2 sm:p-3 hover:from-primary/10 hover:to-primary/15 hover:border-primary/30 transition-all duration-200 group w-full"
       >
         <div className="flex items-start gap-3">
           {/* Icon */}

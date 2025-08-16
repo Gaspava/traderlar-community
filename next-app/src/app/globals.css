@@ -2,6 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Mobile-First Responsive Variables */
 @layer base {
   :root {
     --background: 0 0% 98%;
@@ -69,39 +70,39 @@
     text-rendering: optimizeLegibility;
   }
   
-  /* Typography hierarchy */
+  /* Mobile-First Typography */
   h1, .h1 {
-    @apply font-montserrat font-bold text-2xl md:text-3xl lg:text-4xl tracking-tight;
+    @apply font-montserrat font-bold text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-tight leading-tight;
   }
   
   h2, .h2 {
-    @apply font-montserrat font-bold text-2xl md:text-3xl lg:text-display tracking-tight;
+    @apply font-montserrat font-bold text-lg sm:text-xl md:text-2xl lg:text-3xl tracking-tight leading-tight;
   }
   
   h3, .h3 {
-    @apply font-montserrat font-semibold text-xl md:text-2xl tracking-tight;
+    @apply font-montserrat font-semibold text-base sm:text-lg md:text-xl lg:text-2xl tracking-tight;
   }
   
   h4, .h4 {
-    @apply font-montserrat font-semibold text-lg md:text-xl;
+    @apply font-montserrat font-semibold text-base sm:text-lg md:text-xl;
   }
   
   h5, .h5 {
-    @apply font-montserrat font-medium text-base md:text-lg;
+    @apply font-montserrat font-medium text-sm sm:text-base md:text-lg;
   }
   
   h6, .h6 {
     @apply font-montserrat font-medium text-sm md:text-base;
   }
   
-  /* Paragraph and body text */
+  /* Mobile-Optimized Body Text */
   p, .body-text {
-    @apply font-jakarta text-base leading-relaxed;
+    @apply font-jakarta text-sm sm:text-base leading-relaxed;
   }
   
   /* Small text and captions */
   .text-caption {
-    @apply font-jakarta text-sm text-muted-foreground;
+    @apply font-jakarta text-xs sm:text-sm text-muted-foreground;
   }
   
   /* Numbers, metrics, and data display */
@@ -109,17 +110,17 @@
     @apply font-mono font-semibold tabular-nums;
   }
   
-  /* Trading specific typography */
+  /* Mobile-Optimized Trading Typography */
   .trading-pair {
-    @apply font-mono font-medium uppercase tracking-wide;
+    @apply font-mono font-medium text-xs sm:text-sm uppercase tracking-wide;
   }
   
   .trading-price {
-    @apply font-mono font-bold text-lg tabular-nums;
+    @apply font-mono font-bold text-base sm:text-lg tabular-nums;
   }
   
   .trading-change {
-    @apply font-mono font-semibold tabular-nums;
+    @apply font-mono font-semibold text-sm sm:text-base tabular-nums;
   }
   
   /* Button typography */
@@ -161,6 +162,25 @@
 
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
     background: #94a3b8;
+  }
+  
+  /* Custom green scrollbar for forum sections */
+  .forum-scroll::-webkit-scrollbar {
+    width: 3px;
+    height: 3px;
+  }
+
+  .forum-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .forum-scroll::-webkit-scrollbar-thumb {
+    background: #10B981;
+    border-radius: 2px;
+  }
+
+  .forum-scroll::-webkit-scrollbar-thumb:hover {
+    background: #059669;
   }
   
   /* Word breaking utilities for long text */
@@ -330,10 +350,156 @@
   }
 
   .heading-responsive {
-    font-size: clamp(1.125rem, 4vw, 1.5rem);
+    font-size: clamp(1rem, 3.5vw, 1.5rem);
   }
 
   .title-responsive {
-    font-size: clamp(1.5rem, 5vw, 2.25rem);
+    font-size: clamp(1.25rem, 4vw, 2.25rem);
+  }
+
+  /* Mobile-First Container Styles */
+  .mobile-container {
+    @apply w-full px-4 sm:px-6 md:px-8 mx-auto;
+    max-width: 100%;
+  }
+
+  @media (min-width: 640px) {
+    .mobile-container {
+      max-width: 640px;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .mobile-container {
+      max-width: 768px;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .mobile-container {
+      max-width: 1024px;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .mobile-container {
+      max-width: 1280px;
+    }
+  }
+
+  /* Mobile Touch Targets */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+    @apply flex items-center justify-center;
+  }
+
+  /* Mobile-Optimized Buttons */
+  .btn-mobile {
+    @apply min-h-[44px] px-4 py-2 text-sm sm:text-base touch-manipulation select-none;
+  }
+
+  /* Mobile Grid System */
+  .mobile-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4;
+  }
+
+  /* Mobile Cards */
+  .card-mobile {
+    @apply rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow;
+  }
+
+  /* Mobile Navigation */
+  .nav-mobile {
+    @apply fixed bottom-0 left-0 right-0 bg-background border-t border-border md:hidden z-50;
+  }
+
+  /* Hide scrollbar on mobile for better UX */
+  @media (max-width: 768px) {
+    .hide-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    .hide-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  /* Mobile Modal Overlay */
+  .modal-mobile {
+    @apply fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center;
+  }
+
+  .modal-content-mobile {
+    @apply bg-background rounded-t-2xl sm:rounded-2xl w-full sm:w-auto sm:max-w-lg max-h-[90vh] overflow-y-auto;
+  }
+
+  /* Responsive spacing utilities */
+  .space-y-mobile {
+    @apply space-y-2 sm:space-y-3 md:space-y-4;
+  }
+
+  .space-x-mobile {
+    @apply space-x-2 sm:space-x-3 md:space-x-4;
+  }
+
+  /* Mobile-friendly tables */
+  @media (max-width: 640px) {
+    .table-mobile {
+      display: block;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+  }
+
+  /* Responsive images */
+  .img-responsive {
+    @apply w-full h-auto object-cover;
+  }
+
+  /* Mobile menu styles */
+  .mobile-menu {
+    @apply fixed inset-0 bg-background z-50 transform transition-transform duration-300;
+  }
+
+  .mobile-menu.closed {
+    @apply translate-x-full;
+  }
+
+  .mobile-menu.open {
+    @apply translate-x-0;
+  }
+
+  /* Hamburger menu button */
+  .hamburger-btn {
+    @apply relative w-6 h-5 flex flex-col justify-between;
+  }
+
+  .hamburger-line {
+    @apply w-full h-0.5 bg-foreground transition-all duration-300;
+  }
+
+  /* Mobile-first utilities */
+  .mobile-only {
+    @apply block sm:hidden;
+  }
+
+  .desktop-only {
+    @apply hidden sm:block;
+  }
+
+  /* Prevent text overflow on mobile */
+  .text-wrap-mobile {
+    @apply break-words overflow-wrap-anywhere;
+  }
+
+  /* Mobile form inputs */
+  .input-mobile {
+    @apply w-full min-h-[44px] px-3 py-2 text-sm sm:text-base rounded-lg border border-input;
+  }
+
+  /* Mobile dropdown */
+  .dropdown-mobile {
+    @apply absolute right-0 mt-2 w-56 sm:w-64 rounded-lg bg-popover shadow-lg border border-border;
   }
 }

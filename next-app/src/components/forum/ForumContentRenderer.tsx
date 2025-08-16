@@ -67,7 +67,7 @@ export default function ForumContentRenderer({ content, className = '' }: ForumC
               <div className="my-2">
                 <StrategyCard 
                   strategyId={part.strategyId!}
-                  className="max-w-sm"
+                  className="w-full sm:max-w-sm"
                 />
               </div>
             )}

@@ -20,16 +20,13 @@ import {
   Clock,
   Download,
   Heart,
-  BookOpen,
-  Menu,
-  X
+  BookOpen
 } from 'lucide-react';
 import VoteButtons from '@/components/ui/VoteButtons';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { FeedContent, FeedResponse, SortOption, ContentType, CONTENT_TYPE_CONFIG } from '@/types/feedContent';
 import { InContentAd, LeaderboardAd, DEFAULT_AD_CONFIG } from '@/components/ads';
 import RecentItems from '@/components/RecentItems';
-import HomeSidebar from '@/components/home/HomeSidebar';
 
 interface FeedPageState {
   content: (FeedContent | { type: 'ad'; id: string })[];
@@ -41,7 +38,6 @@ interface FeedPageState {
   contentFilter: ContentType | 'all';
   mounted: boolean;
   currentTheme: string;
-  isMobileSidebarOpen: boolean;
 }
 
 export default function HomePage() {
@@ -54,8 +50,7 @@ export default function HomePage() {
     sortBy: 'hot',
     contentFilter: 'all',
     mounted: false,
-    currentTheme: 'dark',
-    isMobileSidebarOpen: false
+    currentTheme: 'dark'
   });
 
   const { theme } = useTheme();
@@ -270,39 +265,20 @@ export default function HomePage() {
     <div className={`min-h-screen transition-colors duration-200 ${
       isDarkMode ? 'bg-background' : 'bg-gray-50'
     }`}>
-      {/* Homepage Sidebar */}
-      <HomeSidebar 
-        activeSection="home" 
-        isMobileOpen={state.isMobileSidebarOpen}
-        onMobileClose={() => setState(prev => ({ ...prev, isMobileSidebarOpen: false }))}
-      />
+      {/* Main Content - Mobile Optimized */}
+      <div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6 md:py-8">
 
-      {/* Mobile Menu Button */}
-      <button
-        onClick={() => setState(prev => ({ ...prev, isMobileSidebarOpen: true }))}
-        className={`fixed top-20 left-4 z-30 p-2 rounded-lg md:hidden transition-colors ${
-          isDarkMode 
-            ? 'bg-card border border-border text-foreground hover:bg-muted' 
-            : 'bg-white border border-gray-200 text-gray-900 hover:bg-gray-50'
-        }`}
-      >
-        <Menu className="w-6 h-6" />
-      </button>
-
-      {/* Main Content with Left Margin for Fixed Sidebar */}
-      <div className="md:ml-60 transition-all duration-300">
-        <div className="max-w-7xl mx-auto px-6 py-8 pt-24 md:pt-8">
-
-        {/* Main Content Layout */}
-        <div className="flex gap-8">
-          {/* Main Feed */}
-          <div className="flex-1 max-w-[800px] space-y-6">
-            {/* Filter Tabs */}
-            <div className={`flex items-center gap-4 mb-4 ${
+        {/* Main Content Layout - Mobile Responsive */}
+        <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 lg:gap-8">
+          {/* Main Feed - Full Width on Mobile */}
+          <div className="w-full lg:flex-1 lg:max-w-[800px] space-y-4 sm:space-y-6">
+            {/* Filter Tabs - Mobile Optimized */}
+            <div className={`flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 mb-4 ${
               isDarkMode ? 'text-muted-foreground' : 'text-gray-600'
             }`}>
-              {/* Sort Options */}
-              <div className="flex items-center gap-2">
+              {/* Sort Options - Scrollable on Mobile */}
+              <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar w-full sm:w-auto pb-2 sm:pb-0">
                 {[
                   { value: 'hot', label: 'Popüler', icon: Flame },
                   { value: 'new', label: 'Yeni', icon: Sparkles },
@@ -311,20 +287,20 @@ export default function HomePage() {
                   <button
                     key={value}
                     onClick={() => setState(prev => ({ ...prev, sortBy: value as SortOption }))}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium transition-colors ${
+                    className={`flex items-center gap-1.5 sm:gap-2 px-3 py-2 rounded-full text-xs sm:text-sm font-medium transition-colors whitespace-nowrap touch-manipulation active:scale-95 ${
                       state.sortBy === value
                         ? (isDarkMode ? 'bg-primary text-primary-foreground' : 'bg-primary text-white')
-                        : (isDarkMode ? 'text-muted-foreground hover:text-foreground hover:bg-muted' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100')
+                        : (isDarkMode ? 'text-muted-foreground hover:text-foreground hover:bg-muted active:bg-muted/70' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 active:bg-gray-200')
                     }`}
                   >
-                    <Icon className="w-4 h-4" />
-                    {label}
+                    <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <span className="hidden xs:inline">{label}</span>
                   </button>
                 ))}
               </div>
 
-              {/* Content Type Filter */}
-              <div className="ml-auto flex items-center gap-2">
+              {/* Content Type Filter - Mobile Scrollable */}
+              <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar w-full sm:w-auto sm:ml-auto pb-2 sm:pb-0">
                 {[
                   { value: 'all', label: 'Tümü' },
                   { value: 'forum', label: 'Tartışma' },
@@ -334,10 +310,10 @@ export default function HomePage() {
                   <button
                     key={value}
                     onClick={() => setState(prev => ({ ...prev, contentFilter: value as ContentType | 'all' }))}
-                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap touch-manipulation active:scale-95 ${
                       state.contentFilter === value
                         ? (isDarkMode ? 'bg-muted text-foreground' : 'bg-gray-200 text-gray-900')
-                        : (isDarkMode ? 'text-muted-foreground hover:text-foreground hover:bg-muted/50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100')
+                        : (isDarkMode ? 'text-muted-foreground hover:text-foreground hover:bg-muted/50 active:bg-muted/70' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 active:bg-gray-150')
                     }`}
                   >
                     {label}
@@ -346,8 +322,8 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Feed Content */}
-            <div className="space-y-2">
+            {/* Feed Content - Mobile Optimized */}
+            <div className="space-y-3 sm:space-y-4">
               {state.loading ? (
                 <div className="space-y-2">
                   {[...Array(10)].map((_, i) => (
@@ -443,8 +419,8 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Right Sidebar */}
-          <div className="w-80 flex-shrink-0 hidden lg:block">
+          {/* Right Sidebar - Desktop Only */}
+          <div className="w-full lg:w-80 flex-shrink-0 hidden lg:block">
             <div className="sticky top-8 space-y-6">
               {/* Recent Items */}
               <RecentItems />
@@ -497,12 +473,12 @@ function FeedItem({
   };
 
   return (
-    <div className={`rounded-lg border transition-colors duration-200 hover:shadow-sm ${
+    <div className={`rounded-lg border transition-all duration-200 hover:shadow-sm active:scale-[0.99] ${
       isDarkMode ? 'bg-card border-border hover:bg-background' : 'bg-white border-gray-200 hover:bg-gray-50'
     }`}>
-      <div className="flex p-3">
-        {/* Vote section - Forum tarzı */}
-        <div className="flex flex-col items-center w-10 mr-3">
+      <div className="flex flex-col sm:flex-row p-3 sm:p-4 gap-3 sm:gap-0">
+        {/* Vote section - Mobile Responsive */}
+        <div className="hidden sm:flex flex-col items-center w-10 mr-3">
           {content.type === 'forum' ? (
             <VoteButtons
               targetType="topic"
@@ -530,34 +506,34 @@ function FeedItem({
         
         {/* Content */}
         <div className="flex-1 min-w-0">
-          {/* Meta - Forum tarzı */}
-          <div className="flex items-center gap-2 mb-2">
-            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold ${config.bgColor} ${config.textColor}`}>
+          {/* Meta - Mobile Optimized */}
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-2">
+            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] sm:text-xs font-semibold ${config.bgColor} ${config.textColor}`}>
               {config.label}
             </span>
             <span 
-              className="px-1.5 py-0.5 rounded text-xs font-medium text-white"
+              className="px-1.5 py-0.5 rounded text-[10px] sm:text-xs font-medium text-white"
               style={{ backgroundColor: content.category.color }}
             >
               {content.category.name}
             </span>
-            <span className={`text-xs ${
+            <span className={`text-[10px] sm:text-xs ${
               isDarkMode ? 'text-muted-foreground' : 'text-gray-500'
             }`}>
-              • {content.author.username} • {formatDate(content.created_at)} önce
+              <span className="hidden sm:inline">•</span> {content.author.username} <span className="hidden sm:inline">•</span> <span className="sm:hidden">•</span> {formatDate(content.created_at)}
             </span>
           </div>
           
-          {/* Title and Content */}
-          <Link href={getContentUrl()} className="block group">
-            <h3 className={`font-medium text-base mb-2 line-clamp-2 group-hover:text-primary transition-colors ${
+          {/* Title and Content - Mobile Optimized */}
+          <Link href={getContentUrl()} className="block group touch-manipulation">
+            <h3 className={`font-medium text-sm sm:text-base mb-2 line-clamp-2 group-hover:text-primary transition-colors ${
               isDarkMode ? 'text-foreground' : 'text-gray-900'
             }`}>
               {content.title}
             </h3>
             
             {content.content && content.content.length > 50 && (
-              <p className={`text-sm mb-3 line-clamp-3 ${
+              <p className={`text-xs sm:text-sm mb-3 line-clamp-2 sm:line-clamp-3 ${
                 isDarkMode ? 'text-muted-foreground' : 'text-gray-600'
               }`}>
                 {content.content}
@@ -578,54 +554,65 @@ function FeedItem({
             )}
           </Link>
           
-          {/* Actions and Stats - Forum tarzı */}
-          <div className="flex items-center gap-4 text-xs">
-            <button className={`flex items-center gap-1 px-2 py-1 rounded transition-colors ${
-              isDarkMode ? 'text-muted-foreground hover:bg-muted hover:text-foreground' : 'text-gray-500 hover:bg-gray-100'
+          {/* Actions and Stats - Mobile Optimized */}
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-[10px] sm:text-xs">
+            <button className={`flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-1 rounded transition-colors touch-manipulation active:scale-95 ${
+              isDarkMode ? 'text-muted-foreground hover:bg-muted hover:text-foreground active:bg-muted/70' : 'text-gray-500 hover:bg-gray-100 active:bg-gray-200'
             }`}>
               <MessageCircle className="w-3 h-3" />
-              {content.type === 'forum' 
-                ? `${formatNumber((content as any).reply_count)} Yorum`
-                : content.type === 'article'
-                ? `${formatNumber((content as any).comment_count)} Yorum`
-                : `${formatNumber((content as any).like_count)} Beğeni`
-              }
+              <span className="hidden xs:inline">
+                {content.type === 'forum' 
+                  ? `${formatNumber((content as any).reply_count)} Yorum`
+                  : content.type === 'article'
+                  ? `${formatNumber((content as any).comment_count)} Yorum`
+                  : `${formatNumber((content as any).like_count)} Beğeni`
+                }
+              </span>
+              <span className="xs:hidden">
+                {content.type === 'forum' 
+                  ? formatNumber((content as any).reply_count)
+                  : content.type === 'article'
+                  ? formatNumber((content as any).comment_count)
+                  : formatNumber((content as any).like_count)
+                }
+              </span>
             </button>
             
-            <button className={`flex items-center gap-1 px-2 py-1 rounded transition-colors ${
-              isDarkMode ? 'text-muted-foreground hover:bg-muted hover:text-foreground' : 'text-gray-500 hover:bg-gray-100'
+            <button className={`flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-1 rounded transition-colors touch-manipulation active:scale-95 ${
+              isDarkMode ? 'text-muted-foreground hover:bg-muted hover:text-foreground active:bg-muted/70' : 'text-gray-500 hover:bg-gray-100 active:bg-gray-200'
             }`}>
               <Eye className="w-3 h-3" />
-              {formatNumber(content.view_count)}
+              <span>{formatNumber(content.view_count)}</span>
             </button>
 
             {content.type === 'strategy' && (
-              <button className={`flex items-center gap-1 px-2 py-1 rounded transition-colors ${
-                isDarkMode ? 'text-muted-foreground hover:bg-muted hover:text-foreground' : 'text-gray-500 hover:bg-gray-100'
+              <button className={`flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-1 rounded transition-colors touch-manipulation active:scale-95 ${
+                isDarkMode ? 'text-muted-foreground hover:bg-muted hover:text-foreground active:bg-muted/70' : 'text-gray-500 hover:bg-gray-100 active:bg-gray-200'
               }`}>
                 <Download className="w-3 h-3" />
-                {formatNumber((content as any).download_count)}
+                <span className="hidden xs:inline">{formatNumber((content as any).download_count)}</span>
               </button>
             )}
 
             {content.type === 'article' && (
-              <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
+              <div className="flex items-center gap-0.5 sm:gap-1 text-gray-500 dark:text-gray-400">
                 <BookOpen className="w-3 h-3" />
-                {(content as any).read_time} dk
+                <span className="hidden xs:inline">{(content as any).read_time} dk</span>
+                <span className="xs:hidden">{(content as any).read_time}</span>
               </div>
             )}
             
-            <button className={`flex items-center gap-1 px-2 py-1 rounded transition-colors ${
-              isDarkMode ? 'text-muted-foreground hover:bg-muted hover:text-foreground' : 'text-gray-500 hover:bg-gray-100'
+            <button className={`hidden sm:flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-1 rounded transition-colors touch-manipulation active:scale-95 ${
+              isDarkMode ? 'text-muted-foreground hover:bg-muted hover:text-foreground active:bg-muted/70' : 'text-gray-500 hover:bg-gray-100 active:bg-gray-200'
             }`}>
               <Share className="w-3 h-3" />
-              Paylaş
+              <span className="hidden lg:inline">Paylaş</span>
             </button>
             
-            <button className={`flex items-center gap-1 px-2 py-1 rounded transition-colors ${
-              isDarkMode ? 'text-muted-foreground hover:bg-muted hover:text-foreground' : 'text-gray-500 hover:bg-gray-100'
+            <button className={`flex sm:hidden items-center gap-0.5 px-1.5 py-1 rounded transition-colors touch-manipulation active:scale-95 ml-auto ${
+              isDarkMode ? 'text-muted-foreground hover:bg-muted hover:text-foreground active:bg-muted/70' : 'text-gray-500 hover:bg-gray-100 active:bg-gray-200'
             }`}>
-              <MoreHorizontal className="w-3 h-3" />
+              <MoreHorizontal className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -638,11 +625,11 @@ function FeedItem({
 // Feed Item Skeleton
 function FeedItemSkeleton({ isDarkMode }: { isDarkMode: boolean }) {
   return (
-    <div className={`rounded-lg border p-3 ${
+    <div className={`rounded-lg border p-3 sm:p-4 ${
       isDarkMode ? 'bg-card border-border' : 'bg-white border-gray-200'
     }`}>
-      <div className="flex">
-        <div className="w-10 mr-3">
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="hidden sm:block w-10 mr-3">
           <div className={`w-8 h-16 rounded ${isDarkMode ? 'bg-muted' : 'bg-gray-200'} animate-pulse`}></div>
         </div>
         <div className="flex-1">
@@ -652,7 +639,7 @@ function FeedItemSkeleton({ isDarkMode }: { isDarkMode: boolean }) {
           </div>
           <div className={`w-full h-5 mb-2 rounded ${isDarkMode ? 'bg-muted' : 'bg-gray-200'} animate-pulse`}></div>
           <div className={`w-3/4 h-4 mb-3 rounded ${isDarkMode ? 'bg-muted' : 'bg-gray-200'} animate-pulse`}></div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <div className={`w-16 h-6 rounded ${isDarkMode ? 'bg-muted' : 'bg-gray-200'} animate-pulse`}></div>
             <div className={`w-12 h-6 rounded ${isDarkMode ? 'bg-muted' : 'bg-gray-200'} animate-pulse`}></div>
             <div className={`w-14 h-6 rounded ${isDarkMode ? 'bg-muted' : 'bg-gray-200'} animate-pulse`}></div>

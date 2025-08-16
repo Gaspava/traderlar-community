@@ -22,7 +22,6 @@ import {
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useTheme } from 'next-themes';
-import ForumSidebar from '@/components/forum/ForumSidebar';
 import { communityService } from '@/lib/services/communityService';
 import type { 
   CommunityWithMembership, 
@@ -264,11 +263,8 @@ export default function CreatePostPage() {
     <div className={`min-h-screen transition-colors duration-200 ${
       isDarkMode ? 'bg-background' : 'bg-gray-50'
     }`}>
-      {/* Forum Sidebar Component - Community Mode */}
-      <ForumSidebar showCommunities={true} activeCommunity={slug} />
-
-      {/* Main Content with Left Margin for Fixed Sidebar */}
-      <div className="md:ml-60">
+      {/* Main Content */}
+      <div>
         <div className="max-w-4xl mx-auto px-4 py-8">
           {/* Header */}
           <div className="flex items-center gap-4 mb-8">

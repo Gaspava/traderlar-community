@@ -30,6 +30,7 @@ import { useMobileNavigation } from '@/hooks/useMobileInteractions';
 import NotificationCenter from '@/components/notifications/NotificationCenter';
 import { useThemeDetection } from '@/hooks/useThemeDetection';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
+import { useSidebar } from '@/contexts/SidebarContext';
 
 
 export default function Navbar() {
@@ -37,10 +38,10 @@ export default function Navbar() {
   const pathname = usePathname();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [profile, setProfile] = useState<User | null>(null);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const { isMobileOpen, setIsMobileOpen } = useSidebar();
   const { isDarkMode, mounted } = useThemeDetection();
   const { shouldHideNavbar, isScrolled } = useMobileNavigation();
   const profileDropdownRef = useRef<HTMLDivElement>(null);
@@ -70,7 +71,7 @@ export default function Navbar() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Close dropdowns when clicking outside  
+  // Close dropdowns when clicking outside or ESC key
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Element;
@@ -90,10 +91,25 @@ export default function Navbar() {
       }
     };
 
-    // Only add listener if dropdowns are open
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        if (isSearchOpen) {
+          setIsSearchOpen(false);
+        }
+        if (isProfileDropdownOpen) {
+          setIsProfileDropdownOpen(false);
+        }
+      }
+    };
+
+    // Only add listeners if dropdowns are open
     if (isProfileDropdownOpen || isSearchOpen) {
       document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+        document.removeEventListener('keydown', handleKeyDown);
+      };
     }
   }, [isProfileDropdownOpen, isSearchOpen]);
 
@@ -147,16 +163,28 @@ export default function Navbar() {
     <>
       <nav className={cn(
         "sticky top-0 z-50 border-b transition-all duration-300 safe-top",
-        isDarkMode ? "bg-background border-border" : "bg-white border-gray-200",
+        isDarkMode ? "bg-background/95 backdrop-blur-md border-border" : "bg-white/95 backdrop-blur-md border-gray-200",
         shouldHideNavbar ? "transform -translate-y-full lg:translate-y-0" : "transform translate-y-0",
-        isScrolled && "shadow-lg"
+        isScrolled && "shadow-sm"
       )}>
-        <div className="mx-2 lg:mx-4 px-4 sm:px-6 lg:px-8">
-          <div className="flex h-12 lg:h-14 items-center justify-between w-full">
-            {/* Logo - positioned to left edge */}
-            <div className="flex items-center flex-shrink-0">
-              <Link href="/" className="flex items-center space-x-2 group">
-                <div className="text-xl lg:text-2xl font-montserrat font-bold transition-colors">
+        <div className="w-full px-4 sm:px-6 lg:px-8">
+          <div className="flex h-14 sm:h-16 items-center justify-between w-full">
+            {/* Left side - Mobile menu + Logo */}
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              {/* Mobile Menu Button */}
+              <button
+                onClick={() => setIsMobileOpen(true)}
+                className={cn(
+                  "flex md:hidden items-center justify-center w-10 h-10 rounded-lg transition-colors",
+                  isDarkMode ? "text-gray-400 hover:text-white hover:bg-gray-800" : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
+                )}
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+              
+              {/* Logo */}
+              <Link href="/" className="flex items-center space-x-2 group touch-manipulation">
+                <div className="text-lg sm:text-xl lg:text-2xl font-montserrat font-bold transition-colors">
                   <span className={cn(
                     "group-hover:text-primary transition-colors",
                     isDarkMode ? "text-white" : "text-gray-900"
@@ -166,61 +194,39 @@ export default function Navbar() {
               </Link>
             </div>
 
-            {/* Desktop Navigation - centered */}
-            <div className="hidden lg:flex items-center space-x-1 absolute left-1/2 transform -translate-x-1/2">
-              {navItems.map((item) => {
-                const isActive = isActiveRoute(item.href);
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={cn(
-                      "flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-105",
-                      isActive 
-                        ? "bg-primary text-primary-foreground shadow-md" 
-                        : isDarkMode
-                          ? "text-gray-300 hover:text-white hover:bg-gray-800"
-                          : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-                    )}
-                  >
-                    <item.icon className="h-4 w-4" />
-                    <span>{item.label}</span>
-                  </Link>
-                );
-              })}
-              {profile?.role === 'admin' && (
-                <Link
-                  href="/admin"
-                  className={cn(
-                    "flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-105",
-                    pathname.startsWith('/admin') 
-                      ? "bg-orange-100 text-orange-600" 
-                      : "text-orange-600 hover:bg-orange-50"
-                  )}
-                >
-                  <Shield className="h-4 w-4" />
-                  <span>Admin</span>
-                </Link>
-              )}
+            {/* Search Bar - Desktop Only */}
+            <div className="hidden md:flex flex-1 max-w-md mx-4 md:mx-8 lg:max-w-lg">
+              <button
+                onClick={() => setIsSearchOpen(true)}
+                className={cn(
+                  "w-full flex items-center px-4 py-2 rounded-lg text-sm border transition-colors text-left",
+                  isDarkMode
+                    ? "bg-gray-900/80 border-gray-800 text-gray-400 hover:border-gray-700 hover:bg-gray-900"
+                    : "bg-gray-50 border-gray-200 text-gray-500 hover:border-gray-300 hover:bg-gray-100"
+                )}
+              >
+                <Search className="h-4 w-4 mr-3 flex-shrink-0" />
+                <span>Makale, konu veya kullanıcı arayın...</span>
+              </button>
             </div>
 
-            {/* Right side actions - positioned to right edge */}
-            <div className="flex items-center space-x-2 lg:space-x-3 flex-shrink-0 ml-auto">
+            {/* Right side actions - Right Column */}
+            <div className="flex items-center justify-end space-x-1 sm:space-x-2 lg:space-x-3">
 
-              {/* Search - Desktop only */}
+              {/* Search Button - Mobile Only */}
               <button
-                data-button="search"
-                onClick={() => setIsSearchOpen(!isSearchOpen)}
+                onClick={() => setIsSearchOpen(true)}
                 className={cn(
-                  "hidden lg:flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 hover:scale-105",
-                  isDarkMode 
+                  "md:hidden flex items-center justify-center w-10 h-10 rounded-lg transition-colors",
+                  isDarkMode
                     ? "text-gray-400 hover:text-white hover:bg-gray-800"
                     : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
                 )}
-                aria-label="Search"
+                title="Ara"
               >
                 <Search className="h-5 w-5" />
               </button>
+
 
               {user ? (
                 <>
@@ -229,7 +235,7 @@ export default function Navbar() {
                     <NotificationCenter />
                   </div>
 
-                  {/* Profile Dropdown - Desktop */}
+                  {/* Profile Dropdown - Clean Desktop */}
                   <div className="hidden lg:block">
                     <div className={cn(
                       "flex items-center space-x-3 pl-3 border-l",
@@ -244,7 +250,7 @@ export default function Navbar() {
                           data-button="profile"
                           onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
                           className={cn(
-                            "flex items-center space-x-3 p-2 rounded-xl cursor-pointer transition-colors group",
+                            "flex items-center space-x-3 p-2 rounded-lg cursor-pointer transition-colors group",
                             isDarkMode ? "hover:bg-gray-800" : "hover:bg-gray-100"
                           )}
                         >
@@ -348,7 +354,7 @@ export default function Navbar() {
                   <Link 
                     href="/auth/login" 
                     className={cn(
-                      "px-4 py-2 text-sm font-medium transition-colors rounded-xl",
+                      "px-4 py-2 text-sm font-medium transition-colors rounded-lg",
                       isDarkMode
                         ? "text-gray-300 hover:text-white hover:bg-gray-800"
                         : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
@@ -358,263 +364,191 @@ export default function Navbar() {
                   </Link>
                   <Link 
                     href="/auth/register" 
-                    className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors rounded-xl shadow-md hover:shadow-lg hover:scale-105"
+                    className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors rounded-lg"
                   >
                     Üye Ol
                   </Link>
                 </div>
               )}
 
-              {/* Mobile menu button */}
-              <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="lg:hidden flex items-center justify-center w-10 h-10 text-foreground hover:bg-muted/50 rounded-xl transition-all duration-200 relative z-50 mobile-button"
-                aria-label="Toggle menu"
-              >
-                <AnimatePresence mode="wait">
-                  {isMenuOpen ? (
-                    <motion.div
-                      key="close"
-                      initial={{ opacity: 0, rotate: -90 }}
-                      animate={{ opacity: 1, rotate: 0 }}
-                      exit={{ opacity: 0, rotate: 90 }}
-                      transition={{ duration: 0.15 }}
-                    >
-                      <X className="h-6 w-6" />
-                    </motion.div>
-                  ) : (
-                    <motion.div
-                      key="menu"
-                      initial={{ opacity: 0, rotate: 90 }}
-                      animate={{ opacity: 1, rotate: 0 }}
-                      exit={{ opacity: 0, rotate: -90 }}
-                      transition={{ duration: 0.15 }}
-                    >
-                      <Menu className="h-6 w-6" />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </button>
+              {/* Mobile Profile Dropdown - Touch Optimized */}
+              {user ? (
+                <div className="lg:hidden" ref={profileDropdownRef}>
+                  <button
+                    onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+                    className="flex items-center space-x-2 p-2 rounded-lg cursor-pointer transition-colors group"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-primary to-primary/80 flex items-center justify-center text-primary-foreground font-semibold text-sm">
+                      {profile?.name?.charAt(0).toUpperCase() || 'U'}
+                    </div>
+                    <ChevronDown className={cn(
+                      "h-4 w-4 transition-all duration-200 text-muted-foreground",
+                      isProfileDropdownOpen && "rotate-180"
+                    )} />
+                  </button>
+
+                  {/* Mobile Profile Dropdown Menu */}
+                  <AnimatePresence>
+                    {isProfileDropdownOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                        transition={{ duration: 0.15 }}
+                        className={cn(
+                          "absolute right-0 top-full mt-2 w-56 rounded-xl shadow-xl border z-[100]",
+                          isDarkMode 
+                            ? "bg-gray-800 border-gray-700"
+                            : "bg-white border-gray-200"
+                        )}
+                      >
+                        <div className="py-2">
+                          {/* Profile Info */}
+                          <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">
+                              {profile?.name || 'Kullanıcı'}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              @{profile?.username || 'user'}
+                            </p>
+                          </div>
+
+                          {/* Menu Items */}
+                          <div className="py-1">
+                            <Link
+                              href={`/profile/${profile?.username}`}
+                              className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                              onClick={() => setIsProfileDropdownOpen(false)}
+                            >
+                              <User className="mr-3 h-4 w-4" />
+                              Profil
+                            </Link>
+                            
+                            <Link
+                              href="/settings/profile"
+                              className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                              onClick={() => setIsProfileDropdownOpen(false)}
+                            >
+                              <Settings className="mr-3 h-4 w-4" />
+                              Ayarlar
+                            </Link>
+
+                            <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+
+                            <button
+                              onClick={() => {
+                                handleLogout();
+                                setIsProfileDropdownOpen(false);
+                              }}
+                              className="flex w-full items-center px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                            >
+                              <LogOut className="mr-3 h-4 w-4" />
+                              Çıkış Yap
+                            </button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              ) : (
+                <div className="lg:hidden flex items-center space-x-2">
+                  <Link 
+                    href="/auth/login" 
+                    className={cn(
+                      "px-3 py-2 text-sm font-medium transition-colors rounded-lg",
+                      isDarkMode
+                        ? "text-gray-300 hover:text-white hover:bg-gray-800"
+                        : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                    )}
+                  >
+                    Giriş
+                  </Link>
+                  <Link 
+                    href="/auth/register" 
+                    className="px-3 py-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors rounded-lg"
+                  >
+                    Üye Ol
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Modern Mobile Menu with Smooth Animations */}
-        <AnimatePresence>
-          {isMenuOpen && (
-            <>
-              {/* Mobile Menu Overlay */}
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 lg:hidden" 
-                onClick={() => setIsMenuOpen(false)}
-              />
-              
-              {/* Mobile Menu Content */}
-              <motion.div
-                initial={{ x: "100%", opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                exit={{ x: "100%", opacity: 0 }}
-                transition={{ 
-                  type: "spring", 
-                  stiffness: 300, 
-                  damping: 30,
-                  opacity: { duration: 0.2 }
-                }}
-                className="fixed top-16 right-0 bottom-0 w-80 max-w-[85vw] bg-background/98 backdrop-blur-xl border-l border-border z-50 lg:hidden shadow-2xl"
-              >
-                <div className="flex flex-col h-full">
-                  {/* Header */}
-                  <div className="p-4 border-b border-border">
-                    <h2 className="text-lg font-semibold text-foreground">Menu</h2>
-                  </div>
-
-                  {/* Navigation Items */}
-                  <div className="flex-1 overflow-y-auto mobile-scroll py-2">
-                    <div className="space-y-1 px-3">
-                      {navItems.map((item, index) => {
-                        const isActive = isActiveRoute(item.href);
-                        return (
-                          <motion.div
-                            key={item.href}
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: index * 0.1 }}
-                          >
-                            <Link
-                              href={item.href}
-                              className={cn(
-                                "flex items-center space-x-3 rounded-xl px-4 py-3 text-base font-medium transition-all duration-200 touch-manipulation min-h-[52px]",
-                                isActive
-                                  ? "bg-primary text-primary-foreground shadow-md"
-                                  : "text-foreground hover:bg-muted/50 hover:text-foreground"
-                              )}
-                              onClick={() => setIsMenuOpen(false)}
-                            >
-                              <item.icon className="h-5 w-5 flex-shrink-0" />
-                              <span>{item.label}</span>
-                            </Link>
-                          </motion.div>
-                        );
-                      })}
-                      {profile?.role === 'admin' && (
-                        <motion.div
-                          initial={{ opacity: 0, x: 20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: navItems.length * 0.1 }}
-                        >
-                          <Link
-                            href="/admin"
-                            className="flex items-center space-x-3 rounded-xl px-4 py-3 text-base font-medium text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-all duration-200 touch-manipulation min-h-[52px]"
-                            onClick={() => setIsMenuOpen(false)}
-                          >
-                            <Shield className="h-5 w-5 flex-shrink-0" />
-                            <span>Admin</span>
-                          </Link>
-                        </motion.div>
-                      )}
-                    </div>
-                    
-                    {/* Search Button for Mobile */}
-                    <div className="px-3 mt-4 pt-4 border-t border-border">
-                      <motion.button
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.3 }}
-                        onClick={() => {
-                          setIsSearchOpen(true);
-                          setIsMenuOpen(false);
-                        }}
-                        className="flex items-center space-x-3 w-full rounded-xl px-4 py-3 text-base font-medium text-foreground hover:bg-muted/50 transition-all duration-200 touch-manipulation min-h-[52px]"
-                      >
-                        <Search className="h-5 w-5 flex-shrink-0" />
-                        <span>Ara</span>
-                      </motion.button>
-                    </div>
-                  </div>
-                  
-                  {/* Bottom Section */}
-                  <motion.div 
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 }}
-                    className="border-t border-border bg-muted/30 p-4 space-y-3 safe-bottom"
-                  >
-                    {/* Theme Toggle */}
-                    <div className="flex items-center justify-center rounded-xl px-4 py-3 bg-background/50 border">
-                      <ThemeToggle />
-                    </div>
-                    
-                    {user ? (
-                      <div className="space-y-3">
-                        {/* User Profile Section */}
-                        <div className="flex items-center space-x-3 px-4 py-3 rounded-xl bg-background/50 border">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-r from-primary to-primary/80 flex items-center justify-center text-primary-foreground font-semibold">
-                            {profile?.name?.charAt(0).toUpperCase() || 'U'}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm truncate">{profile?.name}</p>
-                            <p className="text-xs text-muted-foreground truncate">@{profile?.username}</p>
-                          </div>
-                        </div>
-                        
-                        <Link
-                          href={`/profile/${profile?.username}`}
-                          className="flex items-center space-x-3 rounded-xl px-4 py-3 text-base font-medium hover:bg-muted/50 transition-all duration-200 touch-manipulation min-h-[52px] bg-background/50 border"
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          <User className="h-5 w-5 flex-shrink-0" />
-                          <span>Profilim</span>
-                        </Link>
-                        
-                        <Link
-                          href="/settings"
-                          className="flex items-center space-x-3 rounded-xl px-4 py-3 text-base font-medium hover:bg-muted/50 transition-all duration-200 touch-manipulation min-h-[52px] bg-background/50 border"
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          <Settings className="h-5 w-5 flex-shrink-0" />
-                          <span>Ayarlar</span>
-                        </Link>
-                        
-                        <button
-                          onClick={() => {
-                            handleLogout();
-                            setIsMenuOpen(false);
-                          }}
-                          className="flex w-full items-center space-x-3 rounded-xl px-4 py-3 text-base font-medium text-destructive hover:bg-destructive/10 transition-all duration-200 touch-manipulation min-h-[52px] bg-background/50 border border-destructive/20"
-                        >
-                          <LogOut className="h-5 w-5 flex-shrink-0" />
-                          <span>Çıkış Yap</span>
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        <Link
-                          href="/auth/login"
-                          className="block rounded-xl px-4 py-3 text-base font-medium text-center hover:bg-muted/50 transition-all duration-200 touch-manipulation min-h-[52px] bg-background/50 border"
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          Giriş Yap
-                        </Link>
-                        <Link
-                          href="/auth/register"
-                          className="block rounded-xl bg-primary px-4 py-3 text-base font-medium text-primary-foreground text-center hover:bg-primary/90 transition-all duration-200 touch-manipulation min-h-[52px] shadow-md hover:shadow-lg"
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          Üye Ol
-                        </Link>
-                      </div>
-                    )}
-                  </motion.div>
-                </div>
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
       </nav>
 
-      {/* Modern Search Dialog */}
+      {/* Enhanced Search Modal */}
       <AnimatePresence>
         {isSearchOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-start justify-center pt-16 px-4"
+            className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 px-4"
           >
-            {/* Overlay */}
+            {/* Blurred Backdrop */}
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+              initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+              animate={{ opacity: 1, backdropFilter: 'blur(12px)' }}
+              exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+              className={cn(
+                "absolute inset-0",
+                isDarkMode ? "bg-black/60" : "bg-black/30"
+              )}
               onClick={() => setIsSearchOpen(false)}
             />
             
             {/* Search Modal */}
             <motion.div
               ref={searchModalRef}
-              data-modal="search"
               initial={{ opacity: 0, scale: 0.95, y: -20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: -20 }}
-              className="relative bg-background rounded-xl shadow-2xl border border-border w-full max-w-2xl overflow-hidden"
+              transition={{ type: "spring", damping: 20, stiffness: 300 }}
+              className={cn(
+                "relative w-full max-w-2xl rounded-2xl shadow-2xl border overflow-hidden",
+                isDarkMode 
+                  ? "bg-gray-950/95 border-gray-800/60 backdrop-blur-xl"
+                  : "bg-white/95 border-gray-200/50 backdrop-blur-xl"
+              )}
             >
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-semibold text-foreground">Ara</h2>
-                  <button
-                    onClick={() => setIsSearchOpen(false)}
-                    className="text-muted-foreground hover:text-foreground transition-colors p-1 hover:bg-muted rounded-lg"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
+              {/* Header */}
+              <div className={cn(
+                "flex items-center justify-between p-6 border-b",
+                isDarkMode 
+                  ? "border-gray-800/40" 
+                  : "border-gray-200/20"
+              )}>
+                <div className="flex items-center space-x-3">
+                  <div className={cn(
+                    "w-10 h-10 rounded-full flex items-center justify-center",
+                    isDarkMode ? "bg-primary/20" : "bg-primary/10"
+                  )}>
+                    <Search className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-semibold text-foreground">Arama</h2>
+                    <p className="text-sm text-muted-foreground">İstediğiniz içeriği bulun</p>
+                  </div>
                 </div>
-                
-                <form onSubmit={handleSearch}>
+                <button
+                  onClick={() => setIsSearchOpen(false)}
+                  className={cn(
+                    "w-8 h-8 rounded-lg flex items-center justify-center transition-colors",
+                    isDarkMode 
+                      ? "hover:bg-gray-800 text-gray-400 hover:text-white"
+                      : "hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+                  )}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              
+              {/* Search Form */}
+              <div className="p-6">
+                <form onSubmit={handleSearch} className="space-y-6">
+                  {/* Search Input */}
                   <div className="relative">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <input
@@ -622,15 +556,96 @@ export default function Navbar() {
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Makale, konu veya kullanıcı arayın..."
-                      className="w-full pl-12 pr-4 py-3 bg-muted/50 border border-border rounded-xl text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                      className={cn(
+                        "w-full pl-12 pr-4 py-4 rounded-xl border-2 text-base transition-all duration-200",
+                        "focus:outline-none focus:ring-0",
+                        isDarkMode
+                          ? "bg-gray-900/60 border-gray-800 text-white placeholder-gray-500 focus:border-primary focus:bg-gray-900/80"
+                          : "bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500 focus:border-primary focus:bg-white"
+                      )}
                       autoFocus
                     />
                   </div>
-                  <div className="flex items-center justify-between mt-4">
-                    <p className="text-sm text-muted-foreground">
-                      Makale, konu veya kullanıcı arayın
-                    </p>
-                    <div className="flex items-center space-x-2">
+
+                  {/* Search Suggestions */}
+                  <div className="space-y-3">
+                    <p className="text-sm font-medium text-muted-foreground">Popüler Aramalar</p>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        'Bitcoin analizi',
+                        'Forex stratejileri', 
+                        'RSI stratejisi',
+                        'Trading psikolojisi',
+                        'Teknik analiz'
+                      ].map((suggestion) => (
+                        <button
+                          key={suggestion}
+                          type="button"
+                          onClick={() => {
+                            setSearchQuery(suggestion);
+                            router.push(`/search?q=${encodeURIComponent(suggestion)}`);
+                            setIsSearchOpen(false);
+                          }}
+                          className={cn(
+                            "px-3 py-2 rounded-full text-sm font-medium transition-colors",
+                            isDarkMode
+                              ? "bg-gray-800/60 text-gray-300 hover:bg-gray-800 hover:text-white border border-gray-700/50"
+                              : "bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-900"
+                          )}
+                        >
+                          {suggestion}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Search Categories */}
+                  <div className="space-y-3">
+                    <p className="text-sm font-medium text-muted-foreground">Kategoriler</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      {[
+                        { name: 'Makaleler', icon: '📄', filter: 'articles' },
+                        { name: 'Forum', icon: '💬', filter: 'forum' },
+                        { name: 'Stratejiler', icon: '📈', filter: 'strategies' },
+                        { name: 'Kullanıcılar', icon: '👥', filter: 'users' },
+                        { name: 'Eğitim', icon: '🎓', filter: 'education' },
+                        { name: 'Analiz', icon: '📊', filter: 'analysis' }
+                      ].map((category) => (
+                        <button
+                          key={category.name}
+                          type="button"
+                          onClick={() => {
+                            router.push(`/search?category=${category.filter}`);
+                            setIsSearchOpen(false);
+                          }}
+                          className={cn(
+                            "p-3 rounded-xl border text-left transition-colors",
+                            isDarkMode
+                              ? "border-gray-800/60 hover:border-gray-700 hover:bg-gray-900/40 bg-gray-900/20"
+                              : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                          )}
+                        >
+                          <div className="flex items-center space-x-3">
+                            <span className="text-lg">{category.icon}</span>
+                            <span className="text-sm font-medium">{category.name}</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className={cn(
+                    "flex items-center justify-between pt-4 border-t",
+                    isDarkMode 
+                      ? "border-gray-800/40" 
+                      : "border-gray-200/20"
+                  )}>
+                    <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+                      <kbd className="px-2 py-1 bg-muted rounded text-[10px] font-mono">ESC</kbd>
+                      <span>iptal için</span>
+                    </div>
+                    <div className="flex items-center space-x-3">
                       <button
                         type="button"
                         onClick={() => setIsSearchOpen(false)}
@@ -640,7 +655,12 @@ export default function Navbar() {
                       </button>
                       <button
                         type="submit"
-                        className="px-6 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors shadow-md hover:shadow-lg"
+                        disabled={!searchQuery.trim()}
+                        className={cn(
+                          "px-6 py-2 text-sm font-medium rounded-lg transition-all shadow-lg hover:shadow-xl",
+                          "bg-primary text-primary-foreground hover:bg-primary/90",
+                          "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg"
+                        )}
                       >
                         Ara
                       </button>

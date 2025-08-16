@@ -28,7 +28,6 @@ import {
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useTheme } from 'next-themes';
-import ForumSidebar from '@/components/forum/ForumSidebar';
 import { communityService } from '@/lib/services/communityService';
 import type { 
   CommunityWithMembership, 
@@ -280,11 +279,8 @@ export default function CommunityPage() {
     <div className={`min-h-screen transition-colors duration-200 ${
       isDarkMode ? 'bg-background' : 'bg-gray-50'
     }`}>
-      {/* Forum Sidebar Component - Community Mode */}
-      <ForumSidebar showCommunities={true} activeCommunity={slug} />
-
-      {/* Main Content with Left Margin for Fixed Sidebar */}
-      <div className="md:ml-60">
+      {/* Main Content */}
+      <div>
         {/* Community Header Banner */}
         <div className={`relative h-32 overflow-hidden ${
           isDarkMode ? 'bg-gradient-to-r from-slate-900 to-slate-800' : 'bg-gradient-to-r from-blue-600 to-indigo-600'

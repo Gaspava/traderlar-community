@@ -23,7 +23,6 @@ import {
   BellOff
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import ForumSidebar from '@/components/forum/ForumSidebar';
 import ForumContentRenderer from '@/components/forum/ForumContentRenderer';
 import { addRecentItem } from '@/lib/utils/recent-items';
 import { useThemeDetection } from '@/hooks/useThemeDetection';
@@ -548,7 +547,7 @@ export default function TopicDetailPage() {
         <div className={`rounded-lg border transition-all duration-200 ${
           isDarkMode ? 'bg-card border-border hover:border-gray-600' : 'bg-white border-gray-200 hover:border-gray-300'
         } ${isReply ? 'border-l-4 border-l-blue-200 dark:border-l-blue-800' : ''}`}>
-          <div className="p-4">
+          <div className="p-3 sm:p-4">
             {/* Post Header */}
             <div className={`flex items-center gap-3 mb-3 text-sm ${
               isDarkMode ? 'text-muted-foreground' : 'text-gray-600'
@@ -586,14 +585,14 @@ export default function TopicDetailPage() {
               />
             </div>
 
-            {/* Post Actions */}
-            <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
-              <div className="flex items-center gap-3">
+            {/* Post Actions - Mobile Responsive */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+              <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                 {/* Vote Buttons */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 sm:gap-2">
                   <button 
                     onClick={() => handleVote('up', 'post', post.id)}
-                    className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                    className={`flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-colors ${
                       post.user_vote === 1
                         ? 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30'
                         : (isDarkMode 
@@ -601,12 +600,12 @@ export default function TopicDetailPage() {
                           : 'text-gray-500 hover:bg-gray-100 hover:text-emerald-500')
                     }`}
                   >
-                    <ArrowUp className="w-4 h-4" />
+                    <ArrowUp className="w-3 h-3 sm:w-4 sm:h-4" />
                     {post.vote_score || 0}
                   </button>
                   <button 
                     onClick={() => handleVote('down', 'post', post.id)}
-                    className={`p-1.5 rounded-full transition-colors ${
+                    className={`p-1 sm:p-1.5 rounded-full transition-colors ${
                       post.user_vote === -1
                         ? 'text-red-600 bg-red-100 dark:bg-red-900/30'
                         : (isDarkMode 
@@ -614,7 +613,7 @@ export default function TopicDetailPage() {
                           : 'text-gray-500 hover:bg-gray-100 hover:text-red-500')
                     }`}
                   >
-                    <ArrowDown className="w-4 h-4" />
+                    <ArrowDown className="w-3 h-3 sm:w-4 sm:h-4" />
                   </button>
                 </div>
 
@@ -622,7 +621,7 @@ export default function TopicDetailPage() {
                 {!isReply && post.replies && post.replies.length > 0 && (
                   <button 
                     onClick={() => toggleReplies(post.id)}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 border ${
+                    className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 border ${
                       expandedReplies.has(post.id)
                         ? (isDarkMode 
                           ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/15' 
@@ -644,22 +643,23 @@ export default function TopicDetailPage() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setReplyingTo(replyingTo === post.id ? null : post.id)}
-                  className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                  className={`flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-colors ${
                     isDarkMode 
                       ? 'text-muted-foreground hover:bg-muted hover:text-foreground' 
                       : 'text-gray-500 hover:bg-gray-100'
                   }`}
                 >
                   <Reply className="w-3 h-3" />
-                  Yanıtla
+                  <span className="hidden sm:inline">Yanıtla</span>
+                  <span className="sm:hidden">Yanıt</span>
                 </button>
-                <button className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                <button className={`flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-colors ${
                   isDarkMode 
                     ? 'text-muted-foreground hover:bg-muted hover:text-foreground' 
                     : 'text-gray-500 hover:bg-gray-100'
                 }`}>
                   <Share2 className="w-3 h-3" />
-                  Paylaş
+                  <span className="hidden sm:inline">Paylaş</span>
                 </button>
               </div>
             </div>
@@ -785,11 +785,8 @@ export default function TopicDetailPage() {
     <div className={`min-h-screen transition-colors duration-200 ${
       isDarkMode ? 'bg-background' : 'bg-gray-50'
     }`}>
-      {/* Forum Sidebar Component */}
-      <ForumSidebar activeCategory={topic?.category?.slug} />
-
-      {/* Main Content with Left Margin for Fixed Sidebar */}
-      <div className="md:ml-60">
+      {/* Main Content */}
+      <div>
         {/* Modern Hero Header - Full Width */}
         <div className={`relative overflow-hidden border-b ${
           isDarkMode 
@@ -819,85 +816,98 @@ export default function TopicDetailPage() {
               ? 'bg-background/95' 
               : 'bg-white/60'
           }`}>
-          <div className="relative z-10 max-w-7xl mx-auto px-6 py-8">
-            <div className="flex items-center gap-4 mb-6">
-              <Link 
-                href={`/forum/${topic.category.slug}`}
-                className={`p-2 rounded-lg border transition-all duration-300 hover:scale-105 ${
-                  isDarkMode 
-                    ? 'bg-slate-800/80 hover:bg-slate-700/80 border-slate-700 text-slate-300 hover:text-emerald-300' 
-                    : 'bg-white/80 hover:bg-gray-50 border-gray-200 text-gray-600 hover:text-emerald-600'
-                }`}
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </Link>
-              <div className="flex items-center gap-4">
+          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
+            {/* Mobile-First Header Layout */}
+            <div className="space-y-4">
+              {/* Back Button and Category Icon - Mobile Responsive */}
+              <div className="flex items-center gap-3">
+                <Link 
+                  href={`/forum/${topic.category.slug}`}
+                  className={`p-2 rounded-lg border transition-all duration-300 hover:scale-105 flex-shrink-0 ${
+                    isDarkMode 
+                      ? 'bg-slate-800/80 hover:bg-slate-700/80 border-slate-700 text-slate-300 hover:text-emerald-300' 
+                      : 'bg-white/80 hover:bg-gray-50 border-gray-200 text-gray-600 hover:text-emerald-600'
+                  }`}
+                >
+                  <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+                </Link>
                 <div
-                  className="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold text-lg shadow-lg"
+                  className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center text-white font-bold text-base sm:text-lg shadow-lg flex-shrink-0"
                   style={{ backgroundColor: topic.category.color }}
                 >
                   {topic.category.name.charAt(0)}
                 </div>
-                <div>
-                  <div className="flex items-center gap-3 mb-1">
-                    <h1 className={`text-2xl font-bold ${
-                      isDarkMode ? 'text-slate-100' : 'text-slate-900'
-                    }`}>{topic.title}</h1>
+                <div className="min-w-0 flex-1">
+                  <p className={`text-xs sm:text-sm ${
+                    isDarkMode ? 'text-slate-400' : 'text-slate-600'
+                  }`}>r/{topic.category.name}</p>
+                </div>
+              </div>
+
+              {/* Title and Badges - Mobile Responsive */}
+              <div className="space-y-2">
+                <h1 className={`text-xl sm:text-2xl md:text-3xl font-bold leading-tight break-words ${
+                  isDarkMode ? 'text-slate-100' : 'text-slate-900'
+                }`}>{topic.title}</h1>
+                
+                {/* Badges - Mobile Stacked */}
+                {(topic.is_pinned || topic.is_locked) && (
+                  <div className="flex flex-wrap gap-2">
                     {topic.is_pinned && (
-                      <div className="flex items-center gap-1 px-3 py-1 bg-emerald-500/20 backdrop-blur-sm text-emerald-300 rounded-full text-xs font-medium border border-emerald-400/30">
+                      <div className="flex items-center gap-1 px-2 py-1 bg-emerald-500/20 backdrop-blur-sm text-emerald-300 rounded-full text-xs font-medium border border-emerald-400/30">
                         <Pin className="w-3 h-3" />
-                        Sabitlenmiş
+                        <span className="hidden sm:inline">Sabitlenmiş</span>
+                        <span className="sm:hidden">Sabit</span>
                       </div>
                     )}
                     {topic.is_locked && (
-                      <div className="flex items-center gap-1 px-3 py-1 bg-red-500/20 backdrop-blur-sm text-red-300 rounded-full text-xs font-medium border border-red-400/30">
+                      <div className="flex items-center gap-1 px-2 py-1 bg-red-500/20 backdrop-blur-sm text-red-300 rounded-full text-xs font-medium border border-red-400/30">
                         <Lock className="w-3 h-3" />
-                        Kilitli
+                        <span className="hidden sm:inline">Kilitli</span>
+                        <span className="sm:hidden">Kilitli</span>
                       </div>
                     )}
                   </div>
-                  <p className={`text-sm ${
-                    isDarkMode ? 'text-slate-400' : 'text-slate-600'
-                  }`}>r/{topic.category.name} topluluğunda tartışma</p>
+                )}
+              </div>
+
+              {/* Stats - Mobile Grid Layout */}
+              <div className={`flex flex-wrap gap-3 sm:gap-4 text-sm sm:text-base ${
+                isDarkMode ? 'text-slate-300' : 'text-slate-500'
+              }`}>
+                <div className="flex items-center gap-1.5">
+                  <Eye className="w-4 h-4 flex-shrink-0" />
+                  <span className="font-medium">{formatNumber(topic.view_count)}</span>
                 </div>
-              </div>
-            </div>
-            
-            <div className={`flex items-center gap-6 text-sm ${
-              isDarkMode ? 'text-slate-300' : 'text-slate-500'
-            }`}>
-              <div className="flex items-center gap-2">
-                <Eye className="w-4 h-4" />
-                <span>{formatNumber(topic.view_count)} Görüntüleme</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <MessageCircle className="w-4 h-4" />
-                <span>{topic.reply_count} Yanıt</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <User className="w-4 h-4" />
-                <span>{topic.author.name} tarafından</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
-                <span>{formatDate(topic.created_at)}</span>
+                <div className="flex items-center gap-1.5">
+                  <MessageCircle className="w-4 h-4 flex-shrink-0" />
+                  <span className="font-medium">{topic.reply_count}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <User className="w-4 h-4 flex-shrink-0" />
+                  <span className="font-medium">{topic.author.name}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Calendar className="w-4 h-4 flex-shrink-0" />
+                  <span className="font-medium">{formatDate(topic.created_at)}</span>
+                </div>
               </div>
             </div>
           </div>
           </div>
         </div>
 
-        {/* Main Content Area with proper spacing and max-width */}
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="flex gap-8">
-            {/* Main Content */}
-            <div className="flex-1 max-w-[800px] space-y-6">
+        {/* Main Content Area with proper spacing and max-width - Mobile Responsive */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
+          <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+            {/* Main Content - Mobile Responsive */}
+            <div className="flex-1 w-full lg:max-w-[800px] space-y-4 sm:space-y-6">
 
-            {/* Topic Content Card */}
+            {/* Topic Content Card - Mobile Responsive */}
             <div className={`rounded-lg border transition-colors duration-200 ${
               isDarkMode ? 'bg-card border-border' : 'bg-white border-gray-200'
             }`}>
-              <div className="p-6">
+              <div className="p-4 sm:p-6">
                 {/* Topic Content */}
                 <div className={`text-sm mb-6 leading-6 ${
                   isDarkMode ? 'text-foreground' : 'text-gray-900'
@@ -908,12 +918,12 @@ export default function TopicDetailPage() {
                   />
                 </div>
 
-                {/* Vote and Actions Section */}
-                <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-700">
+                {/* Vote and Actions Section - Mobile Responsive */}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-4 border-t border-gray-100 dark:border-gray-700">
                   <div className="flex items-center gap-2">
                     <button 
                       onClick={() => handleVote('up', 'topic', topic.id)}
-                      className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                      className={`flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-colors ${
                         topic.user_vote === 1
                           ? 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30'
                           : (isDarkMode 
@@ -921,12 +931,12 @@ export default function TopicDetailPage() {
                             : 'text-gray-500 hover:bg-gray-100 hover:text-emerald-500')
                       }`}
                     >
-                      <ArrowUp className="w-4 h-4" />
+                      <ArrowUp className="w-3 h-3 sm:w-4 sm:h-4" />
                       {topic.vote_score}
                     </button>
                     <button 
                       onClick={() => handleVote('down', 'topic', topic.id)}
-                      className={`p-1.5 rounded-full transition-colors ${
+                      className={`p-1 sm:p-1.5 rounded-full transition-colors ${
                         topic.user_vote === -1
                           ? 'text-red-600 bg-red-100 dark:bg-red-900/30'
                           : (isDarkMode 
@@ -934,39 +944,40 @@ export default function TopicDetailPage() {
                             : 'text-gray-500 hover:bg-gray-100 hover:text-red-500')
                       }`}
                     >
-                      <ArrowDown className="w-4 h-4" />
+                      <ArrowDown className="w-3 h-3 sm:w-4 sm:h-4" />
                     </button>
                   </div>
 
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 flex-wrap">
                     {!topic.is_locked && (
                       <button
                         onClick={() => setReplyingTo(replyingTo === 'main' ? null : 'main')}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                        className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-colors ${
                           isDarkMode 
                             ? 'text-muted-foreground hover:bg-muted hover:text-foreground' 
                             : 'text-gray-500 hover:bg-gray-100'
                         }`}
                       >
-                        <Reply className="w-4 h-4" />
-                        Yanıtla
+                        <Reply className="w-3 h-3 sm:w-4 sm:h-4" />
+                        <span className="hidden sm:inline">Yanıtla</span>
+                        <span className="sm:hidden">Yanıt</span>
                       </button>
                     )}
-                    <button className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                    <button className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-colors ${
                       isDarkMode 
                         ? 'text-muted-foreground hover:bg-muted hover:text-foreground' 
                         : 'text-gray-500 hover:bg-gray-100'
                     }`}>
-                      <Share2 className="w-4 h-4" />
-                      Paylaş
+                      <Share2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                      <span className="hidden sm:inline">Paylaş</span>
                     </button>
-                    <button className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                    <button className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-colors ${
                       isDarkMode 
                         ? 'text-muted-foreground hover:bg-muted hover:text-foreground' 
                         : 'text-gray-500 hover:bg-gray-100'
                     }`}>
-                      <Bookmark className="w-4 h-4" />
-                      Kaydet
+                      <Bookmark className="w-3 h-3 sm:w-4 sm:h-4" />
+                      <span className="hidden sm:inline">Kaydet</span>
                     </button>
                   </div>
                 </div>

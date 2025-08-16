@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useTheme } from 'next-themes';
 import { useRouter } from 'next/navigation';
-import ForumSidebar from '@/components/forum/ForumSidebar';
 import { 
   MessageCircle,
   Eye,
@@ -449,38 +448,36 @@ export default function ForumPage() {
     <div className={`min-h-screen transition-colors duration-200 ${
       isDarkMode ? 'bg-background' : 'bg-gray-50'
     }`}>
-      {/* Forum Sidebar Component */}
-      <ForumSidebar />
-
-      {/* Main Content with Left Margin for Fixed Sidebar */}
-      <div className="md:ml-60">
-        {/* Main Content Area with proper spacing and max-width */}
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="flex gap-8">
-            {/* Main Content */}
-            <div className="flex-1 max-w-[800px] space-y-6">
-              {/* New Topic Button */}
-              <div className="flex justify-between items-center">
-                <h2 className={`text-xl font-bold ${
+      {/* Main Content - Mobile Optimized */}
+      <div>
+        {/* Main Content Area - Mobile Responsive */}
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-6 lg:py-8">
+          <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 lg:gap-8">
+            {/* Main Content - Full Width on Mobile */}
+            <div className="w-full lg:flex-1 lg:max-w-[800px] space-y-4 sm:space-y-6">
+              {/* New Topic Button - Mobile Optimized */}
+              <div className="flex justify-between items-center gap-2">
+                <h2 className={`text-lg sm:text-xl font-bold ${
                   isDarkMode ? 'text-foreground' : 'text-gray-900'
                 }`}>
                   Forum Konuları
                 </h2>
                 <Link
                   href="/forum/yeni-konu"
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105 ${
+                  className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 hover:scale-105 active:scale-95 touch-manipulation ${
                     isDarkMode 
-                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white' 
-                      : 'bg-emerald-500 hover:bg-emerald-600 text-white'
+                      ? 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white' 
+                      : 'bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white'
                   }`}
                 >
-                  <Sparkles className="w-4 h-4" />
-                  Yeni Konu Aç
+                  <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <span className="hidden xs:inline">Yeni Konu Aç</span>
+                  <span className="xs:hidden">Yeni</span>
                 </Link>
               </div>
 
-              {/* Sort Tabs */}
-              <div className={`flex items-center gap-4 mb-4 ${
+              {/* Sort Tabs - Mobile Optimized */}
+              <div className={`flex items-center gap-2 sm:gap-3 overflow-x-auto hide-scrollbar pb-2 mb-2 sm:mb-4 ${
                 isDarkMode ? 'text-muted-foreground' : 'text-gray-600'
               }`}>
                 {[
@@ -491,20 +488,20 @@ export default function ForumPage() {
                   <button
                     key={value}
                     onClick={() => setSortBy(value as any)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium transition-colors ${
+                    className={`flex items-center gap-1 sm:gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-colors whitespace-nowrap touch-manipulation active:scale-95 ${
                       sortBy === value
                         ? (isDarkMode ? 'bg-primary text-primary-foreground' : 'bg-primary text-white')
-                        : (isDarkMode ? 'text-muted-foreground hover:text-foreground hover:bg-muted' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100')
+                        : (isDarkMode ? 'text-muted-foreground hover:text-foreground hover:bg-muted active:bg-muted/70' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 active:bg-gray-200')
                     }`}
                   >
-                    <Icon className="w-4 h-4" />
-                    {label}
+                    <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <span className="hidden xs:inline">{label}</span>
                   </button>
                 ))}
               </div>
 
-              {/* Posts - Reddit Style */}
-              <div className="space-y-2">
+              {/* Posts - Mobile Optimized */}
+              <div className="space-y-2 sm:space-y-3">
                 {loading ? (
                   <div className="space-y-2">
                     {[...Array(8)].map((_, i) => (
@@ -587,16 +584,16 @@ export default function ForumPage() {
                           </div>
                         );
                       } else {
-                        // Regular Post - Reddit Style
+                        // Regular Post - Mobile Optimized
                         const topic = item as ForumTopic;
                         
                         return (
-                          <div key={topic.id} className={`rounded-lg border transition-colors duration-200 hover:shadow-sm ${
+                          <div key={topic.id} className={`rounded-lg border transition-all duration-200 hover:shadow-sm active:scale-[0.99] ${
                             isDarkMode ? 'bg-card border-border hover:bg-background' : 'bg-white border-gray-200 hover:bg-gray-50'
                           }`}>
-                            <div className="flex p-3">
-                              {/* Vote section */}
-                              <div className="flex flex-col items-center w-10 mr-3">
+                            <div className="flex flex-col sm:flex-row p-3 sm:p-4 gap-2 sm:gap-0">
+                              {/* Vote section - Hidden on Mobile */}
+                              <div className="hidden sm:flex flex-col items-center w-10 mr-3">
                                 <VoteButtons
                                   targetType="topic"
                                   targetId={topic.id}
@@ -609,9 +606,9 @@ export default function ForumPage() {
                               
                               {/* Content */}
                               <div className="flex-1 min-w-0">
-                                {/* Meta */}
-                                <div className="flex items-center gap-2 mb-2">
-                                  <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${
+                                {/* Meta - Mobile Optimized */}
+                                <div className="flex flex-wrap items-center gap-1 sm:gap-2 mb-2">
+                                  <div className={`hidden sm:flex w-5 h-5 rounded-full items-center justify-center text-xs ${
                                     isDarkMode ? 'text-muted-foreground' : 'text-gray-600'
                                   }`}>
                                     {(() => {
@@ -630,15 +627,15 @@ export default function ForumPage() {
                                       return categoryIcons[topic.category.name] || <MessageCircle className="w-3 h-3" />;
                                     })()}
                                   </div>
-                                  <Link href={`/forum/${topic.category.slug}`} className={`text-xs font-medium hover:underline ${
+                                  <Link href={`/forum/${topic.category.slug}`} className={`text-[10px] sm:text-xs font-medium hover:underline ${
                                     isDarkMode ? 'text-foreground' : 'text-gray-900'
                                   }`}>
                                     {topic.category.name}
                                   </Link>
-                                  <span className={`text-xs ${
+                                  <span className={`text-[10px] sm:text-xs ${
                                     isDarkMode ? 'text-muted-foreground' : 'text-gray-500'
                                   }`}>
-                                    • {topic.author.username} • {formatDate(topic.created_at)} önce
+                                    <span className="hidden sm:inline">•</span> {topic.author.username} <span className="hidden sm:inline">•</span> <span className="sm:hidden">•</span> {formatDate(topic.created_at)}
                                   </span>
                                   {topic.is_pinned && (
                                     <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-emerald-100 text-emerald-800 rounded-full">
@@ -647,16 +644,16 @@ export default function ForumPage() {
                                   )}
                                 </div>
                                 
-                                {/* Title and Content */}
-                                <Link href={`/forum/${topic.category.slug}/${topic.slug}`} className="block group">
-                                  <h3 className={`font-medium text-base mb-2 line-clamp-2 group-hover:text-primary transition-colors ${
+                                {/* Title and Content - Mobile Optimized */}
+                                <Link href={`/forum/${topic.category.slug}/${topic.slug}`} className="block group touch-manipulation">
+                                  <h3 className={`font-medium text-sm sm:text-base mb-2 line-clamp-2 group-hover:text-primary transition-colors ${
                                     isDarkMode ? 'text-foreground' : 'text-gray-900'
                                   }`}>
                                     {topic.title}
                                   </h3>
                                   
                                   {topic.content && topic.content.length > 50 && (
-                                    <p className={`text-sm mb-3 line-clamp-3 ${
+                                    <p className={`text-xs sm:text-sm mb-2 sm:mb-3 line-clamp-2 sm:line-clamp-3 ${
                                       isDarkMode ? 'text-muted-foreground' : 'text-gray-600'
                                     }`}>
                                       {topic.content}
@@ -664,24 +661,31 @@ export default function ForumPage() {
                                   )}
                                 </Link>
                                 
-                                {/* Actions */}
-                                <div className="flex items-center gap-4 text-xs">
-                                  <button className={`flex items-center gap-1 px-2 py-1 rounded transition-colors ${
-                                    isDarkMode ? 'text-muted-foreground hover:bg-muted hover:text-foreground' : 'text-gray-500 hover:bg-gray-100'
+                                {/* Actions - Mobile Optimized */}
+                                <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-[10px] sm:text-xs">
+                                  {/* Mobile Vote Display */}
+                                  <div className="flex sm:hidden items-center gap-0.5 text-gray-600 dark:text-gray-400">
+                                    <span className="font-medium">{formatNumber(topic.vote_score)}</span>
+                                    <span>puan</span>
+                                  </div>
+                                  
+                                  <button className={`flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded transition-colors touch-manipulation active:scale-95 ${
+                                    isDarkMode ? 'text-muted-foreground hover:bg-muted hover:text-foreground active:bg-muted/70' : 'text-gray-500 hover:bg-gray-100 active:bg-gray-200'
                                   }`}>
                                     <MessageCircle className="w-3 h-3" />
-                                    {formatNumber(topic.reply_count)} Yorum
+                                    <span className="hidden xs:inline">{formatNumber(topic.reply_count)} Yorum</span>
+                                    <span className="xs:hidden">{formatNumber(topic.reply_count)}</span>
                                   </button>
-                                  <button className={`flex items-center gap-1 px-2 py-1 rounded transition-colors ${
-                                    isDarkMode ? 'text-muted-foreground hover:bg-muted hover:text-foreground' : 'text-gray-500 hover:bg-gray-100'
+                                  <button className={`hidden sm:flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded transition-colors touch-manipulation active:scale-95 ${
+                                    isDarkMode ? 'text-muted-foreground hover:bg-muted hover:text-foreground active:bg-muted/70' : 'text-gray-500 hover:bg-gray-100 active:bg-gray-200'
                                   }`}>
                                     <Share className="w-3 h-3" />
-                                    Paylaş
+                                    <span className="hidden lg:inline">Paylaş</span>
                                   </button>
-                                  <button className={`flex items-center gap-1 px-2 py-1 rounded transition-colors ${
-                                    isDarkMode ? 'text-muted-foreground hover:bg-muted hover:text-foreground' : 'text-gray-500 hover:bg-gray-100'
+                                  <button className={`flex sm:hidden items-center gap-0.5 px-1.5 py-0.5 rounded transition-colors touch-manipulation active:scale-95 ml-auto ${
+                                    isDarkMode ? 'text-muted-foreground hover:bg-muted hover:text-foreground active:bg-muted/70' : 'text-gray-500 hover:bg-gray-100 active:bg-gray-200'
                                   }`}>
-                                    <MoreHorizontal className="w-3 h-3" />
+                                    <MoreHorizontal className="w-3.5 h-3.5" />
                                   </button>
                                 </div>
                               </div>

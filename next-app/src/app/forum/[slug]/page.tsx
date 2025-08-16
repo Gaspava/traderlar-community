@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
-import ForumSidebar from '@/components/forum/ForumSidebar';
 import { useThemeDetection } from '@/hooks/useThemeDetection';
 import { 
   ArrowUp,
@@ -253,11 +252,8 @@ export default function ForumCategoryPage() {
       <div className={`min-h-screen transition-colors duration-200 ${
         isDarkMode ? 'bg-background' : 'bg-gray-50'
       }`}>
-      {/* Forum Sidebar Component */}
-      <ForumSidebar activeCategory={categorySlug} />
-
-      {/* Main Content with Left Margin for Fixed Sidebar */}
-      <div className="md:ml-60">
+      {/* Main Content */}
+      <div>
       {/* Header */}
       <div className="bg-background/95 backdrop-blur-xl border-b border-border/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

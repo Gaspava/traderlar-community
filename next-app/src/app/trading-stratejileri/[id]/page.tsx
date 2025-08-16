@@ -1302,90 +1302,91 @@ export default function StrategyDetailPage() {
           <div className="absolute -top-40 -right-40 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"></div>
           <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
           
-          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
-              className="space-y-6"
+              className="space-y-4 sm:space-y-6"
             >
-              {/* Back Button - Modern Design */}
+              {/* Back Button - Mobile Responsive */}
               <Link 
                 href="/trading-stratejileri"
-                className="group inline-flex items-center gap-2 px-4 py-2 bg-white/80 dark:bg-card/80 backdrop-blur-sm border border-gray-200 dark:border-border rounded-xl hover:bg-white dark:hover:bg-muted transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/10 dark:hover:shadow-purple-500/20"
+                className="group inline-flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2 bg-white/80 dark:bg-card/80 backdrop-blur-sm border border-gray-200 dark:border-border rounded-xl hover:bg-white dark:hover:bg-muted transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/10 dark:hover:shadow-purple-500/20"
               >
                 <ArrowLeft className="w-4 h-4 text-gray-600 dark:text-muted-foreground group-hover:text-purple-600 dark:group-hover:text-purple-400 group-hover:scale-110 transition-all duration-300" />
                 <span className="text-sm font-medium text-gray-700 dark:text-foreground group-hover:text-purple-600 dark:group-hover:text-purple-400">Geri Dön</span>
               </Link>
 
-              {/* Strategy Title Section */}
-              <div className="space-y-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h1 className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-gray-900 via-purple-800 to-blue-800 dark:from-white dark:via-purple-200 dark:to-blue-200 bg-clip-text text-transparent mb-3">
-                      {strategy.name}
-                    </h1>
-                    
-                    {/* Author & Verification */}
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-sm">
-                          {strategy.author.name.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-gray-800 dark:text-foreground">{strategy.author.name}</span>
-                            {strategy.author.verified && (
-                              <div className="flex items-center gap-1 px-2 py-0.5 bg-blue-100 dark:bg-card text-blue-700 dark:text-blue-400 rounded-full text-xs font-medium">
-                                <CheckCircle className="w-3 h-3" />
-                                <span>Verified</span>
-                              </div>
-                            )}
-                          </div>
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded-full text-xs font-medium">
-                            <Sparkles className="w-3 h-3" />
-                            Pro Trader
-                          </span>
-                        </div>
-                      </div>
+              {/* Strategy Title Section - Mobile Layout */}
+              <div className="space-y-3 sm:space-y-4">
+                {/* Title */}
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold bg-gradient-to-r from-gray-900 via-purple-800 to-blue-800 dark:from-white dark:via-purple-200 dark:to-blue-200 bg-clip-text text-transparent leading-tight">
+                  {strategy.name}
+                </h1>
+                
+                {/* Author & Verification - Mobile Responsive */}
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-xs sm:text-sm">
+                      {strategy.author.name.charAt(0).toUpperCase()}
                     </div>
-
-                    {/* Strategy Stats */}
-                    <div className="flex flex-wrap items-center gap-4 text-sm">
-                      <div className="flex items-center gap-2 px-3 py-1.5 bg-white/60 dark:bg-card/60 backdrop-blur-sm rounded-lg border border-gray-200/50 dark:border-border/50">
-                        <Calendar className="w-4 h-4 text-blue-500" />
-                        <span className="text-gray-600 dark:text-muted-foreground">Oluşturulma:</span>
-                        <span className="font-medium text-gray-800 dark:text-foreground">
-                          {strategy.created_at ? new Date(strategy.created_at).toLocaleDateString('tr-TR') : '15 Oca 2024'}
-                        </span>
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-gray-800 dark:text-foreground text-sm sm:text-base">{strategy.author.name}</span>
+                        {strategy.author.verified && (
+                          <div className="flex items-center gap-1 px-2 py-0.5 bg-blue-100 dark:bg-card text-blue-700 dark:text-blue-400 rounded-full text-xs font-medium">
+                            <CheckCircle className="w-3 h-3" />
+                            <span className="hidden sm:inline">Verified</span>
+                            <span className="sm:hidden">✓</span>
+                          </div>
+                        )}
                       </div>
-                      
-                      <div className="flex items-center gap-2 px-3 py-1.5 bg-white/60 dark:bg-card/60 backdrop-blur-sm rounded-lg border border-gray-200/50 dark:border-border/50">
-                        <RefreshCw className="w-4 h-4 text-green-500" />
-                        <span className="text-gray-600 dark:text-muted-foreground">Son Güncelleme:</span>
-                        <span className="font-medium text-gray-800 dark:text-foreground">
-                          {strategy.updated_at ? new Date(strategy.updated_at).toLocaleDateString('tr-TR') : '28 Oca 2024'}
-                        </span>
-                      </div>
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded-full text-xs font-medium">
+                        <Sparkles className="w-3 h-3" />
+                        <span className="hidden sm:inline">Pro Trader</span>
+                        <span className="sm:hidden">Pro</span>
+                      </span>
                     </div>
                   </div>
+                </div>
 
-                  {/* Action Stats */}
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 px-4 py-2 bg-white/70 dark:bg-card/70 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-border hover:bg-white dark:hover:bg-muted transition-all duration-300">
-                      <Eye className="w-4 h-4 text-blue-500" />
-                      <span className="font-semibold text-gray-700 dark:text-foreground">{strategy.views || 45}</span>
-                    </div>
-                    
-                    <div className="flex items-center gap-2 px-4 py-2 bg-white/70 dark:bg-card/70 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-border hover:bg-white dark:hover:bg-muted transition-all duration-300">
-                      <Heart className="w-4 h-4 text-red-500" />
-                      <span className="font-semibold text-gray-700 dark:text-foreground">{strategy.likes || 234}</span>
-                    </div>
-                    
-                    <div className="flex items-center gap-2 px-4 py-2 bg-white/70 dark:bg-card/70 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-border hover:bg-white dark:hover:bg-muted transition-all duration-300">
-                      <Users className="w-4 h-4 text-purple-500" />
-                      <span className="font-semibold text-gray-700 dark:text-foreground">{strategy.subscribers || 1340}</span>
-                      <span className="text-xs text-gray-500 dark:text-muted-foreground">İşlem</span>
+                {/* Strategy Stats - Mobile Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm">
+                  <div className="flex items-center gap-2 px-3 py-2 bg-white/60 dark:bg-card/60 backdrop-blur-sm rounded-lg border border-gray-200/50 dark:border-border/50">
+                    <Calendar className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                    <span className="text-gray-600 dark:text-muted-foreground">Oluşturulma:</span>
+                    <span className="font-medium text-gray-800 dark:text-foreground truncate">
+                      {strategy.created_at ? new Date(strategy.created_at).toLocaleDateString('tr-TR') : '15 Oca 2024'}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 px-3 py-2 bg-white/60 dark:bg-card/60 backdrop-blur-sm rounded-lg border border-gray-200/50 dark:border-border/50">
+                    <RefreshCw className="w-4 h-4 text-green-500 flex-shrink-0" />
+                    <span className="text-gray-600 dark:text-muted-foreground">Güncelleme:</span>
+                    <span className="font-medium text-gray-800 dark:text-foreground truncate">
+                      {strategy.updated_at ? new Date(strategy.updated_at).toLocaleDateString('tr-TR') : '28 Oca 2024'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Action Stats - Mobile Grid */}
+                <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                  <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-2 bg-white/70 dark:bg-card/70 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-border hover:bg-white dark:hover:bg-muted transition-all duration-300">
+                    <Eye className="w-3 h-3 sm:w-4 sm:h-4 text-blue-500 flex-shrink-0" />
+                    <span className="font-semibold text-gray-700 dark:text-foreground text-xs sm:text-sm">{strategy.views || 45}</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-2 bg-white/70 dark:bg-card/70 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-border hover:bg-white dark:hover:bg-muted transition-all duration-300">
+                    <Heart className="w-3 h-3 sm:w-4 sm:h-4 text-red-500 flex-shrink-0" />
+                    <span className="font-semibold text-gray-700 dark:text-foreground text-xs sm:text-sm">{strategy.likes || 234}</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-2 bg-white/70 dark:bg-card/70 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-border hover:bg-white dark:hover:bg-muted transition-all duration-300">
+                    <Users className="w-3 h-3 sm:w-4 sm:h-4 text-purple-500 flex-shrink-0" />
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:gap-1">
+                      <span className="font-semibold text-gray-700 dark:text-foreground text-xs sm:text-sm">{strategy.subscribers || 1340}</span>
+                      <span className="text-xs text-gray-500 dark:text-muted-foreground leading-none">İşlem</span>
                     </div>
                   </div>
                 </div>
@@ -1394,73 +1395,75 @@ export default function StrategyDetailPage() {
           </div>
         </div>
 
-        {/* Download Actions Bar */}
+        {/* Download Actions Bar - Mobile Responsive */}
         <div className="border-b border-gray-200 dark:border-border bg-white/50 dark:bg-background/50 backdrop-blur-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-0">
+              {/* Action Buttons - Mobile Grid */}
+              <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto">
                 <button
                   onClick={() => setLiked(!liked)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-300 ${
+                  className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-xl transition-all duration-300 flex-shrink-0 ${
                     liked 
                       ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-border' 
                       : 'bg-gray-100 dark:bg-card text-gray-600 dark:text-muted-foreground border border-gray-200 dark:border-border hover:bg-red-50 dark:hover:bg-muted hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-border'
                   }`}
                 >
-                  <Heart className={`w-4 h-4 ${liked ? 'fill-current' : ''}`} />
-                  <span className="text-sm font-medium">{strategy.likes || 234}</span>
+                  <Heart className={`w-3 h-3 sm:w-4 sm:h-4 ${liked ? 'fill-current' : ''}`} />
+                  <span className="text-xs sm:text-sm font-medium">{strategy.likes || 234}</span>
                 </button>
                 
-                <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-card text-gray-600 dark:text-muted-foreground border border-gray-200 dark:border-border rounded-xl hover:bg-blue-50 dark:hover:bg-muted hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-border transition-all duration-300">
-                  <Share2 className="w-4 h-4" />
-                  <span className="text-sm font-medium">Paylaş</span>
+                <button className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-gray-100 dark:bg-card text-gray-600 dark:text-muted-foreground border border-gray-200 dark:border-border rounded-xl hover:bg-blue-50 dark:hover:bg-muted hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-border transition-all duration-300 flex-shrink-0">
+                  <Share2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="text-xs sm:text-sm font-medium hidden sm:inline">Paylaş</span>
                 </button>
                 
-                <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-card text-gray-600 dark:text-muted-foreground border border-gray-200 dark:border-border rounded-xl hover:bg-yellow-50 dark:hover:bg-muted hover:text-yellow-600 dark:hover:text-yellow-400 hover:border-yellow-200 dark:hover:border-border transition-all duration-300">
-                  <Flag className="w-4 h-4" />
-                  <span className="text-sm font-medium">Raporla</span>
+                <button className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-gray-100 dark:bg-card text-gray-600 dark:text-muted-foreground border border-gray-200 dark:border-border rounded-xl hover:bg-yellow-50 dark:hover:bg-muted hover:text-yellow-600 dark:hover:text-yellow-400 hover:border-yellow-200 dark:hover:border-border transition-all duration-300 flex-shrink-0">
+                  <Flag className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="text-xs sm:text-sm font-medium hidden sm:inline">Raporla</span>
                 </button>
               </div>
               
-              <div className="flex items-center gap-3">
+              {/* Download Buttons - Mobile Responsive */}
+              <div className="flex items-center gap-2 sm:gap-3">
                 {strategy.ea_link && (
                   <a 
                     href={strategy.ea_link} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 text-white rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-purple-500/30 font-medium"
+                    className="flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2 bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 text-white rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-purple-500/30 font-medium flex-1 sm:flex-initial justify-center"
                   >
-                    <Play className="w-4 h-4" />
-                    <span>EA İndir</span>
+                    <Play className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <span className="text-xs sm:text-sm">EA İndir</span>
                   </a>
                 )}
-                <button className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-purple-600/30 font-medium">
-                  <Download className="w-4 h-4" />
-                  <span>İndir</span>
+                <button className="flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-purple-600/30 font-medium flex-1 sm:flex-initial justify-center">
+                  <Download className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="text-xs sm:text-sm">İndir</span>
                 </button>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Tabs */}
+        {/* Tabs - Mobile Responsive */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="border-b border-gray-300/50 dark:border-border/50 bg-gray-100/20 dark:bg-background/20 backdrop-blur-sm">
-            <div className="flex overflow-x-auto">
+            <div className="flex overflow-x-auto scrollbar-thin">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`group flex items-center gap-3 px-6 py-4 font-medium transition-all duration-300 border-b-2 whitespace-nowrap relative ${
+                  className={`group flex items-center gap-2 sm:gap-3 px-3 sm:px-6 py-3 sm:py-4 font-medium transition-all duration-300 border-b-2 whitespace-nowrap relative flex-shrink-0 ${
                     activeTab === tab.id
                       ? 'border-purple-500 dark:border-purple-400 text-purple-600 dark:text-purple-400 bg-gradient-to-t from-purple-500/10 to-transparent shadow-lg shadow-purple-500/20'
                       : 'border-transparent text-gray-600 dark:text-muted-foreground hover:text-purple-500 dark:hover:text-purple-300 hover:border-purple-500/50 hover:bg-gradient-to-t hover:from-gray-200/30 dark:hover:from-card/30 hover:to-transparent'
                   }`}
                 >
-                  <tab.icon className={`w-5 h-5 transition-all duration-300 ${
+                  <tab.icon className={`w-4 h-4 sm:w-5 sm:h-5 transition-all duration-300 ${
                     activeTab === tab.id ? 'text-purple-600 dark:text-purple-400 drop-shadow-lg drop-shadow-purple-500/50' : 'group-hover:scale-110'
                   }`} />
-                  <span className="font-semibold">{tab.label}</span>
+                  <span className="font-semibold text-xs sm:text-sm">{tab.label}</span>
                   {activeTab === tab.id && (
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-purple-500/5 to-transparent animate-pulse" />
                   )}
@@ -1470,51 +1473,51 @@ export default function StrategyDetailPage() {
           </div>
         </div>
 
-        {/* Content */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Content - Mobile Responsive */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
           {activeTab === 'overview' && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="space-y-8"
+              className="space-y-6 sm:space-y-8"
             >
-              {/* Performance Metrics */}
+              {/* Performance Metrics - Mobile Grid */}
               <div>
-                <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 dark:from-purple-400 dark:to-blue-400 bg-clip-text text-transparent mb-6">Performans Metrikleri</h2>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
-                  <div className="bg-gradient-to-br from-white/80 to-gray-50/90 dark:from-card/50 dark:to-background/70 rounded-xl p-6 text-center backdrop-blur-sm">
-                    <div className="text-2xl font-bold text-purple-500 dark:text-purple-400 mb-2">
+                <h2 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 dark:from-purple-400 dark:to-blue-400 bg-clip-text text-transparent mb-4 sm:mb-6">Performans Metrikleri</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
+                  <div className="bg-gradient-to-br from-white/80 to-gray-50/90 dark:from-card/50 dark:to-background/70 rounded-xl p-4 sm:p-6 text-center backdrop-blur-sm">
+                    <div className="text-lg sm:text-2xl font-bold text-purple-500 dark:text-purple-400 mb-1 sm:mb-2">
                       +{strategy.performance.totalReturn || 0}%
                     </div>
-                    <div className="text-sm text-gray-600 dark:text-muted-foreground font-medium">Toplam Getiri</div>
+                    <div className="text-xs sm:text-sm text-gray-600 dark:text-muted-foreground font-medium">Toplam Getiri</div>
                   </div>
                   
-                  <div className="bg-gradient-to-br from-white/80 to-gray-50/90 dark:from-card/50 dark:to-background/70 rounded-xl p-6 text-center backdrop-blur-sm">
-                    <div className="text-2xl font-bold text-blue-500 dark:text-blue-400 mb-2">
+                  <div className="bg-gradient-to-br from-white/80 to-gray-50/90 dark:from-card/50 dark:to-background/70 rounded-xl p-4 sm:p-6 text-center backdrop-blur-sm">
+                    <div className="text-lg sm:text-2xl font-bold text-blue-500 dark:text-blue-400 mb-1 sm:mb-2">
                       +{calculatedAnnualReturn !== null ? calculatedAnnualReturn : (strategy.performance.annualReturn || 0)}%
                     </div>
-                    <div className="text-sm text-gray-600 dark:text-muted-foreground font-medium">Yıllık Getiri</div>
+                    <div className="text-xs sm:text-sm text-gray-600 dark:text-muted-foreground font-medium">Yıllık Getiri</div>
                   </div>
                   
-                  <div className="bg-gradient-to-br from-white/80 to-gray-50/90 dark:from-card/50 dark:to-background/70 rounded-xl p-6 text-center backdrop-blur-sm">
-                    <div className="text-2xl font-bold text-green-500 dark:text-green-400 mb-2">
+                  <div className="bg-gradient-to-br from-white/80 to-gray-50/90 dark:from-card/50 dark:to-background/70 rounded-xl p-4 sm:p-6 text-center backdrop-blur-sm">
+                    <div className="text-lg sm:text-2xl font-bold text-green-500 dark:text-green-400 mb-1 sm:mb-2">
                       {strategy.performance.profitFactor}
                     </div>
-                    <div className="text-sm text-gray-600 dark:text-muted-foreground font-medium">Profit Factor</div>
+                    <div className="text-xs sm:text-sm text-gray-600 dark:text-muted-foreground font-medium">Profit Factor</div>
                   </div>
                   
-                  <div className="bg-gradient-to-br from-white/80 to-gray-50/90 dark:from-card/50 dark:to-background/70 rounded-xl p-6 text-center backdrop-blur-sm">
-                    <div className="text-2xl font-bold text-pink-500 dark:text-pink-400 mb-2">
+                  <div className="bg-gradient-to-br from-white/80 to-gray-50/90 dark:from-card/50 dark:to-background/70 rounded-xl p-4 sm:p-6 text-center backdrop-blur-sm">
+                    <div className="text-lg sm:text-2xl font-bold text-pink-500 dark:text-pink-400 mb-1 sm:mb-2">
                       {strategy.performance.sharpeRatio}
                     </div>
-                    <div className="text-sm text-gray-600 dark:text-muted-foreground font-medium">Sharpe Ratio</div>
+                    <div className="text-xs sm:text-sm text-gray-600 dark:text-muted-foreground font-medium">Sharpe Ratio</div>
                   </div>
                   
-                  <div className="bg-gradient-to-br from-white/80 to-gray-50/90 dark:from-card/50 dark:to-background/70 rounded-xl p-6 text-center backdrop-blur-sm">
-                    <div className="text-2xl font-bold text-purple-600 dark:text-purple-500 mb-2">
+                  <div className="bg-gradient-to-br from-white/80 to-gray-50/90 dark:from-card/50 dark:to-background/70 rounded-xl p-4 sm:p-6 text-center backdrop-blur-sm col-span-2 sm:col-span-1">
+                    <div className="text-lg sm:text-2xl font-bold text-purple-600 dark:text-purple-500 mb-1 sm:mb-2">
                       {strategy.performance.totalTrades}
                     </div>
-                    <div className="text-sm text-gray-600 dark:text-muted-foreground font-medium">Toplam İşlem</div>
+                    <div className="text-xs sm:text-sm text-gray-600 dark:text-muted-foreground font-medium">Toplam İşlem</div>
                   </div>
                 </div>
               </div>
@@ -1677,9 +1680,61 @@ export default function StrategyDetailPage() {
                     </div>
                   </div>
 
-                  {/* Trades Table */}
+                  {/* Trades Table - Mobile Responsive */}
                   <div className="bg-card rounded-xl overflow-hidden">
-                    <div className="overflow-x-auto">
+                    {/* Mobile Card View */}
+                    <div className="block sm:hidden space-y-3 p-4">
+                      {trades.map((trade, index) => (
+                        <div key={trade.id || index} className="bg-muted/10 rounded-lg p-3 border border-border/50">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-mono text-muted-foreground">#{trade.tradeNumber || trade.ticket}</span>
+                              <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                trade.type === 'buy' 
+                                  ? 'bg-green-500/20 text-green-400' 
+                                  : 'bg-red-500/20 text-red-400'
+                              }`}>
+                                {trade.type?.toUpperCase()}
+                              </span>
+                            </div>
+                            <span className={`text-sm font-bold ${
+                              trade.profit > 0 ? 'text-green-400' : trade.profit < 0 ? 'text-red-400' : 'text-muted-foreground'
+                            }`}>
+                              {trade.profit > 0 ? '+' : ''}{trade.profit?.toFixed(2)}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div>
+                              <span className="text-muted-foreground">Sembol:</span>
+                              <span className="ml-1 font-medium">{trade.symbol}</span>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Boyut:</span>
+                              <span className="ml-1 font-medium">{trade.size}</span>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Açılış:</span>
+                              <span className="ml-1 font-mono">{trade.openPrice?.toFixed(5)}</span>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Kapanış:</span>
+                              <span className="ml-1 font-mono">{trade.closePrice?.toFixed(5)}</span>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Tarih:</span>
+                              <span className="ml-1">{trade.openTime ? new Date(trade.openTime).toLocaleDateString('tr-TR') : '-'}</span>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Süre:</span>
+                              <span className="ml-1">{trade.duration ? `${trade.duration}m` : '-'}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Desktop Table View */}
+                    <div className="hidden sm:block overflow-x-auto">
                       <table className="w-full text-xs">
                         <thead className="bg-muted/30">
                           <tr>

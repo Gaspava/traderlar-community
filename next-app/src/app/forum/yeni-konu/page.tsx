@@ -15,7 +15,6 @@ import {
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { Category } from '@/lib/supabase/types';
-import ForumSidebar from '@/components/forum/ForumSidebar';
 import { slugify, isValidSlug } from '@/lib/utils/slugify';
 import { useThemeDetection } from '@/hooks/useThemeDetection';
 import { useMentionDetection } from '@/hooks/useMentionDetection';
@@ -301,11 +300,8 @@ export default function NewTopicPage() {
         </div>
       </div>
 
-      {/* Forum Sidebar Component */}
-      <ForumSidebar />
-
-      {/* Main Content with Left Margin for Fixed Sidebar */}
-      <div className="md:ml-60">
+      {/* Main Content */}
+      <div>
         <div className="max-w-6xl mx-auto">
           <div className="flex gap-0">
           {/* Main Content - Yeni Konu Oluşturma */}

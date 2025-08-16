@@ -132,12 +132,12 @@ function ArticlesPageContent() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-background">
-      {/* Compact Header */}
+      {/* Compact Header - Mobile Optimized */}
       <div className="border-b border-gray-200 dark:border-border bg-white dark:bg-card">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-foreground">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-foreground">
                 Makaleler
               </h1>
               <p className="text-sm text-gray-600 dark:text-muted-foreground mt-1">
@@ -162,10 +162,10 @@ function ArticlesPageContent() {
         </div>
       </div>
 
-      {/* Modern Filters and Search */}
+      {/* Modern Filters and Search - Mobile Optimized */}
       <div className="border-b border-gray-200 dark:border-border bg-white/50 dark:bg-background/50 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex flex-col lg:flex-row gap-4 items-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+          <div className="flex flex-col gap-4 items-stretch sm:items-center">
             {/* Search */}
             <form onSubmit={handleSearch} className="flex-1 max-w-2xl">
               <div className="relative">
@@ -180,17 +180,17 @@ function ArticlesPageContent() {
               </div>
             </form>
 
-            {/* Filters */}
-            <div className="flex items-center gap-3">
+            {/* Filters - Mobile Responsive */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               {/* Category Filter */}
-              <div className="relative">
+              <div className="relative flex-1 sm:flex-initial">
                 <select
                   value={selectedCategory || ''}
                   onChange={(e) => {
                     setSelectedCategory(e.target.value || null);
                     setCurrentPage(1);
                   }}
-                  className="appearance-none bg-white/80 dark:bg-card/80 backdrop-blur-sm border border-gray-200 dark:border-border rounded-xl px-4 py-3 pr-10 text-gray-800 dark:text-foreground focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-300 cursor-pointer"
+                  className="appearance-none bg-white/80 dark:bg-card/80 backdrop-blur-sm border border-gray-200 dark:border-border rounded-xl px-4 py-3 pr-10 text-gray-800 dark:text-foreground focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-300 cursor-pointer w-full"
                 >
                   <option value="">Tüm Kategoriler</option>
                   {categories.map((category) => (
@@ -203,11 +203,11 @@ function ArticlesPageContent() {
               </div>
 
               {/* Sort */}
-              <div className="relative">
+              <div className="relative flex-1 sm:flex-initial">
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as 'newest' | 'popular' | 'trending')}
-                  className="appearance-none bg-white/80 dark:bg-card/80 backdrop-blur-sm border border-gray-200 dark:border-border rounded-xl px-4 py-3 pr-10 text-gray-800 dark:text-foreground focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all duration-300 cursor-pointer"
+                  className="appearance-none bg-white/80 dark:bg-card/80 backdrop-blur-sm border border-gray-200 dark:border-border rounded-xl px-4 py-3 pr-10 text-gray-800 dark:text-foreground focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all duration-300 cursor-pointer w-full"
                 >
                   <option value="newest">En Yeni</option>
                   <option value="popular">En Popüler</option>
@@ -257,11 +257,11 @@ function ArticlesPageContent() {
         </div>
       </div>
 
-      {/* Content Area */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Content Area - Mobile Optimized */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {loading ? (
-          /* Loading State */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          /* Loading State - Mobile Grid */
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="bg-white/80 dark:bg-card/80 backdrop-blur-sm rounded-2xl overflow-hidden animate-pulse border border-gray-200 dark:border-border">
                 <div className="aspect-video bg-gray-200 dark:bg-muted"></div>
@@ -301,9 +301,9 @@ function ArticlesPageContent() {
                 </button>
               </div>
             ) : (
-              /* Modern Articles Grid */
+              /* Modern Articles Grid - Mobile Responsive */
               <>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
                   {articles.map((article, index) => (
                     <div key={article.id}>
                       <motion.article

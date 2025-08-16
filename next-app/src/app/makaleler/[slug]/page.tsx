@@ -262,7 +262,7 @@ export default function ArticleDetailPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-background dark:via-card/30 dark:to-background">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-4xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
           <div className="bg-white dark:bg-card rounded-2xl border border-gray-200/50 dark:border-border/50 shadow-xl overflow-hidden p-8 lg:p-12">
             <div className="animate-pulse">
               <div className="h-6 bg-gradient-to-r from-green-200 to-emerald-200 dark:from-green-800 dark:to-emerald-800 rounded-full w-1/4 mb-6"></div>
@@ -283,7 +283,7 @@ export default function ArticleDetailPage() {
   if (!loading && !article) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-background dark:via-card/30 dark:to-background">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-4xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
           <div className="bg-white dark:bg-card rounded-2xl border border-gray-200/50 dark:border-border/50 shadow-xl overflow-hidden p-8 lg:p-12 text-center">
             <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
               <span className="text-2xl">📝</span>
@@ -320,16 +320,16 @@ export default function ArticleDetailPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-background dark:via-card/30 dark:to-background">
       {/* Above-the-fold Ad */}
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Main Content Grid with Sidebar */}
-        <div className="flex flex-col lg:flex-row gap-2.5">
-          {/* Article Content */}
-          <article className="flex-1 bg-white dark:bg-card rounded-xl border border-gray-200/50 dark:border-border/50 shadow-lg overflow-hidden" style={{maxWidth: '800px'}}>
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-3 sm:py-6">
+        {/* Main Content Grid with Sidebar - Mobile Optimized */}
+        <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
+          {/* Article Content - Full Width on Mobile */}
+          <article className="w-full lg:flex-1 bg-white dark:bg-card rounded-lg sm:rounded-xl border border-gray-200/50 dark:border-border/50 shadow-sm sm:shadow-lg overflow-hidden lg:max-w-[800px]">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
-              className="p-6 lg:p-8"
+              className="p-4 sm:p-6 lg:p-8"
             >
             {/* Back button - Inside card */}
             <motion.div
@@ -352,57 +352,57 @@ export default function ArticleDetailPage() {
             {article.title}
           </h1>
 
-          {/* Author and Meta - Minimized */}
-          <div className="flex items-center justify-between gap-4 mb-6 pb-4 border-b border-gray-200/50 dark:border-border/50">
-            <div className="flex items-center gap-3">
+          {/* Author and Meta - Mobile Optimized */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6 pb-3 sm:pb-4 border-b border-gray-200/50 dark:border-border/50">
+            <div className="flex items-center gap-2 sm:gap-3">
               <Link
                 href={`/profile/${article.author_username}`}
-                className="flex items-center gap-3 group"
+                className="flex items-center gap-2 sm:gap-3 group touch-manipulation"
               >
                 <img
                   src={article.author_avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${article.author_username}`}
                   alt={article.author_name}
-                  className="w-10 h-10 rounded-full ring-1 ring-gray-200 dark:ring-gray-700 transition-all duration-300 group-hover:ring-green-400 dark:group-hover:ring-green-500"
+                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-full ring-1 ring-gray-200 dark:ring-gray-700 transition-all duration-300 group-hover:ring-green-400 dark:group-hover:ring-green-500"
                 />
                 <div>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
+                  <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
                     {article.author_name}
                   </p>
-                  <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                  <div className="flex items-center gap-1 sm:gap-2 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
                     <span>{new Date(article.published_at!).toLocaleDateString('tr-TR')}</span>
-                    <span>•</span>
-                    <span>5 dk okuma</span>
+                    <span className="hidden sm:inline">•</span>
+                    <span className="hidden sm:inline">5 dk okuma</span>
                   </div>
                 </div>
               </Link>
             </div>
 
-            {/* Actions */}
+            {/* Actions - Mobile Optimized */}
             {canEdit && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 sm:gap-2 ml-auto">
                 <Link
                   href={`/makaleler/${article.slug}/edit`}
-                  className="p-2 text-gray-400 hover:text-green-600 transition-colors"
+                  className="p-1.5 sm:p-2 text-gray-400 hover:text-green-600 active:text-green-700 transition-colors touch-target"
                 >
-                  <Edit className="w-4 h-4" />
+                  <Edit className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </Link>
                 <button
                   onClick={handleDelete}
-                  className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                  className="p-1.5 sm:p-2 text-gray-400 hover:text-red-600 active:text-red-700 transition-colors touch-target"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </button>
               </div>
             )}
           </div>
 
-          {/* Cover Image */}
+          {/* Cover Image - Mobile Optimized */}
           {article.cover_image && (
-            <div className="mb-8 rounded-xl overflow-hidden">
+            <div className="mb-4 sm:mb-6 lg:mb-8 -mx-4 sm:mx-0 sm:rounded-xl overflow-hidden">
               <img
                 src={article.cover_image}
                 alt={article.title}
-                className="w-full h-auto max-h-80 object-cover"
+                className="w-full h-auto max-h-48 sm:max-h-64 lg:max-h-80 object-cover"
               />
             </div>
           )}
@@ -511,23 +511,23 @@ export default function ArticleDetailPage() {
             )}
           </div>
 
-          {/* Stats and Actions - Minimized */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 py-4 border-t border-gray-200/50 dark:border-border/50 mb-8">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              {/* Stats */}
-              <div className="flex items-center gap-4 text-sm">
-                <span className="flex items-center gap-1 text-gray-600 dark:text-gray-300">
-                  <Eye className="w-4 h-4" />
-                  <span className="metric-value">{article.view_count}</span>
+          {/* Stats and Actions - Mobile Optimized */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 py-3 sm:py-4 border-t border-gray-200/50 dark:border-border/50 mb-4 sm:mb-6 lg:mb-8">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 w-full sm:w-auto">
+              {/* Stats - Mobile Responsive */}
+              <div className="flex items-center gap-3 sm:gap-4 text-xs sm:text-sm">
+                <span className="flex items-center gap-0.5 sm:gap-1 text-gray-600 dark:text-gray-300">
+                  <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <span className="metric-value text-xs sm:text-sm">{article.view_count}</span>
                 </span>
                 
                 <motion.button
                   onClick={handleLike}
                   disabled={liking}
-                  className={`flex items-center gap-1 transition-colors ${
+                  className={`flex items-center gap-0.5 sm:gap-1 transition-colors touch-manipulation active:scale-95 p-1 -m-1 ${
                     isLiked 
                       ? 'text-red-500' 
-                      : 'text-gray-600 dark:text-gray-300 hover:text-red-500'
+                      : 'text-gray-600 dark:text-gray-300 hover:text-red-500 active:text-red-600'
                   }`}
                   whileTap={{ scale: 0.95 }}
                 >
@@ -535,13 +535,13 @@ export default function ArticleDetailPage() {
                     animate={isLiked ? { scale: [1, 1.2, 1] } : { scale: 1 }}
                     transition={{ duration: 0.3 }}
                   >
-                    <Heart className={`w-4 h-4 transition-all duration-300 ${
+                    <Heart className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-all duration-300 ${
                       isLiked ? 'fill-current' : ''
                     }`} />
                   </motion.div>
                   <motion.span
                     key={likeCount}
-                    className="metric-value"
+                    className="metric-value text-xs sm:text-sm"
                     initial={{ scale: 1 }}
                     animate={{ scale: [1, 1.1, 1] }}
                     transition={{ duration: 0.2 }}
@@ -550,19 +550,19 @@ export default function ArticleDetailPage() {
                   </motion.span>
                 </motion.button>
                 
-                <span className="flex items-center gap-1 text-gray-600 dark:text-gray-300">
-                  <MessageCircle className="w-4 h-4" />
-                  <span className="metric-value">{commentCount}</span>
+                <span className="flex items-center gap-0.5 sm:gap-1 text-gray-600 dark:text-gray-300">
+                  <MessageCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <span className="metric-value text-xs sm:text-sm">{commentCount}</span>
                 </span>
               </div>
 
-              {/* Categories */}
-              <div className="flex items-center gap-2">
+              {/* Categories - Mobile Scrollable */}
+              <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto hide-scrollbar">
                 {article.categories.map((category) => (
                   <Link
                     key={category.id}
                     href={`/makaleler?category=${category.slug}`}
-                    className="text-xs px-3 py-1 rounded-full font-medium transition-all duration-300 hover:scale-105 shadow-sm backdrop-blur-sm"
+                    className="text-[10px] sm:text-xs px-2 sm:px-3 py-0.5 sm:py-1 rounded-full font-medium transition-all duration-300 hover:scale-105 shadow-sm backdrop-blur-sm whitespace-nowrap touch-manipulation active:scale-95"
                     style={{
                       backgroundColor: `${category.color}15`,
                       color: category.color,
@@ -575,22 +575,22 @@ export default function ArticleDetailPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2 ml-auto sm:ml-0">
               <button
                 onClick={handleSave}
-                className={`p-2 rounded-lg transition-colors ${
+                className={`p-1.5 sm:p-2 rounded-lg transition-colors touch-target active:scale-95 ${
                   isSaved
                     ? 'text-green-500'
-                    : 'text-gray-600 dark:text-gray-300 hover:text-green-500'
+                    : 'text-gray-600 dark:text-gray-300 hover:text-green-500 active:text-green-600'
                 }`}
               >
-                <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-current' : ''}`} />
+                <Bookmark className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isSaved ? 'fill-current' : ''}`} />
               </button>
               <button
                 onClick={handleShare}
-                className="p-2 text-gray-600 dark:text-gray-300 hover:text-blue-500 rounded-lg transition-colors"
+                className="p-1.5 sm:p-2 text-gray-600 dark:text-gray-300 hover:text-blue-500 active:text-blue-600 rounded-lg transition-colors touch-target active:scale-95"
               >
-                <Share2 className="w-4 h-4" />
+                <Share2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
             </div>
           </div>
