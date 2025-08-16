@@ -58,16 +58,16 @@ export default function LoginPage() {
     >
       <Link
         href="/"
-        className="inline-flex items-center gap-2 text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white transition-colors mb-8"
+        className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-8"
       >
         <ArrowLeft className="w-4 h-4" />
         Ana Sayfaya Dön
       </Link>
 
-      <div className="bg-white/90 dark:bg-black/50 backdrop-blur-xl rounded-2xl p-8 shadow-2xl border border-neutral-200 dark:border-neutral-800">
+      <div className="bg-card/95 backdrop-blur-xl rounded-2xl p-8 shadow-2xl border border-border">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-neutral-900 dark:text-white mb-2">Hoş Geldiniz</h1>
-          <p className="text-neutral-600 dark:text-neutral-400">Trading topluluğuna giriş yapın</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Hoş Geldiniz</h1>
+          <p className="text-muted-foreground">Trading topluluğuna giriş yapın</p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -82,41 +82,41 @@ export default function LoginPage() {
           )}
 
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+            <label htmlFor="email" className="block text-sm font-medium text-foreground mb-2">
               Email Adresi
             </label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400 dark:text-neutral-500" />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <input
                 {...register('email')}
                 type="email"
                 id="email"
                 placeholder="ornek@email.com"
-                className="w-full bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-300 dark:border-neutral-700 rounded-lg px-10 py-3 text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all"
+                className="w-full bg-background border border-border rounded-lg px-10 py-3 text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
               />
             </div>
             {errors.email && (
-              <p className="mt-1 text-sm text-red-500 dark:text-red-400">{errors.email.message}</p>
+              <p className="mt-1 text-sm text-destructive">{errors.email.message}</p>
             )}
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+            <label htmlFor="password" className="block text-sm font-medium text-foreground mb-2">
               Şifre
             </label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400 dark:text-neutral-500" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <input
                 {...register('password')}
                 type={showPassword ? 'text' : 'password'}
                 id="password"
                 placeholder="••••••••"
-                className="w-full bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-300 dark:border-neutral-700 rounded-lg px-10 py-3 text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all"
+                className="w-full bg-background border border-border rounded-lg px-10 py-3 text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300 transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
               >
                 {showPassword ? (
                   <EyeOff className="w-5 h-5" />
@@ -126,14 +126,14 @@ export default function LoginPage() {
               </button>
             </div>
             {errors.password && (
-              <p className="mt-1 text-sm text-red-500 dark:text-red-400">{errors.password.message}</p>
+              <p className="mt-1 text-sm text-destructive">{errors.password.message}</p>
             )}
           </div>
 
           <div className="flex items-center justify-between">
             <Link
               href="/auth/forgot-password"
-              className="text-sm text-neutral-600 hover:text-green-600 dark:text-neutral-400 dark:hover:text-green-400 transition-colors"
+              className="text-sm text-muted-foreground hover:text-primary transition-colors"
             >
               Şifremi Unuttum
             </Link>
@@ -142,7 +142,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-3 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? (
               <span className="flex items-center justify-center gap-2">
@@ -170,34 +170,34 @@ export default function LoginPage() {
         </form>
 
         <div className="mt-8 text-center">
-          <p className="text-neutral-600 dark:text-neutral-400">
+          <p className="text-muted-foreground">
             Hesabınız yok mu?{' '}
             <Link
               href="/auth/register"
-              className="text-green-500 hover:text-green-600 dark:text-green-400 dark:hover:text-green-300 font-medium transition-colors"
+              className="text-primary hover:text-primary/80 font-medium transition-colors"
             >
               Üye Ol
             </Link>
           </p>
         </div>
 
-        <div className="mt-8 flex items-center justify-center gap-4 text-xs text-neutral-500 dark:text-neutral-500">
+        <div className="mt-8 flex items-center justify-center gap-4 text-xs text-muted-foreground">
           <span className="flex items-center gap-2">
-            <span className="text-green-500 dark:text-green-400">1000+</span> Üye
+            <span className="text-primary">1000+</span> Üye
           </span>
           <span>•</span>
           <span className="flex items-center gap-2">
-            <span className="text-green-500 dark:text-green-400">500+</span> Strateji
+            <span className="text-primary">500+</span> Strateji
           </span>
           <span>•</span>
           <span className="flex items-center gap-2">
-            <span className="text-green-500 dark:text-green-400">200+</span> Makale
+            <span className="text-primary">200+</span> Makale
           </span>
         </div>
       </div>
 
       <div className="mt-6 text-center">
-        <p className="text-xs text-neutral-500 dark:text-neutral-500">
+        <p className="text-xs text-muted-foreground">
           2025 Traderlar.com. Tüm hakları saklıdır.
         </p>
       </div>
