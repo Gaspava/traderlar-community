@@ -262,7 +262,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className={`min-h-screen transition-colors duration-200 ${
+    <div className={`min-h-screen pt-14 sm:pt-16 transition-colors duration-200 ${
       isDarkMode ? 'bg-background' : 'bg-gray-50'
     }`}>
       {/* Main Content - Mobile Optimized */}
