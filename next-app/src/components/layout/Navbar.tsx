@@ -162,9 +162,9 @@ export default function Navbar() {
   return (
     <>
       <nav className={cn(
-        "fixed top-0 w-full z-50 border-b transition-all duration-300 safe-top",
+        "sticky top-0 z-50 border-b transition-all duration-300 safe-top",
         isDarkMode ? "bg-background/95 backdrop-blur-md border-border" : "bg-white/95 backdrop-blur-md border-gray-200",
-        "transform translate-y-0",
+        shouldHideNavbar ? "transform -translate-y-full lg:translate-y-0" : "transform translate-y-0",
         isScrolled && "shadow-sm"
       )}>
         <div className="w-full px-4 sm:px-6 lg:px-8">

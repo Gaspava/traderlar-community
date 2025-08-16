@@ -355,9 +355,9 @@ export default function TradingStratejileriPage() {
 
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-background pt-14 sm:pt-16">
+    <div className="min-h-screen bg-gray-50 dark:bg-background">
         {/* Header - Mobil optimize edilmiş */}
-        <div className="sticky top-14 sm:top-16 z-30 bg-gray-50/80 dark:bg-background/80 backdrop-blur-xl border-b border-gray-200/30 dark:border-border/30">
+        <div className="sticky top-0 z-40 bg-gray-50/80 dark:bg-background/80 backdrop-blur-xl border-b border-gray-200/30 dark:border-border/30">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
